@@ -1,62 +1,111 @@
-use bevy::prelude::*;
+//! Shows how to render simple primitive shapes with a single color.
+
+use bevy::{
+    prelude::*,
+    sprite::{MaterialMesh2dBundle, Mesh2dHandle, Wireframe2dConfig, Wireframe2dPlugin},
+};
 
 fn main() {
     App::new()
-    .add_plugins((DefaultPlugins, HelloPlugin))
-    .run();
+        .add_plugins((DefaultPlugins, Wireframe2dPlugin))
+        .add_systems(Startup, setup)
+        .add_systems(Update, (toggle_wireframe, quit_game, move_camera))
+        .run();
 }
 
-//create new system
-// fn hello_world() {
-//     println!("hello world!");
-// }
-
-//create new components
-#[derive(Component)]
-struct Person;
+const X_EXTENT: f32 = 900.;
 
 #[derive(Component)]
-struct Name(String);
+struct MainCamera;
 
-//create new startup system for adding entities with particular components to the world
-fn add_people(mut commands: Commands) {
-    commands.spawn((Person, Name("Elaina Proctor".to_string())));
-    commands.spawn((Person, Name("Renzo Hume".to_string())));
-    commands.spawn((Person, Name("Zayna Nieves".to_string())));
+fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    commands.spawn((Camera2dBundle::default(), MainCamera));
+
+    let shapes = [
+        Mesh2dHandle(meshes.add(Circle { radius: 50.0 })),
+        Mesh2dHandle(meshes.add(CircularSector::new(50.0, 1.0))),
+        Mesh2dHandle(meshes.add(CircularSegment::new(50.0, 1.25))),
+        Mesh2dHandle(meshes.add(Ellipse::new(25.0, 50.0))),
+        Mesh2dHandle(meshes.add(Annulus::new(25.0, 50.0))),
+        Mesh2dHandle(meshes.add(Capsule2d::new(25.0, 50.0))),
+        Mesh2dHandle(meshes.add(Rhombus::new(75.0, 100.0))),
+        Mesh2dHandle(meshes.add(Rectangle::new(50.0, 100.0))),
+        Mesh2dHandle(meshes.add(RegularPolygon::new(50.0, 6))),
+        Mesh2dHandle(meshes.add(Triangle2d::new(
+            Vec2::Y * 50.0,
+            Vec2::new(-50.0, -50.0),
+            Vec2::new(50.0, -50.0),
+        ))),
+    ];
+    let num_shapes = shapes.len();
+
+    for (i, shape) in shapes.into_iter().enumerate() {
+        // Distribute colors evenly across the rainbow.
+        let color = Color::hsl(360. * i as f32 / num_shapes as f32, 0.95, 0.7);
+
+        commands.spawn(MaterialMesh2dBundle {
+            mesh: shape,
+            material: materials.add(color),
+            transform: Transform::from_xyz(
+                // Distribute shapes from -X_EXTENT/2 to +X_EXTENT/2.
+                -X_EXTENT / 2. + i as f32 / (num_shapes - 1) as f32 * X_EXTENT,
+                0.0,
+                0.0,
+            ),
+            ..default()
+        });
+    }
+
+    commands.spawn(
+        TextBundle::from_section("Press SPACE to toggle wireframes\nPress ESC to quit", TextStyle::default())
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                top: Val::Px(12.0),
+                left: Val::Px(12.0),
+                ..default()
+            }),
+    );
 }
 
-//create new system operating on entities with specific components, using a query
-fn greet_people(time: Res<Time>, mut timer: ResMut<GreetTimer>, query: Query<&Name, With<Person>>) {
-    if timer.0.tick(time.delta()).just_finished() {
-        for name in &query {
-            println!("hello {}!", name.0);
+fn toggle_wireframe(
+    mut wireframe_config: ResMut<Wireframe2dConfig>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+) {
+    if keyboard.just_pressed(KeyCode::Space) {
+        wireframe_config.global = !wireframe_config.global;
+    }
+}
+
+// query: Query<(&Health, Option<&PlayerName>), (With<Player>, Without<Enemy>)>,
+
+fn move_camera(mut query: Query<&mut Transform, With<MainCamera>>, keyboard: Res<ButtonInput<KeyCode>>, time: Res<Time>) {
+    let camera_speed = 200.0;
+    let camera_move = time.delta_seconds() * camera_speed;
+    for mut transform in &mut query {
+        if keyboard.pressed(KeyCode::KeyA) {
+            transform.translation.x -= camera_move;
+        }
+        if keyboard.pressed(KeyCode::KeyD) {
+            transform.translation.x += camera_move;
+        }
+        if keyboard.pressed(KeyCode::KeyW) {
+            transform.translation.y += camera_move;
+        }
+        if keyboard.pressed(KeyCode::KeyS) {
+            transform.translation.y -= camera_move;
         }
     }
 }
 
-//create mutable system modifying entities with specific components, using a query
-fn update_people(mut query: Query<&mut Name, With<Person>>) {
-    for mut name in &mut query {
-        if name.0 == "Elaina Proctor" {
-            name.0 = "Elaina Hume".to_string();
-            break; // We don’t need to change any other names
-        }
+fn quit_game(
+    mut app_exit_events: ResMut<Events<bevy::app::AppExit>>,
+    keyboard: Res<ButtonInput<KeyCode>>
+) {
+    if keyboard.just_pressed(KeyCode::Escape) {
+        app_exit_events.send(bevy::app::AppExit::Success);
     }
 }
-
-//create plugin for all above functionality in order to neatly encapsulate adding of these systems
-//(chain is used to enforce ordering of systems in an update cycle)
-pub struct HelloPlugin;
-
-impl Plugin for HelloPlugin {
-    fn build(&self, app: &mut App) {
-        app
-        .insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)))
-        .add_systems(Startup, add_people)
-        .add_systems(Update, (update_people, greet_people).chain());
-    }
-}
-
-//create new timer resource (resources are like components, but globally unique)
-#[derive(Resource)]
-struct GreetTimer(Timer);
