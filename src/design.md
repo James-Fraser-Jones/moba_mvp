@@ -1,8 +1,10 @@
-# pathfinding
+# design
+
+## pathfinding
 
 picked up from [starcraft talk](https://www.gdcvault.com/play/1014514/AI-Navigation-It-s-Not)
 
-## planning
+### planning
 
 * path mesh
     * constrained delaunay triangulation
@@ -16,7 +18,7 @@ picked up from [starcraft talk](https://www.gdcvault.com/play/1014514/AI-Navigat
     * A* search on the path mesh (hierarchical??)
     * support with different radii (using funnel algorithm??)
 
-## steering
+### steering
 
 * Craig Reynold's boids
     * Following
@@ -29,13 +31,13 @@ picked up from [starcraft talk](https://www.gdcvault.com/play/1014514/AI-Navigat
 * Prevent hallway dance with mind reading of local units
 * Avoidance steering allows navigation around concave depressions in clumps of other stationary units
 
-## collision
+### collision
 
 * Units can push other (non-stationary) units
 * Physics simulation using circles and a limited number of rounds
 * Pathing mesh is used for collision logic to ensure units aren't pushed into unwalkable terrain
 
-# networking
+## networking
 
 client-server architecture with "client-prediction" and/or "rollback" optionally enabled/disabled for specific player actions (possibly other game events)
 
@@ -43,7 +45,7 @@ watch the [overwatch talk](https://www.gdcvault.com/play/1024001/-Overwatch-Game
 
 UDP with optional in-order reliability layer
 
-# wide (content)
+## wide (content)
 * status effects (buffs/CC)
 * damage types
 * damage collision types
