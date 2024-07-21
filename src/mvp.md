@@ -45,7 +45,10 @@
 
 ## steps
 
-1. unit, displaying
+1. **(DONE)** single unit, displaying
     * position
-    * radius
-    * orientation
+    * radius (colored circle)
+    * orientation (colored triangle within)
+
+2. multiple of these units
+3. units having randomised positions, orientations, radiuses

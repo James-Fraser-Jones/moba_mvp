@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::{
     prelude::*, sprite::{MaterialMesh2dBundle, Mesh2dHandle}
 };
@@ -21,7 +23,7 @@ fn setup(
     commands.spawn((Camera2dBundle::default(), MainCamera));
 
     commands.spawn(MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(meshes.add(Circle { radius: 50. })),
+        mesh: Mesh2dHandle(meshes.add(Circle { radius: RADIUS })),
         material: materials.add(Color::hsl(0., 0.7, 0.5)),
         transform: Transform::from_xyz(
             0.,
@@ -31,13 +33,26 @@ fn setup(
         ..default()
     });
 
+    // commands.spawn(MaterialMesh2dBundle {
+    //     mesh: Mesh2dHandle(meshes.add(Rectangle::new(50., 100.))),
+    //     material: materials.add(Color::hsl(180., 0.7, 0.5)),
+    //     transform: Transform::from_xyz( 
+    //         100.,
+    //         0.,
+    //         0.,
+    //     ),
+    //     ..default()
+    // });
+
+    const ANG: f32 = 2.*PI/16.;
+    const RADIUS: f32 = 20.;
     commands.spawn(MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(meshes.add(Rectangle::new(50., 100.))),
+        mesh: Mesh2dHandle(meshes.add(Triangle2d::new(Vec2::new(0., RADIUS), Vec2::new(RADIUS*ANG.sin(), -RADIUS*ANG.cos()), Vec2::new(-RADIUS*ANG.sin(), -RADIUS*ANG.cos())))),
         material: materials.add(Color::hsl(180., 0.7, 0.5)),
         transform: Transform::from_xyz( 
-            100.,
             0.,
             0.,
+            1.,
         ),
         ..default()
     });
