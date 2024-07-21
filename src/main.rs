@@ -6,8 +6,9 @@ use bevy::{
 
 const CAMERA_SPEED: f32 = 500.;
 
-const ARROW_ANG: f32 = 2.*PI/16.;
-const RADIUS: f32 = 56.;
+const UNIT_SPEED: f32 = 150.;
+const ARROW_ANG: f32 = PI/4.;
+const RADIUS: f32 = 50.;
 const RED_HUE: f32 = 0.;
 const GREEN_HUE: f32 = 120.0;
 const BLUE_HUE: f32 = 240.0;
@@ -16,12 +17,15 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
-        .add_systems(Update, (quit_game, move_camera))
+        .add_systems(Update, (quit_game, move_camera, move_units))
         .run();
 }
 
-#[derive(Component)]
-struct MainCamera;
+#[derive(Component, Default)]
+struct IsMainCamera;
+
+#[derive(Component, Default)]
+struct IsUnit;
 
 #[derive(Component, PartialEq, Default, Copy, Clone)]
 enum Team {
@@ -33,6 +37,7 @@ enum Team {
 struct UnitBundle {
     spatial: SpatialBundle,
     team: Team,
+    is_unit: IsUnit,
 }
 
 fn setup(
@@ -50,7 +55,7 @@ fn setup(
                 ..default()
             }),
     );
-    commands.spawn((Camera2dBundle::default(), MainCamera));
+    commands.spawn((Camera2dBundle::default(), IsMainCamera));
 
     //initialize mesh and material resources (shared across all units)
     let bound_mesh_handle = Mesh2dHandle(meshes.add(Circle::new(RADIUS)));
@@ -116,7 +121,7 @@ fn setup(
     }
 }
 
-fn move_camera(mut query: Query<&mut Transform, With<MainCamera>>, keyboard: Res<ButtonInput<KeyCode>>, time: Res<Time>) {
+fn move_camera(mut query: Query<&mut Transform, With<IsMainCamera>>, keyboard: Res<ButtonInput<KeyCode>>, time: Res<Time>) {
     let mut transform = query.single_mut(); //okay when entity known to exist and be unique
     let mut direction: Vec2 = Vec2::ZERO;
     if keyboard.pressed(KeyCode::KeyA) {
@@ -142,5 +147,12 @@ fn quit_game(
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
         app_exit_events.send(bevy::app::AppExit::Success);
+    }
+}
+
+fn move_units(mut query: Query<&mut Transform, With<IsUnit>>, time: Res<Time>) {
+    for mut transform in &mut query {
+        let direction = transform.local_x().as_vec3();
+        transform.translation += direction * UNIT_SPEED * time.delta_seconds();
     }
 }

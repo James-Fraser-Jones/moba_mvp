@@ -54,4 +54,6 @@
 
 2. **(DONE)** multiple of these units
 
-3. units having randomised positions, orientations, radiuses
+3. **(DONE)** units moving along their given orientations in a straight line
+
+4. experimental boids implementation (with no obstacles)
