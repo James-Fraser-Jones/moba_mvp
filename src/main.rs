@@ -4,18 +4,29 @@ use bevy::{
     input::mouse::{MouseWheel, MouseScrollUnit}, prelude::*, sprite::{MaterialMesh2dBundle, Mesh2dHandle}, window::WindowMode
 };
 
-const CAMERA_SPEED: f32 = 500.;
+use rand::Rng;
 
-const UNIT_SPEED: f32 = 150.;
+//camera
+const CAMERA_SPEED: f32 = 500.;
+const ZOOM_SPEED: f32 = 0.1;
+
+//unit
+const UNIT_SPEED: f32 = 300.;
+const UNIT_TURN: f32 = PI/16.;
+const RADIUS: f32 = 20.;
+const NUM_UNITS: i32 = 100;
+
+//screen
+const SCREEN_WIDTH: f32 = 1920.;
+const SCREEN_HEIGHT: f32 = 1080.;
+
+//cosmetic
+const APP_NAME: &str = "Moba MVP";
 const ARROW_ANG: f32 = PI/4.;
-const RADIUS: f32 = 50.;
 const RED_HUE: f32 = 0.;
 const GREEN_HUE: f32 = 120.;
 const BLUE_HUE: f32 = 240.;
-const SCREEN_WIDTH: f32 = 1920.;
-const SCREEN_HEIGHT: f32 = 1080.;
-const APP_NAME: &str = "Moba MVP";
-const ZOOM_SPEED: f32 = 0.1;
+
 
 fn main() -> AppExit {
     App::new()
@@ -81,47 +92,31 @@ fn setup(
     let red_material_handle = materials.add(Color::hsl(RED_HUE, 0.75, 0.5));
     let blue_material_handle = materials.add(Color::hsl(BLUE_HUE, 0.75, 0.5));
 
-    //initialise units
-    let units = [
-        UnitBundle {
-            spatial: SpatialBundle {
-                transform: Transform::from_xyz(0., 0., 0.).with_rotation(Quat::from_rotation_z(0.)),
-                ..default()
-            },
-            ..default()
-        },
-        UnitBundle {
-            spatial: SpatialBundle {
-                transform: Transform::from_xyz(200., 0., 0.).with_rotation(Quat::from_rotation_z(PI/2.)),
-                ..default()
-            },
-            team: Team::Blue,
-            ..default()
-        },
-        UnitBundle {
-            spatial: SpatialBundle {
-                transform: Transform::from_xyz(0., 200., 0.).with_rotation(Quat::from_rotation_z(3.*PI/4.)),
-                ..default()
-            },
-            team: Team::Blue,
-            ..default()
-        },
-        UnitBundle {
-            spatial: SpatialBundle {
-                transform: Transform::from_xyz(200., 200., 0.).with_rotation(Quat::from_rotation_z(PI)),
-                ..default()
-            },
-            ..default()
-        },
-    ];
-
     //spawn entities, including adding 2 mesh bundles as child entities of each unit
-    for unit in units.into_iter() {
-        let team = unit.team;
+    let mut rng = rand::thread_rng(); //get ref to random number generator
+    for _ in 0..NUM_UNITS {
+        let unit = UnitBundle {
+            spatial: SpatialBundle {
+                transform: 
+                    Transform::from_xyz(
+                        rng.gen_range(-SCREEN_WIDTH..=SCREEN_WIDTH), 
+                        rng.gen_range(-SCREEN_HEIGHT..=SCREEN_HEIGHT), 
+                        0.
+                    )
+                    .with_rotation(Quat::from_rotation_z(
+                        rng.gen_range((0.)..(2.*PI))
+                    )),
+                ..default()
+            },
+            team: if rng.gen() {Team::Blue} else {Team::Red},
+            ..default()
+        };
+        let team = unit.team; //avoid borrow checking issue
         commands.spawn(unit).with_children(|parent| {
             parent.spawn(MaterialMesh2dBundle {
                 mesh: bound_mesh_handle.clone(), //cloning handles to resources is safe
                 material: bound_material_handle.clone(),
+                visibility: Visibility::Hidden, //hide for now
                 ..default()
             });
             parent.spawn(MaterialMesh2dBundle {
@@ -176,7 +171,25 @@ fn quit_game(
 
 fn move_units(mut query: Query<&mut Transform, With<IsUnit>>, time: Res<Time>) {
     for mut transform in &mut query {
+        //move units in "forward" direction
         let direction = transform.local_x().as_vec3();
         transform.translation += direction * UNIT_SPEED * time.delta_seconds();
+
+        //turn units a random amount
+        transform.rotate(Quat::from_rotation_z(rand::thread_rng().gen_range(-UNIT_TURN..=UNIT_TURN)));
+
+        //wrap units around default camera bounds
+        if transform.translation.x > SCREEN_WIDTH/2. {
+            transform.translation.x -= SCREEN_WIDTH;
+        }
+        else if transform.translation.x < -SCREEN_WIDTH/2. {
+            transform.translation.x += SCREEN_WIDTH;
+        }
+        if transform.translation.y > SCREEN_HEIGHT/2. {
+            transform.translation.y -= SCREEN_HEIGHT;
+        }
+        else if transform.translation.y < -SCREEN_HEIGHT/2. {
+            transform.translation.y += SCREEN_HEIGHT;
+        }
     }
 }

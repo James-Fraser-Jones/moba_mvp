@@ -57,7 +57,7 @@
 3. **(DONE)** units moving along their given orientations in a straight line
 
 4. experimental boids implementation (with no obstacles)
-   - place arbitrary number of units with randomised stats
-   - apply screenwrapping
-   - apply collision?
-   -
+   - **(DONE)** place arbitrary number of units with randomised stats
+   - **(DONE)**implement screenwrapping
+   - **(DONE)** add random turning per-frame
+   - implement an actual functional boids algorithm (_without_ forces)
