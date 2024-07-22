@@ -13,8 +13,8 @@ const ZOOM_SPEED: f32 = 0.1;
 //unit
 const UNIT_SPEED: f32 = 300.;
 const UNIT_TURN: f32 = PI/16.;
-const UNIT_RADIUS: f32 = 20.; //if set to factor of GCD of SCREEN_WIDTH and SCREEN_HEIGHT, can have a grid with square cells that fits the screen perfectly (currently: 120)
-const NUM_UNITS: i32 = 100;
+const UNIT_RADIUS: f32 = 10.; //if set to factor of GCD of SCREEN_WIDTH and SCREEN_HEIGHT, can have a grid with square cells that fits the screen perfectly (currently: 120)
+const NUM_UNITS: i32 = 1000;
 
 //screen
 const SCREEN_WIDTH: f32 = 1920.;
@@ -28,6 +28,8 @@ const BRIGHTNESS: f32 = 0.5;
 const RED: Color = Color::hsl(0., SATURATION, BRIGHTNESS);
 const GREEN: Color = Color::hsl(120., SATURATION, BRIGHTNESS);
 const BLUE: Color = Color::hsl(240., SATURATION, BRIGHTNESS);
+const TEAL: Color = Color::hsl(190., SATURATION, BRIGHTNESS);
+const YELLOW: Color = Color::hsl(60., SATURATION, BRIGHTNESS);
 
 //grid
 const GRID_SCALE: f32 = 2.; //size of grid cells, relative to unit diameter
@@ -94,9 +96,11 @@ fn setup(
         Vec2::new(-UNIT_RADIUS*ARROW_ANG.cos(), UNIT_RADIUS*ARROW_ANG.sin()), 
         Vec2::new(-UNIT_RADIUS*ARROW_ANG.cos(), -UNIT_RADIUS*ARROW_ANG.sin())
     )));
-    let bound_material_handle = materials.add(GREEN);
+    let green_material_handle = materials.add(GREEN);
     let red_material_handle = materials.add(RED);
     let blue_material_handle = materials.add(BLUE);
+    let yellow_material_handle = materials.add(YELLOW);
+    let teal_material_handle = materials.add(TEAL);
 
     //spawn entities, including adding 2 mesh bundles as child entities of each unit
     let mut rng = rand::thread_rng(); //get ref to random number generator
@@ -121,7 +125,7 @@ fn setup(
         commands.spawn(unit).with_children(|parent| {
             parent.spawn(MaterialMesh2dBundle {
                 mesh: bound_mesh_handle.clone(), //cloning handles to resources is safe
-                material: bound_material_handle.clone(),
+                material: green_material_handle.clone(),
                 //visibility: Visibility::Hidden, //hide for now
                 ..default()
             });
@@ -133,6 +137,49 @@ fn setup(
             });
         });
     }
+
+    //spawn "map"
+    let map_size = SCREEN_WIDTH.min(SCREEN_HEIGHT);
+    let lane_width = 0.12;
+    let inner_map_size = map_size * (1. - 2.*lane_width);
+    let river_width = 0.1;
+    let base_radius = 0.2;
+    commands.spawn(MaterialMesh2dBundle { //outer lanes
+        mesh: Mesh2dHandle(meshes.add(Rectangle::from_length(map_size))),
+        material: yellow_material_handle.clone(),
+        transform: Transform::from_translation(Vec2::ZERO.extend(-5.)),
+        ..default()
+    });
+    commands.spawn(MaterialMesh2dBundle { //jungle
+        mesh: Mesh2dHandle(meshes.add(Rectangle::from_length(inner_map_size))),
+        material: green_material_handle.clone(),
+        transform: Transform::from_translation(Vec2::ZERO.extend(-4.)),
+        ..default()
+    });
+    commands.spawn(MaterialMesh2dBundle { //river
+        mesh: Mesh2dHandle(meshes.add(Rectangle::new(river_width * map_size, f32::sqrt(2.) * inner_map_size))),
+        material: teal_material_handle.clone(),
+        transform: Transform::from_translation(Vec2::ZERO.extend(-3.)).with_rotation(Quat::from_rotation_z(PI/4.)),
+        ..default()
+    });
+    commands.spawn(MaterialMesh2dBundle { //mid
+        mesh: Mesh2dHandle(meshes.add(Rectangle::new(lane_width * map_size, f32::sqrt(2.) * inner_map_size))),
+        material: yellow_material_handle.clone(),
+        transform: Transform::from_translation(Vec2::ZERO.extend(-2.)).with_rotation(Quat::from_rotation_z(-PI/4.)),
+        ..default()
+    });
+    commands.spawn(MaterialMesh2dBundle { //red base
+        mesh: Mesh2dHandle(meshes.add(CircularSector::from_radians(base_radius * map_size, PI/2.))),
+        material: red_material_handle.clone(),
+        transform: Transform::from_translation(Vec2::splat(-map_size/2.).extend(-1.)).with_rotation(Quat::from_rotation_z(-PI/4.)),
+        ..default()
+    });
+    commands.spawn(MaterialMesh2dBundle { //blue base
+        mesh: Mesh2dHandle(meshes.add(CircularSector::from_radians(base_radius * map_size, PI/2.))),
+        material: blue_material_handle.clone(),
+        transform: Transform::from_translation(Vec2::splat(map_size/2.).extend(-1.)).with_rotation(Quat::from_rotation_z(3.*PI/4.)),
+        ..default()
+    });
 }
 
 fn move_camera(
@@ -201,7 +248,7 @@ fn move_units(mut query: Query<&mut Transform, With<IsUnit>>, time: Res<Time>) {
 }
 
 fn resolve_collisions(mut query: Query<&mut Transform, With<IsUnit>>) {
-    let mut transforms = query.iter_combinations_mut();
+    let mut transforms = query.iter_combinations_mut(); //combinations don't include pairs of refs to a single entity
     while let Some([mut transform_a, mut transform_b]) = transforms.fetch_next() {
         let mut pos_a = transform_a.translation.truncate();
         let mut pos_b = transform_b.translation.truncate();
