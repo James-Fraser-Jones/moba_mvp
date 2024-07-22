@@ -13,7 +13,7 @@ const ZOOM_SPEED: f32 = 0.1;
 //unit
 const UNIT_SPEED: f32 = 300.;
 const UNIT_TURN: f32 = PI/16.;
-const RADIUS: f32 = 20.;
+const UNIT_RADIUS: f32 = 20.; //if set to factor of GCD of SCREEN_WIDTH and SCREEN_HEIGHT, can have a grid with square cells that fits the screen perfectly (currently: 120)
 const NUM_UNITS: i32 = 100;
 
 //screen
@@ -23,10 +23,13 @@ const SCREEN_HEIGHT: f32 = 1080.;
 //cosmetic
 const APP_NAME: &str = "Moba MVP";
 const ARROW_ANG: f32 = PI/4.;
-const RED_HUE: f32 = 0.;
-const GREEN_HUE: f32 = 120.;
-const BLUE_HUE: f32 = 240.;
+const SATURATION: f32 = 0.75;
+const BRIGHTNESS: f32 = 0.5;
+const RED: Color = Color::hsl(0., SATURATION, BRIGHTNESS);
+const GREEN: Color = Color::hsl(120., SATURATION, BRIGHTNESS);
+const BLUE: Color = Color::hsl(240., SATURATION, BRIGHTNESS);
 
+const GRID_SCALE: f32 = 2.; //size of grid cells, relative to unit diameter
 
 fn main() -> AppExit {
     App::new()
@@ -41,7 +44,8 @@ fn main() -> AppExit {
             ..default()
         }))
         .add_systems(Startup, setup)
-        .add_systems(Update, (quit_game, move_camera, move_units))
+        .add_systems(Update, (quit_game, move_camera, draw_grid))
+        .add_systems(FixedUpdate, move_units)
         .run()
 }
 
@@ -82,15 +86,15 @@ fn setup(
     ));
 
     //initialize mesh and material resources (shared across all units)
-    let bound_mesh_handle = Mesh2dHandle(meshes.add(Circle::new(RADIUS)));
+    let bound_mesh_handle = Mesh2dHandle(meshes.add(Circle::new(UNIT_RADIUS)));
     let arrow_mesh_handle = Mesh2dHandle(meshes.add(Triangle2d::new(
-        Vec2::new(RADIUS, 0.), 
-        Vec2::new(-RADIUS*ARROW_ANG.cos(), RADIUS*ARROW_ANG.sin()), 
-        Vec2::new(-RADIUS*ARROW_ANG.cos(), -RADIUS*ARROW_ANG.sin())
+        Vec2::new(UNIT_RADIUS, 0.), 
+        Vec2::new(-UNIT_RADIUS*ARROW_ANG.cos(), UNIT_RADIUS*ARROW_ANG.sin()), 
+        Vec2::new(-UNIT_RADIUS*ARROW_ANG.cos(), -UNIT_RADIUS*ARROW_ANG.sin())
     )));
-    let bound_material_handle = materials.add(Color::hsl(GREEN_HUE, 0.75, 0.5));
-    let red_material_handle = materials.add(Color::hsl(RED_HUE, 0.75, 0.5));
-    let blue_material_handle = materials.add(Color::hsl(BLUE_HUE, 0.75, 0.5));
+    let bound_material_handle = materials.add(GREEN);
+    let red_material_handle = materials.add(RED);
+    let blue_material_handle = materials.add(BLUE);
 
     //spawn entities, including adding 2 mesh bundles as child entities of each unit
     let mut rng = rand::thread_rng(); //get ref to random number generator
@@ -116,7 +120,7 @@ fn setup(
             parent.spawn(MaterialMesh2dBundle {
                 mesh: bound_mesh_handle.clone(), //cloning handles to resources is safe
                 material: bound_material_handle.clone(),
-                visibility: Visibility::Hidden, //hide for now
+                //visibility: Visibility::Hidden, //hide for now
                 ..default()
             });
             parent.spawn(MaterialMesh2dBundle {
@@ -192,4 +196,16 @@ fn move_units(mut query: Query<&mut Transform, With<IsUnit>>, time: Res<Time>) {
             transform.translation.y += SCREEN_HEIGHT;
         }
     }
+}
+
+fn draw_grid(mut gizmos: Gizmos) {
+    let cell_size: f32 = UNIT_RADIUS*2. * GRID_SCALE;
+    gizmos.grid_2d(
+        Vec2::ZERO,
+        0.,
+        UVec2::new((SCREEN_WIDTH/cell_size).round() as u32, (SCREEN_HEIGHT/cell_size).round() as u32),
+        Vec2::splat(cell_size),
+        GREEN
+        )
+        .outer_edges();
 }
