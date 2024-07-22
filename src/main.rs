@@ -29,6 +29,7 @@ const RED: Color = Color::hsl(0., SATURATION, BRIGHTNESS);
 const GREEN: Color = Color::hsl(120., SATURATION, BRIGHTNESS);
 const BLUE: Color = Color::hsl(240., SATURATION, BRIGHTNESS);
 
+//grid
 const GRID_SCALE: f32 = 2.; //size of grid cells, relative to unit diameter
 
 fn main() -> AppExit {
@@ -37,6 +38,7 @@ fn main() -> AppExit {
             primary_window: Some(Window {
                 title: APP_NAME.into(),
                 name: Some(APP_NAME.into()),
+                position: WindowPosition::At(IVec2::ZERO),
                 resolution: (SCREEN_WIDTH, SCREEN_HEIGHT).into(),
                 mode: WindowMode::Windowed,
                 ..default()
@@ -44,8 +46,8 @@ fn main() -> AppExit {
             ..default()
         }))
         .add_systems(Startup, setup)
-        .add_systems(Update, (quit_game, move_camera, draw_grid))
-        .add_systems(FixedUpdate, move_units)
+        .add_systems(Update, (quit_game, move_camera))
+        .add_systems(FixedUpdate, (move_units, resolve_collisions).chain())
         .run()
 }
 
@@ -175,12 +177,12 @@ fn quit_game(
 
 fn move_units(mut query: Query<&mut Transform, With<IsUnit>>, time: Res<Time>) {
     for mut transform in &mut query {
+        //turn units a random amount
+        //transform.rotate(Quat::from_rotation_z(rand::thread_rng().gen_range(-UNIT_TURN..=UNIT_TURN)));
+
         //move units in "forward" direction
         let direction = transform.local_x().as_vec3();
         transform.translation += direction * UNIT_SPEED * time.delta_seconds();
-
-        //turn units a random amount
-        transform.rotate(Quat::from_rotation_z(rand::thread_rng().gen_range(-UNIT_TURN..=UNIT_TURN)));
 
         //wrap units around default camera bounds
         if transform.translation.x > SCREEN_WIDTH/2. {
@@ -194,6 +196,23 @@ fn move_units(mut query: Query<&mut Transform, With<IsUnit>>, time: Res<Time>) {
         }
         else if transform.translation.y < -SCREEN_HEIGHT/2. {
             transform.translation.y += SCREEN_HEIGHT;
+        }
+    }
+}
+
+fn resolve_collisions(mut query: Query<&mut Transform, With<IsUnit>>) {
+    let mut transforms = query.iter_combinations_mut();
+    while let Some([mut transform_a, mut transform_b]) = transforms.fetch_next() {
+        let mut pos_a = transform_a.translation.truncate();
+        let mut pos_b = transform_b.translation.truncate();
+        let a_to_b = pos_b - pos_a;
+        let collide_dist = 2.*UNIT_RADIUS - a_to_b.length();
+        if collide_dist > 0. {
+            let a_to_b_dir = a_to_b.normalize();
+            pos_a -= a_to_b_dir * collide_dist / 2.;
+            pos_b += a_to_b_dir * collide_dist / 2.;
+            transform_a.translation = pos_a.extend(transform_a.translation.z);
+            transform_b.translation = pos_b.extend(transform_b.translation.z);
         }
     }
 }
