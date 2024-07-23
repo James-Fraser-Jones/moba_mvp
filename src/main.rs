@@ -85,6 +85,18 @@ struct UnitBundle {
     team: Team,
     unit: Unit, //tag for query filtering
 }
+impl UnitBundle {
+    fn from_xyrt(x: f32, y: f32, r: f32, t: Team) -> Self {
+        Self {
+            spatial: SpatialBundle {
+                transform: Transform::from_xyz(x, y, 0.).with_rotation(Quat::from_rotation_z(r)),
+                ..default()
+            },
+            team: t,
+            ..default()
+        }
+    }
+}
 
 #[derive(Resource)]
 struct Handles {
@@ -163,39 +175,35 @@ fn init_assets(
 fn init_units(mut commands: Commands, handles: Res<Handles>) {
     let mut rng = rand::thread_rng(); //get ref to random number generator
     for _ in 0..NUM_UNITS {
-        let unit = UnitBundle {
-            spatial: SpatialBundle {
-                transform: Transform::from_xyz(
-                    rng.gen_range(-SCREEN_WIDTH..=SCREEN_WIDTH),
-                    rng.gen_range(-SCREEN_HEIGHT..=SCREEN_HEIGHT),
-                    0.,
-                )
-                .with_rotation(Quat::from_rotation_z(rng.gen_range((0.)..(2. * PI)))),
-                ..default()
-            },
-            team: if rng.gen() { Team::Blue } else { Team::Red },
-            ..default()
-        };
-        let team = unit.team; //avoid borrow checking issue
-        commands.spawn(unit).with_children(|parent| {
-            parent.spawn(MaterialMesh2dBundle {
-                mesh: handles.unit.clone(), //cloning handles to resources is safe
-                material: handles.green.clone(),
-                //visibility: Visibility::Hidden, //hide for now
-                ..default()
-            });
-            parent.spawn(MaterialMesh2dBundle {
-                mesh: handles.direction.clone(),
-                material: if team == Team::Red {
-                    handles.red.clone()
-                } else {
-                    handles.blue.clone()
-                },
-                transform: Transform::from_translation(Vec2::ZERO.extend(1.)), //ensure triangles are rendered above circles
-                ..default()
-            });
-        });
+        let rx = rng.gen_range(-SCREEN_WIDTH..=SCREEN_WIDTH);
+        let ry = rng.gen_range(-SCREEN_HEIGHT..=SCREEN_HEIGHT);
+        let rr = rng.gen_range((0.)..(2. * PI));
+        let rt = if rng.gen() { Team::Blue } else { Team::Red };
+        let unit = UnitBundle::from_xyrt(rx, ry, rr, rt);
+        spawn_unit(&mut commands, &handles, unit);
     }
+}
+
+fn spawn_unit(commands: &mut Commands, handles: &Res<Handles>, unit: UnitBundle) {
+    let team = unit.team; //avoid borrow checking issue
+    commands.spawn(unit).with_children(|parent| {
+        parent.spawn(MaterialMesh2dBundle {
+            mesh: handles.unit.clone(), //cloning handles to resources is safe
+            material: handles.green.clone(),
+            //visibility: Visibility::Hidden, //hide for now
+            ..default()
+        });
+        parent.spawn(MaterialMesh2dBundle {
+            mesh: handles.direction.clone(),
+            material: if team == Team::Red {
+                handles.red.clone()
+            } else {
+                handles.blue.clone()
+            },
+            transform: Transform::from_translation(Vec2::ZERO.extend(1.)), //ensure triangles are rendered above circles
+            ..default()
+        });
+    });
 }
 
 fn init_map(mut commands: Commands, handles: Res<Handles>) {
