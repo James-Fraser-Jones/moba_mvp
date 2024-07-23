@@ -3,9 +3,7 @@ use bevy::{
     prelude::*,
 };
 
-//camera
-const CAMERA_SPEED: f32 = 500.;
-const ZOOM_SPEED: f32 = 0.1;
+use crate::lib::consts::*;
 
 pub struct CameraPlugin;
 
