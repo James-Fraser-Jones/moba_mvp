@@ -1,4 +1,4 @@
-use crate::lib::{consts::*, types::*, utils::*};
+use crate::helpers::{consts::*, types::*, utils::*};
 use bevy::{
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},

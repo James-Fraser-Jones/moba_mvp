@@ -1,4 +1,4 @@
-use crate::lib::types::*;
+use crate::helpers::types::*;
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 
 pub fn spawn_unit(commands: &mut Commands, handles: &Res<Handles>, unit: UnitBundle) {

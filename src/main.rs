@@ -1,8 +1,8 @@
-pub mod lib;
+pub mod helpers;
 mod plugins;
 
 use bevy::{prelude::*, window::WindowMode};
-use lib::consts::*;
+use helpers::consts::*;
 use plugins::*;
 
 fn main() -> AppExit {

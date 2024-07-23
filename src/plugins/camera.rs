@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
 };
 
-use crate::lib::consts::*;
+use crate::helpers::consts::*;
 
 pub struct CameraPlugin;
 
