@@ -6,7 +6,6 @@ pub const ZOOM_SPEED: f32 = 0.1;
 
 //unit
 pub const UNIT_SPEED: f32 = 300.;
-pub const UNIT_TURN: f32 = PI / 16.;
 pub const UNIT_RADIUS: f32 = 10.; //if set to factor of GCD of SCREEN_WIDTH and SCREEN_HEIGHT, can have a grid with square cells that fits the screen perfectly (currently: 120)
 pub const UNIT_TRIANGLE_ANGLE: f32 = PI / 4.;
 
@@ -27,11 +26,25 @@ pub const PURPLE_HUE: f32 = 275.;
 
 //map
 pub const MAP_SIZE: f32 = SCREEN_HEIGHT;
+
 pub const LANE_WIDTH: f32 = 0.12;
-pub const INNER_MAP_SIZE: f32 = MAP_SIZE * (1. - 2. * LANE_WIDTH);
 pub const RIVER_WIDTH: f32 = 0.1;
-pub const BASE_RADIUS: f32 = 0.15;
+pub const BASE_RADIUS: f32 = 0.18;
+
+pub const MID_LANE: f32 = (1. - LANE_WIDTH) / 2.;
+pub const NON_LANE_WIDTH: f32 = 1. - 2. * LANE_WIDTH;
 
 //spawner
 pub const SPAWNER_RADIUS: f32 = 15.;
-pub const SPAWNER_POS_RADIUS: f32 = 0.1;
+pub const SPAWNER_POS_RADIUS: f32 = 0.08;
+pub const SPAWNER_DELAY: f32 = 1.;
+
+//directions
+pub const NORTH: f32 = 2. * PI / 4.;
+pub const NORTH_EAST: f32 = 1. * PI / 4.;
+pub const EAST: f32 = 0. * PI / 4.;
+pub const SOUTH_EAST: f32 = 7. * PI / 4.;
+pub const SOUTH: f32 = 6. * PI / 4.;
+pub const SOUTH_WEST: f32 = 5. * PI / 4.;
+pub const WEST: f32 = 4. * PI / 4.;
+pub const NORTH_WEST: f32 = 3. * PI / 4.;

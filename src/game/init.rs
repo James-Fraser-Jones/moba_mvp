@@ -40,16 +40,16 @@ fn init_assets(
         plain: Mesh2dHandle(meshes.add(Rectangle::from_length(MAP_SIZE))),
         river: Mesh2dHandle(meshes.add(Rectangle::new(
             RIVER_WIDTH * MAP_SIZE,
-            f32::sqrt(2.) * INNER_MAP_SIZE,
+            f32::sqrt(2.) * NON_LANE_WIDTH * MAP_SIZE,
         ))),
         mid: Mesh2dHandle(meshes.add(Rectangle::new(
             LANE_WIDTH * MAP_SIZE,
-            f32::sqrt(2.) * INNER_MAP_SIZE,
+            f32::sqrt(2.) * NON_LANE_WIDTH * MAP_SIZE,
         ))),
         lane: Mesh2dHandle(meshes.add(Rectangle::new(LANE_WIDTH * MAP_SIZE, MAP_SIZE))),
         base: Mesh2dHandle(meshes.add(CircularSector::from_radians(
             BASE_RADIUS * MAP_SIZE,
-            PI / 2.,
+            2. * PI / 4.,
         ))),
 
         //colors
@@ -83,45 +83,37 @@ fn init_map(mut commands: Commands, handles: Res<Handles>) {
         mesh: handles.mid.clone(),
         material: handles.yellow.clone(),
         transform: Transform::from_translation(Vec2::ZERO.extend(-3.))
-            .with_rotation(Quat::from_rotation_z(-PI / 4.)),
+            .with_rotation(Quat::from_rotation_z(7. * PI / 4.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
         //top
         mesh: handles.lane.clone(),
         material: handles.yellow.clone(),
-        transform: Transform::from_translation(
-            Vec2::new(0., (MAP_SIZE * (1. - LANE_WIDTH)) / 2.).extend(-2.),
-        )
-        .with_rotation(Quat::from_rotation_z(PI / 2.)),
+        transform: Transform::from_translation(Vec2::new(0., MID_LANE * MAP_SIZE).extend(-2.))
+            .with_rotation(Quat::from_rotation_z(2. * PI / 4.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
         //left
         mesh: handles.lane.clone(),
         material: handles.yellow.clone(),
-        transform: Transform::from_translation(
-            Vec2::new(-((MAP_SIZE * (1. - LANE_WIDTH)) / 2.), 0.).extend(-2.),
-        ),
+        transform: Transform::from_translation(Vec2::new(-MID_LANE * MAP_SIZE, 0.).extend(-2.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
         //bot
         mesh: handles.lane.clone(),
         material: handles.yellow.clone(),
-        transform: Transform::from_translation(
-            Vec2::new(0., -((MAP_SIZE * (1. - LANE_WIDTH)) / 2.)).extend(-2.),
-        )
-        .with_rotation(Quat::from_rotation_z(PI / 2.)),
+        transform: Transform::from_translation(Vec2::new(0., -MID_LANE * MAP_SIZE).extend(-2.))
+            .with_rotation(Quat::from_rotation_z(2. * PI / 4.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
         //right
         mesh: handles.lane.clone(),
         material: handles.yellow.clone(),
-        transform: Transform::from_translation(
-            Vec2::new((MAP_SIZE * (1. - LANE_WIDTH)) / 2., 0.).extend(-2.),
-        ),
+        transform: Transform::from_translation(Vec2::new(MID_LANE * MAP_SIZE, 0.).extend(-2.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
@@ -129,7 +121,7 @@ fn init_map(mut commands: Commands, handles: Res<Handles>) {
         mesh: handles.base.clone(),
         material: handles.red.clone(),
         transform: Transform::from_translation(Vec2::splat(-MAP_SIZE / 2.).extend(-1.))
-            .with_rotation(Quat::from_rotation_z(-PI / 4.)),
+            .with_rotation(Quat::from_rotation_z(7. * PI / 4.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
@@ -143,20 +135,22 @@ fn init_map(mut commands: Commands, handles: Res<Handles>) {
 }
 
 fn init_spawners(mut commands: Commands, handles: Res<Handles>) {
-    let red_spawner = SpawnerBundle::from_xyrt(
-        -((MAP_SIZE * (1. - LANE_WIDTH)) / 2.),
-        -((MAP_SIZE * (1. - LANE_WIDTH)) / 2.),
-        PI / 4.,
-        Team::Red,
-        1.,
-    );
-    let blue_spawner = SpawnerBundle::from_xyrt(
-        (MAP_SIZE * (1. - LANE_WIDTH)) / 2.,
-        (MAP_SIZE * (1. - LANE_WIDTH)) / 2.,
-        5. * PI / 4.,
-        Team::Blue,
-        1.,
-    );
-    spawn_spawner(&mut commands, &handles, red_spawner);
-    spawn_spawner(&mut commands, &handles, blue_spawner);
+    let red_start = Vec2::splat(-MID_LANE * MAP_SIZE);
+    for dir in [NORTH, NORTH_EAST, EAST] {
+        let red_pos = red_start + Vec2::from_angle(dir) * SPAWNER_POS_RADIUS * MAP_SIZE;
+        spawn_spawner(
+            &mut commands,
+            &handles,
+            SpawnerBundle::from_xyrt(red_pos.x, red_pos.y, dir, Team::Red, SPAWNER_DELAY),
+        )
+    }
+    let blue_start = Vec2::splat(MID_LANE * MAP_SIZE);
+    for dir in [SOUTH, SOUTH_WEST, WEST] {
+        let blue_pos = blue_start + Vec2::from_angle(dir) * SPAWNER_POS_RADIUS * MAP_SIZE;
+        spawn_spawner(
+            &mut commands,
+            &handles,
+            SpawnerBundle::from_xyrt(blue_pos.x, blue_pos.y, dir, Team::Blue, SPAWNER_DELAY),
+        )
+    }
 }
