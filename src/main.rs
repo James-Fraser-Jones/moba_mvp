@@ -4,7 +4,6 @@ use bevy::{
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
     window::WindowMode,
 };
-use std::collections::HashMap;
 use std::f32::consts::PI;
 
 use rand::Rng;
@@ -37,6 +36,13 @@ const YELLOW_HUE: f32 = 60.;
 
 //grid
 const GRID_SCALE: f32 = 2.; //size of grid cells, relative to unit diameter
+
+//map
+const MAP_SIZE: f32 = SCREEN_HEIGHT;
+const LANE_WIDTH: f32 = 0.12;
+const INNER_MAP_SIZE: f32 = MAP_SIZE * (1. - 2. * LANE_WIDTH);
+const RIVER_WIDTH: f32 = 0.1;
+const BASE_RADIUS: f32 = 0.15;
 
 fn main() -> AppExit {
     App::new()
@@ -80,10 +86,20 @@ struct UnitBundle {
     unit: Unit, //tag for query filtering
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 struct Handles {
-    meshes: HashMap<&'static str, Mesh2dHandle>,
-    materials: HashMap<&'static str, Handle<ColorMaterial>>,
+    unit: Mesh2dHandle,
+    direction: Mesh2dHandle,
+    plain: Mesh2dHandle,
+    river: Mesh2dHandle,
+    mid: Mesh2dHandle,
+    lane: Mesh2dHandle,
+    base: Mesh2dHandle,
+    red: Handle<ColorMaterial>,
+    green: Handle<ColorMaterial>,
+    blue: Handle<ColorMaterial>,
+    yellow: Handle<ColorMaterial>,
+    teal: Handle<ColorMaterial>,
 }
 
 fn init_camera(mut commands: Commands) {
@@ -105,45 +121,42 @@ fn init_assets(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     commands.insert_resource(Handles {
-        meshes: HashMap::from([
-            (
-                "triangle",
-                Mesh2dHandle(meshes.add(Triangle2d::new(
-                    Vec2::new(UNIT_RADIUS, 0.),
-                    Vec2::new(
-                        -UNIT_RADIUS * UNIT_TRIANGLE_ANGLE.cos(),
-                        UNIT_RADIUS * UNIT_TRIANGLE_ANGLE.sin(),
-                    ),
-                    Vec2::new(
-                        -UNIT_RADIUS * UNIT_TRIANGLE_ANGLE.cos(),
-                        -UNIT_RADIUS * UNIT_TRIANGLE_ANGLE.sin(),
-                    ),
-                ))),
+        //units
+        unit: Mesh2dHandle(meshes.add(Circle::new(UNIT_RADIUS))),
+        direction: Mesh2dHandle(meshes.add(Triangle2d::new(
+            Vec2::new(UNIT_RADIUS, 0.),
+            Vec2::new(
+                -UNIT_RADIUS * UNIT_TRIANGLE_ANGLE.cos(),
+                UNIT_RADIUS * UNIT_TRIANGLE_ANGLE.sin(),
             ),
-            ("circle", Mesh2dHandle(meshes.add(Circle::new(UNIT_RADIUS)))),
-        ]),
-        materials: HashMap::from([
-            (
-                "red",
-                materials.add(Color::hsl(RED_HUE, SATURATION, BRIGHTNESS)),
+            Vec2::new(
+                -UNIT_RADIUS * UNIT_TRIANGLE_ANGLE.cos(),
+                -UNIT_RADIUS * UNIT_TRIANGLE_ANGLE.sin(),
             ),
-            (
-                "green",
-                materials.add(Color::hsl(GREEN_HUE, SATURATION, BRIGHTNESS)),
-            ),
-            (
-                "blue",
-                materials.add(Color::hsl(BLUE_HUE, SATURATION, BRIGHTNESS)),
-            ),
-            (
-                "yellow",
-                materials.add(Color::hsl(YELLOW_HUE, SATURATION, BRIGHTNESS)),
-            ),
-            (
-                "teal",
-                materials.add(Color::hsl(TEAL_HUE, SATURATION, BRIGHTNESS)),
-            ),
-        ]),
+        ))),
+
+        //map
+        plain: Mesh2dHandle(meshes.add(Rectangle::from_length(MAP_SIZE))),
+        river: Mesh2dHandle(meshes.add(Rectangle::new(
+            RIVER_WIDTH * MAP_SIZE,
+            f32::sqrt(2.) * INNER_MAP_SIZE,
+        ))),
+        mid: Mesh2dHandle(meshes.add(Rectangle::new(
+            LANE_WIDTH * MAP_SIZE,
+            f32::sqrt(2.) * INNER_MAP_SIZE,
+        ))),
+        lane: Mesh2dHandle(meshes.add(Rectangle::new(LANE_WIDTH * MAP_SIZE, MAP_SIZE))),
+        base: Mesh2dHandle(meshes.add(CircularSector::from_radians(
+            BASE_RADIUS * MAP_SIZE,
+            PI / 2.,
+        ))),
+
+        //colors
+        red: materials.add(Color::hsl(RED_HUE, SATURATION, BRIGHTNESS)),
+        green: materials.add(Color::hsl(GREEN_HUE, SATURATION, BRIGHTNESS)),
+        blue: materials.add(Color::hsl(BLUE_HUE, SATURATION, BRIGHTNESS)),
+        yellow: materials.add(Color::hsl(YELLOW_HUE, SATURATION, BRIGHTNESS)),
+        teal: materials.add(Color::hsl(TEAL_HUE, SATURATION, BRIGHTNESS)),
     });
 }
 
@@ -166,17 +179,17 @@ fn init_units(mut commands: Commands, handles: Res<Handles>) {
         let team = unit.team; //avoid borrow checking issue
         commands.spawn(unit).with_children(|parent| {
             parent.spawn(MaterialMesh2dBundle {
-                mesh: handles.meshes.get("circle").unwrap().clone(), //cloning handles to resources is safe
-                material: handles.materials.get("green").unwrap().clone(),
+                mesh: handles.unit.clone(), //cloning handles to resources is safe
+                material: handles.green.clone(),
                 //visibility: Visibility::Hidden, //hide for now
                 ..default()
             });
             parent.spawn(MaterialMesh2dBundle {
-                mesh: handles.meshes.get("triangle").unwrap().clone(),
+                mesh: handles.direction.clone(),
                 material: if team == Team::Red {
-                    handles.materials.get("red").unwrap().clone()
+                    handles.red.clone()
                 } else {
-                    handles.materials.get("blue").unwrap().clone()
+                    handles.blue.clone()
                 },
                 transform: Transform::from_translation(Vec2::ZERO.extend(1.)), //ensure triangles are rendered above circles
                 ..default()
@@ -185,68 +198,81 @@ fn init_units(mut commands: Commands, handles: Res<Handles>) {
     }
 }
 
-fn init_map(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, handles: Res<Handles>) {
-    //spawn "map"
-    let map_size = SCREEN_WIDTH.min(SCREEN_HEIGHT);
-    let lane_width = 0.12;
-    let inner_map_size = map_size * (1. - 2. * lane_width);
-    let river_width = 0.1;
-    let base_radius = 0.2;
+fn init_map(mut commands: Commands, handles: Res<Handles>) {
     commands.spawn(MaterialMesh2dBundle {
-        //outer lanes
-        mesh: Mesh2dHandle(meshes.add(Rectangle::from_length(map_size))),
-        material: handles.materials.get("yellow").unwrap().clone(),
+        //plain
+        mesh: handles.plain.clone(),
+        material: handles.green.clone(),
         transform: Transform::from_translation(Vec2::ZERO.extend(-5.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
-        //jungle
-        mesh: Mesh2dHandle(meshes.add(Rectangle::from_length(inner_map_size))),
-        material: handles.materials.get("green").unwrap().clone(),
-        transform: Transform::from_translation(Vec2::ZERO.extend(-4.)),
-        ..default()
-    });
-    commands.spawn(MaterialMesh2dBundle {
         //river
-        mesh: Mesh2dHandle(meshes.add(Rectangle::new(
-            river_width * map_size,
-            f32::sqrt(2.) * inner_map_size,
-        ))),
-        material: handles.materials.get("teal").unwrap().clone(),
-        transform: Transform::from_translation(Vec2::ZERO.extend(-3.))
+        mesh: handles.river.clone(),
+        material: handles.teal.clone(),
+        transform: Transform::from_translation(Vec2::ZERO.extend(-4.))
             .with_rotation(Quat::from_rotation_z(PI / 4.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
         //mid
-        mesh: Mesh2dHandle(meshes.add(Rectangle::new(
-            lane_width * map_size,
-            f32::sqrt(2.) * inner_map_size,
-        ))),
-        material: handles.materials.get("yellow").unwrap().clone(),
-        transform: Transform::from_translation(Vec2::ZERO.extend(-2.))
+        mesh: handles.mid.clone(),
+        material: handles.yellow.clone(),
+        transform: Transform::from_translation(Vec2::ZERO.extend(-3.))
             .with_rotation(Quat::from_rotation_z(-PI / 4.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
+        //top
+        mesh: handles.lane.clone(),
+        material: handles.yellow.clone(),
+        transform: Transform::from_translation(
+            Vec2::new(0., (MAP_SIZE * (1. - LANE_WIDTH)) / 2.).extend(-2.),
+        )
+        .with_rotation(Quat::from_rotation_z(PI / 2.)),
+        ..default()
+    });
+    commands.spawn(MaterialMesh2dBundle {
+        //left
+        mesh: handles.lane.clone(),
+        material: handles.yellow.clone(),
+        transform: Transform::from_translation(
+            Vec2::new(-((MAP_SIZE * (1. - LANE_WIDTH)) / 2.), 0.).extend(-2.),
+        ),
+        ..default()
+    });
+    commands.spawn(MaterialMesh2dBundle {
+        //bot
+        mesh: handles.lane.clone(),
+        material: handles.yellow.clone(),
+        transform: Transform::from_translation(
+            Vec2::new(0., -((MAP_SIZE * (1. - LANE_WIDTH)) / 2.)).extend(-2.),
+        )
+        .with_rotation(Quat::from_rotation_z(PI / 2.)),
+        ..default()
+    });
+    commands.spawn(MaterialMesh2dBundle {
+        //right
+        mesh: handles.lane.clone(),
+        material: handles.yellow.clone(),
+        transform: Transform::from_translation(
+            Vec2::new((MAP_SIZE * (1. - LANE_WIDTH)) / 2., 0.).extend(-2.),
+        ),
+        ..default()
+    });
+    commands.spawn(MaterialMesh2dBundle {
         //red base
-        mesh: Mesh2dHandle(meshes.add(CircularSector::from_radians(
-            base_radius * map_size,
-            PI / 2.,
-        ))),
-        material: handles.materials.get("red").unwrap().clone(),
-        transform: Transform::from_translation(Vec2::splat(-map_size / 2.).extend(-1.))
+        mesh: handles.base.clone(),
+        material: handles.red.clone(),
+        transform: Transform::from_translation(Vec2::splat(-MAP_SIZE / 2.).extend(-1.))
             .with_rotation(Quat::from_rotation_z(-PI / 4.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
         //blue base
-        mesh: Mesh2dHandle(meshes.add(CircularSector::from_radians(
-            base_radius * map_size,
-            PI / 2.,
-        ))),
-        material: handles.materials.get("blue").unwrap().clone(),
-        transform: Transform::from_translation(Vec2::splat(map_size / 2.).extend(-1.))
+        mesh: handles.base.clone(),
+        material: handles.blue.clone(),
+        transform: Transform::from_translation(Vec2::splat(MAP_SIZE / 2.).extend(-1.))
             .with_rotation(Quat::from_rotation_z(3. * PI / 4.)),
         ..default()
     });
