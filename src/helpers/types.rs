@@ -33,7 +33,7 @@ impl UnitBundle {
 
 //spawner
 #[derive(Component, Default)]
-pub struct SpawnTimer(pub Timer);
+pub struct FixedTimer(pub Timer);
 
 #[derive(Component, Default)]
 pub struct Spawner;
@@ -42,7 +42,7 @@ pub struct Spawner;
 pub struct SpawnerBundle {
     pub spatial: SpatialBundle,
     pub team: Team,
-    pub timer: SpawnTimer,
+    pub timer: FixedTimer,
     pub spawner: Spawner,
 }
 impl SpawnerBundle {
@@ -53,7 +53,7 @@ impl SpawnerBundle {
                 ..default()
             },
             team: t,
-            timer: SpawnTimer(Timer::from_seconds(s, TimerMode::Repeating)),
+            timer: FixedTimer(Timer::from_seconds(s, TimerMode::Repeating)),
             ..default()
         }
     }

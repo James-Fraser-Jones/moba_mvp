@@ -7,19 +7,23 @@ impl Plugin for UpdatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (spawn_units, move_units, collide_units).chain(),
+            (update_timers, spawn_units, move_units, collide_units).chain(),
         );
     }
 }
 
+fn update_timers(mut query: Query<&mut FixedTimer>, time: Res<Time>) {
+    for mut timer in &mut query {
+        timer.0.tick(time.delta());
+    }
+}
+
 fn spawn_units(
-    mut query: Query<(&Transform, &Team, &mut SpawnTimer), With<Spawner>>,
+    query: Query<(&Transform, &Team, &FixedTimer), With<Spawner>>,
     mut commands: Commands,
     handles: Res<Handles>,
-    time: Res<Time>,
 ) {
-    for (transform, team, mut spawn_timer) in &mut query {
-        spawn_timer.0.tick(time.delta());
+    for (transform, team, spawn_timer) in &query {
         if spawn_timer.0.finished() {
             let unit = UnitBundle::from_xyrt(
                 transform.translation.x,
