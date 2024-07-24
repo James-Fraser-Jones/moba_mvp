@@ -7,7 +7,7 @@ impl Plugin for UpdatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (update_timers, spawn_units, move_units, collide_units).chain(),
+            (update_timers, manage_waves, move_units, collide_units).chain(),
         );
     }
 }
@@ -18,20 +18,44 @@ fn update_timers(mut query: Query<&mut FixedTimer>, time: Res<Time>) {
     }
 }
 
-fn spawn_units(
-    query: Query<(&Transform, &Team, &FixedTimer), With<Spawner>>,
+fn manage_waves(
+    mut wave_manager: ResMut<WaveManager>,
+    spawner_query: Query<(&Transform, &Team), With<Spawner>>,
     mut commands: Commands,
     handles: Res<Handles>,
+    time: Res<Time>,
 ) {
-    for (transform, team, spawn_timer) in &query {
-        if spawn_timer.0.finished() {
-            let unit = UnitBundle::from_xyrt(
-                transform.translation.x,
-                transform.translation.y,
-                transform.rotation.to_axis_angle().1,
-                *team,
-            );
-            spawn_unit(&mut commands, &handles, unit);
+    //advance time
+    wave_manager.wave_timer.tick(time.delta());
+    wave_manager.spawn_timer.tick(time.delta()); //does nothing if paused
+
+    if !wave_manager.spawn_timer.paused() {
+        //if we are currently spawning a wave
+        if wave_manager.spawn_index < WAVE_NUM_UNITS {
+            //if we have not reached the end of this wave
+            if wave_manager.spawn_timer.finished() {
+                //spawn a unit at each spawner
+                for (transform, team) in &spawner_query {
+                    let unit = UnitBundle::from_xyrt(
+                        transform.translation.x,
+                        transform.translation.y,
+                        transform.rotation.to_axis_angle().1,
+                        *team,
+                    );
+                    spawn_unit(&mut commands, &handles, unit);
+                }
+                wave_manager.spawn_index += 1;
+            }
+        } else {
+            //if we have reached the end of this wave
+            wave_manager.spawn_timer.reset();
+            wave_manager.spawn_timer.pause();
+            wave_manager.spawn_index = 0;
+        }
+    } else {
+        //if we are not spawning a wave
+        if wave_manager.wave_timer.finished() {
+            wave_manager.spawn_timer.unpause();
         }
     }
 }

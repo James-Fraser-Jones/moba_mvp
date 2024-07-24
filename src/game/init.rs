@@ -9,7 +9,7 @@ pub struct InitPlugin;
 
 impl Plugin for InitPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (init_assets, (init_map, init_spawners)).chain());
+        app.add_systems(Startup, (init_assets, (init_map, init_waves)).chain());
     }
 }
 
@@ -134,7 +134,9 @@ fn init_map(mut commands: Commands, handles: Res<Handles>) {
     });
 }
 
-fn init_spawners(mut commands: Commands, handles: Res<Handles>) {
+fn init_waves(mut commands: Commands, handles: Res<Handles>) {
+    commands.insert_resource(WaveManager::new());
+    //spawners
     let red_start = Vec2::splat(-MID_LANE * MAP_SIZE);
     for dir in [NORTH, NORTH_EAST, EAST] {
         let red_pos = red_start + Vec2::from_angle(dir) * SPAWNER_POS_RADIUS * MAP_SIZE;

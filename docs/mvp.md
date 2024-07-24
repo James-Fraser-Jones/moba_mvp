@@ -3,6 +3,7 @@
 ## broad
 
 - map
+
   - square
   - _no_ jungle
   - 2 _square_ lanes: top, bot
@@ -19,7 +20,9 @@
     - heart placement
     - minion paths
   - linear symmetry also
+
 - minions
+
   - spawning
   - navigating
   - following path
@@ -37,7 +40,9 @@
   - projectiles
   - health bars
   - dying
+
 - characters
+
   - need 10 (naturally)
   - effectively powered up minions
   - have abilities
@@ -56,8 +61,30 @@
 
 3. **(DONE)** units moving along their given orientations in a straight line
 
-4. experimental boids implementation (with no obstacles)
-   - **(DONE)** place arbitrary number of units with randomised stats
-   - **(DONE)**implement screenwrapping
-   - **(DONE)** add random turning per-frame
-   - implement an actual functional boids algorithm (_without_ forces)
+4. **(DONE)** randomized spawns
+
+5. **(DONE)** naive unit collision implemented
+
+6. **(DONE)** basic map layout drawn
+
+7. **(DONE)** spawners implemented
+
+8. **(DONE)** project separated into plugins
+
+9. **(DONE)** create wavemanager resource and have correctly spawning minions waves
+
+10. make minions walk to midpoints of lanes and then turn and walk the rest
+
+11. make minions switch into attack mode when they see nearby enemies
+
+12. split minions into melee and ranged with differing attack ranges
+
+13. give minions an attack animation
+
+14. give minions health bars
+
+15. make attacks hurt minions
+
+16. make minions die when their health falls to 0
+
+17. make ranged minions have projectiles

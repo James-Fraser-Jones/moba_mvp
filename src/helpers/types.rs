@@ -1,5 +1,7 @@
 use bevy::{prelude::*, sprite::Mesh2dHandle};
 
+use crate::{SPAWNER_DELAY, WAVE_DELAY};
+
 //team
 #[derive(Component, PartialEq, Default, Copy, Clone)]
 pub enum Team {
@@ -31,6 +33,23 @@ impl UnitBundle {
     }
 }
 
+//wave manager
+#[derive(Resource, Default)]
+pub struct WaveManager {
+    pub wave_timer: Timer,
+    pub spawn_timer: Timer,
+    pub spawn_index: i32,
+}
+impl WaveManager {
+    pub fn new() -> Self {
+        Self {
+            wave_timer: Timer::from_seconds(WAVE_DELAY, TimerMode::Repeating),
+            spawn_timer: Timer::from_seconds(SPAWNER_DELAY, TimerMode::Repeating),
+            ..default()
+        }
+    }
+}
+
 //spawner
 #[derive(Component, Default)]
 pub struct FixedTimer(pub Timer);
@@ -42,7 +61,6 @@ pub struct Spawner;
 pub struct SpawnerBundle {
     pub spatial: SpatialBundle,
     pub team: Team,
-    pub timer: FixedTimer,
     pub spawner: Spawner,
 }
 impl SpawnerBundle {
@@ -53,7 +71,6 @@ impl SpawnerBundle {
                 ..default()
             },
             team: t,
-            timer: FixedTimer(Timer::from_seconds(s, TimerMode::Repeating)),
             ..default()
         }
     }

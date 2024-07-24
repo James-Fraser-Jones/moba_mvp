@@ -5,7 +5,7 @@ pub const CAMERA_SPEED: f32 = 500.;
 pub const ZOOM_SPEED: f32 = 0.1;
 
 //unit
-pub const UNIT_SPEED: f32 = 300.;
+pub const UNIT_SPEED: f32 = 100.;
 pub const UNIT_RADIUS: f32 = 10.; //if set to factor of GCD of SCREEN_WIDTH and SCREEN_HEIGHT, can have a grid with square cells that fits the screen perfectly (currently: 120)
 pub const UNIT_TRIANGLE_ANGLE: f32 = PI / 4.;
 
@@ -34,7 +34,11 @@ pub const BASE_RADIUS: f32 = 0.18;
 pub const MID_LANE: f32 = (1. - LANE_WIDTH) / 2.;
 pub const NON_LANE_WIDTH: f32 = 1. - 2. * LANE_WIDTH;
 
-//spawner
+//waves
+pub const WAVE_DELAY: f32 = 20.;
+pub const WAVE_NUM_UNITS: i32 = 6;
+
+//spawners
 pub const SPAWNER_RADIUS: f32 = 15.;
 pub const SPAWNER_POS_RADIUS: f32 = 0.08;
 pub const SPAWNER_DELAY: f32 = 1.;
