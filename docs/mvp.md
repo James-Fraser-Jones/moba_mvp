@@ -73,7 +73,7 @@
 
 9. **(DONE)** create wavemanager resource and have correctly spawning minions waves
 
-10. make minions walk to midpoints of lanes and then turn and walk the rest
+10. **(DONE)** make minions walk to midpoints of lanes and then turn and walk the rest
 
 11. make minions switch into attack mode when they see nearby enemies
 

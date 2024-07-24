@@ -5,6 +5,16 @@ use crate::helpers::consts::*;
 use super::utils::vec4_to_trans;
 use std::f32::consts::PI;
 
+//movetype
+#[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
+pub enum MoveType {
+    #[default]
+    Stationary,
+    Move(Vec2),
+    AttackMove(Vec2),
+    Attack(i32),
+}
+
 //discipline
 #[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
 pub enum Discipline {
@@ -34,12 +44,17 @@ pub enum Team {
 #[derive(Component, Default)]
 pub struct Unit;
 
+#[derive(Component, Default)]
+pub struct MidCrossed(pub bool);
+
 #[derive(Bundle, Default)]
 pub struct UnitBundle {
     pub spatial: SpatialBundle,
     pub team: Team,
     pub discipline: Discipline,
     pub lane: Lane,
+    pub move_type: MoveType,
+    pub mid_crossed: MidCrossed,
     pub unit: Unit, //tag for query filtering
 }
 impl UnitBundle {

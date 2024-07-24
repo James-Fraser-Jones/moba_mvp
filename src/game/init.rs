@@ -67,14 +67,14 @@ fn init_map(mut commands: Commands, handles: Res<Handles>) {
         //plain
         mesh: handles.plain.clone(),
         material: handles.green.clone(),
-        transform: Transform::from_translation(Vec2::ZERO.extend(-5.)),
+        transform: Transform::from_translation(Vec2::ZERO.extend(-6.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
         //river
         mesh: handles.river.clone(),
         material: handles.teal.clone(),
-        transform: Transform::from_translation(Vec2::ZERO.extend(-4.))
+        transform: Transform::from_translation(Vec2::ZERO.extend(-5.))
             .with_rotation(Quat::from_rotation_z(PI / 4.)),
         ..default()
     });
@@ -82,7 +82,7 @@ fn init_map(mut commands: Commands, handles: Res<Handles>) {
         //mid
         mesh: handles.mid.clone(),
         material: handles.yellow.clone(),
-        transform: Transform::from_translation(Vec2::ZERO.extend(-3.))
+        transform: Transform::from_translation(Vec2::ZERO.extend(-4.))
             .with_rotation(Quat::from_rotation_z(7. * PI / 4.)),
         ..default()
     });
@@ -90,7 +90,7 @@ fn init_map(mut commands: Commands, handles: Res<Handles>) {
         //top
         mesh: handles.lane.clone(),
         material: handles.yellow.clone(),
-        transform: Transform::from_translation(Vec2::new(0., MID_LANE * MAP_SIZE).extend(-2.))
+        transform: Transform::from_translation(Vec2::new(0., MID_LANE * MAP_SIZE).extend(-3.))
             .with_rotation(Quat::from_rotation_z(2. * PI / 4.)),
         ..default()
     });
@@ -98,14 +98,14 @@ fn init_map(mut commands: Commands, handles: Res<Handles>) {
         //left
         mesh: handles.lane.clone(),
         material: handles.yellow.clone(),
-        transform: Transform::from_translation(Vec2::new(-MID_LANE * MAP_SIZE, 0.).extend(-2.)),
+        transform: Transform::from_translation(Vec2::new(-MID_LANE * MAP_SIZE, 0.).extend(-3.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
         //bot
         mesh: handles.lane.clone(),
         material: handles.yellow.clone(),
-        transform: Transform::from_translation(Vec2::new(0., -MID_LANE * MAP_SIZE).extend(-2.))
+        transform: Transform::from_translation(Vec2::new(0., -MID_LANE * MAP_SIZE).extend(-3.))
             .with_rotation(Quat::from_rotation_z(2. * PI / 4.)),
         ..default()
     });
@@ -113,14 +113,14 @@ fn init_map(mut commands: Commands, handles: Res<Handles>) {
         //right
         mesh: handles.lane.clone(),
         material: handles.yellow.clone(),
-        transform: Transform::from_translation(Vec2::new(MID_LANE * MAP_SIZE, 0.).extend(-2.)),
+        transform: Transform::from_translation(Vec2::new(MID_LANE * MAP_SIZE, 0.).extend(-3.)),
         ..default()
     });
     commands.spawn(MaterialMesh2dBundle {
         //red base
         mesh: handles.base.clone(),
         material: handles.red.clone(),
-        transform: Transform::from_translation(Vec2::splat(-MAP_SIZE / 2.).extend(-1.))
+        transform: Transform::from_translation(Vec2::splat(-MAP_SIZE / 2.).extend(-2.))
             .with_rotation(Quat::from_rotation_z(7. * PI / 4.)),
         ..default()
     });
@@ -128,7 +128,7 @@ fn init_map(mut commands: Commands, handles: Res<Handles>) {
         //blue base
         mesh: handles.base.clone(),
         material: handles.blue.clone(),
-        transform: Transform::from_translation(Vec2::splat(MAP_SIZE / 2.).extend(-1.))
+        transform: Transform::from_translation(Vec2::splat(MAP_SIZE / 2.).extend(-2.))
             .with_rotation(Quat::from_rotation_z(3. * PI / 4.)),
         ..default()
     });
@@ -154,7 +154,7 @@ fn init_waves(mut commands: Commands, handles: Res<Handles>) {
             spawn_spawner(
                 &mut commands,
                 &handles,
-                SpawnerBundle::new(pos.extend(0.).extend(ang), team, lane),
+                SpawnerBundle::new(pos.extend(-1.).extend(ang), team, lane),
             )
         }
     }

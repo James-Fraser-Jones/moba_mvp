@@ -1,3 +1,4 @@
+use bevy::prelude::*;
 use std::f32::consts::PI;
 
 //camera
@@ -33,6 +34,13 @@ pub const BASE_RADIUS: f32 = 0.18;
 
 pub const MID_LANE: f32 = (1. - LANE_WIDTH) / 2.;
 pub const NON_LANE_WIDTH: f32 = 1. - 2. * LANE_WIDTH;
+
+//locations
+pub const TOP: Vec2 = Vec2::new(-1., 1.);
+pub const MID: Vec2 = Vec2::new(0., 0.);
+pub const BOT: Vec2 = Vec2::new(1., -1.);
+pub const RED: Vec2 = Vec2::new(-1., -1.);
+pub const BLUE: Vec2 = Vec2::new(1., 1.);
 
 //waves
 pub const WAVE_DELAY: f32 = 20.;

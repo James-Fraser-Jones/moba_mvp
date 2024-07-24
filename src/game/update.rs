@@ -1,5 +1,6 @@
 use crate::helpers::{consts::*, types::*, utils::*};
 use bevy::prelude::*;
+use rand::prelude::*;
 
 pub struct UpdatePlugin;
 
@@ -7,7 +8,14 @@ impl Plugin for UpdatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (update_timers, manage_waves, move_units, collide_units).chain(),
+            (
+                update_timers,
+                manage_waves,
+                unit_ai,
+                move_units,
+                collide_units,
+            )
+                .chain(),
         );
     }
 }
@@ -20,7 +28,7 @@ fn update_timers(mut query: Query<&mut FixedTimer>, time: Res<Time>) {
 
 fn manage_waves(
     mut wave_manager: ResMut<WaveManager>,
-    spawner_query: Query<(&Transform, &Team), With<Spawner>>,
+    spawner_query: Query<(&Transform, &Team, &Lane), With<Spawner>>,
     mut commands: Commands,
     handles: Res<Handles>,
     time: Res<Time>,
@@ -35,10 +43,10 @@ fn manage_waves(
             //if we have not reached the end of this wave
             if wave_manager.spawn_timer.finished() {
                 //spawn a unit at each spawner
-                for (transform, team) in &spawner_query {
+                for (transform, team, lane) in &spawner_query {
                     let mut vec4 = trans_to_vec4(transform);
                     vec4.z = 0.; //reset z-index;
-                    let unit = UnitBundle::new(vec4, *team, Discipline::Melee, Lane::Mid);
+                    let unit = UnitBundle::new(vec4, *team, Discipline::Melee, *lane);
                     spawn_unit(&mut commands, &handles, unit);
                 }
                 wave_manager.spawn_index += 1;
@@ -57,10 +65,56 @@ fn manage_waves(
     }
 }
 
-fn move_units(mut query: Query<&mut Transform, With<Unit>>, time: Res<Time>) {
-    for mut transform in &mut query {
-        let direction = transform.local_x().as_vec3();
-        transform.translation += direction * UNIT_SPEED * time.delta_seconds();
+fn unit_ai(mut query: Query<(&Transform, &mut MoveType, &Lane, &Team, &mut MidCrossed)>) {
+    for (transform, mut move_type, lane, team, mut mid_crossed) in &mut query {
+        //println!("team: {:?}, lane: {:?}", team, lane);
+        match *move_type {
+            MoveType::Stationary => {
+                *move_type = MoveType::Move(
+                    if mid_crossed.0 {
+                        match *team {
+                            Team::Red => BLUE,
+                            Team::Blue => RED,
+                        }
+                    } else {
+                        match *lane {
+                            Lane::Bot => BOT,
+                            Lane::Mid => MID,
+                            Lane::Top => TOP,
+                        }
+                    } * MID_LANE
+                        * MAP_SIZE,
+                );
+            }
+            MoveType::Move(pos) => {
+                if (pos - transform.translation.truncate()).length() < UNIT_RADIUS * 2.5 {
+                    mid_crossed.0 = true;
+                    *move_type = MoveType::Stationary;
+                }
+            }
+            MoveType::Attack(id) => {}
+            MoveType::AttackMove(pos) => {}
+        }
+    }
+}
+
+fn move_units(mut query: Query<(&mut Transform, &mut MoveType), With<Unit>>, time: Res<Time>) {
+    for (mut transform, move_type) in &mut query {
+        match *move_type {
+            MoveType::Stationary => {}
+            MoveType::Move(pos) => {
+                let wiggle = 2.
+                    * Vec2::new(
+                        thread_rng().gen_range(-1.0..=1.0),
+                        thread_rng().gen_range(-1.0..=1.0),
+                    );
+                let direction = (pos - transform.translation.truncate() + wiggle).normalize();
+                transform.translation += direction.extend(0.) * UNIT_SPEED * time.delta_seconds();
+                transform.rotation = Quat::from_rotation_z(direction.to_angle());
+            }
+            MoveType::Attack(id) => {}
+            MoveType::AttackMove(pos) => {}
+        }
     }
 }
 
