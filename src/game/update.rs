@@ -36,12 +36,9 @@ fn manage_waves(
             if wave_manager.spawn_timer.finished() {
                 //spawn a unit at each spawner
                 for (transform, team) in &spawner_query {
-                    let unit = UnitBundle::from_xyrt(
-                        transform.translation.x,
-                        transform.translation.y,
-                        transform.rotation.to_axis_angle().1,
-                        *team,
-                    );
+                    let mut vec4 = trans_to_vec4(transform);
+                    vec4.z = 0.; //reset z-index;
+                    let unit = UnitBundle::new(vec4, *team, Discipline::Melee, Lane::Mid);
                     spawn_unit(&mut commands, &handles, unit);
                 }
                 wave_manager.spawn_index += 1;

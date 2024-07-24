@@ -1,9 +1,29 @@
 use bevy::{prelude::*, sprite::Mesh2dHandle};
 
-use crate::{SPAWNER_DELAY, WAVE_DELAY};
+use crate::helpers::consts::*;
+
+use super::utils::vec4_to_trans;
+use std::f32::consts::PI;
+
+//discipline
+#[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
+pub enum Discipline {
+    #[default]
+    Melee,
+    Ranged,
+}
+
+//lane
+#[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
+pub enum Lane {
+    #[default]
+    Mid,
+    Top,
+    Bot,
+}
 
 //team
-#[derive(Component, PartialEq, Default, Copy, Clone)]
+#[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
 pub enum Team {
     #[default]
     Red,
@@ -18,16 +38,17 @@ pub struct Unit;
 pub struct UnitBundle {
     pub spatial: SpatialBundle,
     pub team: Team,
+    pub discipline: Discipline,
+    pub lane: Lane,
     pub unit: Unit, //tag for query filtering
 }
 impl UnitBundle {
-    pub fn from_xyrt(x: f32, y: f32, r: f32, t: Team) -> Self {
+    pub fn new(vec4: Vec4, team: Team, discipline: Discipline, lane: Lane) -> Self {
         Self {
-            spatial: SpatialBundle {
-                transform: Transform::from_xyz(x, y, 0.).with_rotation(Quat::from_rotation_z(r)),
-                ..default()
-            },
-            team: t,
+            spatial: SpatialBundle::from_transform(vec4_to_trans(vec4)),
+            team,
+            discipline,
+            lane,
             ..default()
         }
     }
@@ -61,16 +82,15 @@ pub struct Spawner;
 pub struct SpawnerBundle {
     pub spatial: SpatialBundle,
     pub team: Team,
+    pub lane: Lane,
     pub spawner: Spawner,
 }
 impl SpawnerBundle {
-    pub fn from_xyrt(x: f32, y: f32, r: f32, t: Team, s: f32) -> Self {
+    pub fn new(vec4: Vec4, team: Team, lane: Lane) -> Self {
         Self {
-            spatial: SpatialBundle {
-                transform: Transform::from_xyz(x, y, 0.).with_rotation(Quat::from_rotation_z(r)),
-                ..default()
-            },
-            team: t,
+            spatial: SpatialBundle::from_transform(vec4_to_trans(vec4)),
+            team,
+            lane,
             ..default()
         }
     }

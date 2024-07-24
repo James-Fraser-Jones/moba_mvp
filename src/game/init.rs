@@ -135,24 +135,50 @@ fn init_map(mut commands: Commands, handles: Res<Handles>) {
 }
 
 fn init_waves(mut commands: Commands, handles: Res<Handles>) {
+    //wave manager
     commands.insert_resource(WaveManager::new());
+
+    for (lane_pos, lane) in [
+        (Vec2::new(-1., 1.), Lane::Top),
+        (Vec2::new(0., 0.), Lane::Mid),
+        (Vec2::new(1., -1.), Lane::Bot),
+    ] {
+        for (team_pos, team) in [
+            (Vec2::new(-1., -1.), Team::Red),
+            (Vec2::new(1., 1.), Team::Blue),
+        ] {
+            let diff = (lane_pos - team_pos).normalize();
+            let ang = -diff.angle_between(Vec2::X);
+            println!(
+                "team: {:?}, lane: {:?}, diff: {:?}, ang: {:?}",
+                team, lane, diff, ang
+            );
+            let pos = (team_pos + diff * SPAWNER_POS_RADIUS) * MID_LANE * MAP_SIZE;
+            spawn_spawner(
+                &mut commands,
+                &handles,
+                SpawnerBundle::new(pos.extend(0.).extend(ang), team, lane),
+            )
+        }
+    }
+
     //spawners
-    let red_start = Vec2::splat(-MID_LANE * MAP_SIZE);
-    for dir in [NORTH, NORTH_EAST, EAST] {
-        let red_pos = red_start + Vec2::from_angle(dir) * SPAWNER_POS_RADIUS * MAP_SIZE;
-        spawn_spawner(
-            &mut commands,
-            &handles,
-            SpawnerBundle::from_xyrt(red_pos.x, red_pos.y, dir, Team::Red, SPAWNER_DELAY),
-        )
-    }
-    let blue_start = Vec2::splat(MID_LANE * MAP_SIZE);
-    for dir in [SOUTH, SOUTH_WEST, WEST] {
-        let blue_pos = blue_start + Vec2::from_angle(dir) * SPAWNER_POS_RADIUS * MAP_SIZE;
-        spawn_spawner(
-            &mut commands,
-            &handles,
-            SpawnerBundle::from_xyrt(blue_pos.x, blue_pos.y, dir, Team::Blue, SPAWNER_DELAY),
-        )
-    }
+    // let red_start = Vec2::splat(-MID_LANE * MAP_SIZE);
+    // for dir in [NORTH, NORTH_EAST, EAST] {
+    //     let red_pos = red_start + Vec2::from_angle(dir) * SPAWNER_POS_RADIUS * MAP_SIZE;
+    //     spawn_spawner(
+    //         &mut commands,
+    //         &handles,
+    //         SpawnerBundle::new(red_pos.x, red_pos.y, dir, Team::Red, SPAWNER_DELAY),
+    //     )
+    // }
+    // let blue_start = Vec2::splat(MID_LANE * MAP_SIZE);
+    // for dir in [SOUTH, SOUTH_WEST, WEST] {
+    //     let blue_pos = blue_start + Vec2::from_angle(dir) * SPAWNER_POS_RADIUS * MAP_SIZE;
+    //     spawn_spawner(
+    //         &mut commands,
+    //         &handles,
+    //         SpawnerBundle::from_xyrt(blue_pos.x, blue_pos.y, dir, Team::Blue, SPAWNER_DELAY),
+    //     )
+    // }
 }
