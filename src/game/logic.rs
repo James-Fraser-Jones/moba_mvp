@@ -2,10 +2,11 @@ use crate::helpers::{consts::*, types::*, utils::*};
 use bevy::prelude::*;
 use rand::prelude::*;
 
-pub struct UpdatePlugin;
+pub struct LogicPlugin;
 
-impl Plugin for UpdatePlugin {
+impl Plugin for LogicPlugin {
     fn build(&self, app: &mut App) {
+        app.add_systems(Startup, (init_map, init_spawners).chain());
         app.add_systems(
             FixedUpdate,
             (
@@ -18,6 +19,68 @@ impl Plugin for UpdatePlugin {
             )
                 .chain(),
         );
+        app.add_event::<GraphicsEvent>();
+    }
+}
+
+fn spawn_spawner(
+    spawner: SpawnerBundle,
+    map: Entity,
+    commands: &mut Commands,
+    ev_graphics: &mut EventWriter<GraphicsEvent>,
+) {
+    if let Some(mut map) = commands.get_entity(map) {
+        let spawner_entity = map.commands().spawn(spawner).id();
+        map.add_child(spawner_entity);
+        ev_graphics.send(GraphicsEvent::new(spawner_entity));
+    }
+}
+
+fn spawn_unit(
+    unit: UnitBundle,
+    map: Entity,
+    commands: &mut Commands,
+    ev_graphics: &mut EventWriter<GraphicsEvent>,
+) {
+    if let Some(mut map) = commands.get_entity(map) {
+        let unit_entity = map.commands().spawn(unit).id();
+        map.add_child(unit_entity);
+        ev_graphics.send(GraphicsEvent::new(unit_entity));
+    }
+}
+
+fn init_map(mut commands: Commands, mut ev_graphics: EventWriter<GraphicsEvent>) {
+    //add map entity
+    let map = MapBundle::new();
+    let map_entity = commands.spawn(map).id();
+    ev_graphics.send(GraphicsEvent::new(map_entity));
+
+    //add wave manager resource
+    commands.insert_resource(WaveManager::new());
+}
+
+fn init_spawners(
+    mut commands: Commands,
+    mut ev_graphics: EventWriter<GraphicsEvent>,
+    map_query: Query<Entity, With<Map>>,
+) {
+    let map = map_query.single();
+
+    for (lane_pos, lane) in [
+        (Vec2::new(-1., 1.), Lane::Top),
+        (Vec2::new(0., 0.), Lane::Mid),
+        (Vec2::new(1., -1.), Lane::Bot),
+    ] {
+        for (team_pos, team) in [
+            (Vec2::new(-1., -1.), Team::Red),
+            (Vec2::new(1., 1.), Team::Blue),
+        ] {
+            let diff = (lane_pos - team_pos).normalize();
+            let ang = -diff.angle_between(Vec2::X);
+            let pos = (team_pos + diff * SPAWNER_POS_RADIUS) * MID_LANE * MAP_SIZE;
+            let spawner = SpawnerBundle::new(pos.extend(-1.).extend(ang), team, lane);
+            spawn_spawner(spawner, map, &mut commands, &mut ev_graphics);
+        }
     }
 }
 
@@ -31,9 +94,12 @@ fn manage_waves(
     mut wave_manager: ResMut<WaveManager>,
     spawner_query: Query<(&Transform, &Team, &Lane), With<Spawner>>,
     mut commands: Commands,
-    handles: Res<Handles>,
     time: Res<Time>,
+    mut ev_graphics: EventWriter<GraphicsEvent>,
+    map_query: Query<Entity, With<Map>>,
 ) {
+    let map = map_query.single();
+
     //advance time
     wave_manager.wave_timer.tick(time.delta());
     wave_manager.spawn_timer.tick(time.delta()); //does nothing if paused
@@ -48,7 +114,7 @@ fn manage_waves(
                     let mut vec4 = trans_to_vec4(transform);
                     vec4.z = 0.; //reset z-index;
                     let unit = UnitBundle::new(vec4, *team, Discipline::Melee, *lane);
-                    spawn_unit(&mut commands, &handles, unit);
+                    spawn_unit(unit, map, &mut commands, &mut ev_graphics);
                 }
                 wave_manager.spawn_index += 1;
             }
@@ -86,19 +152,13 @@ fn unit_ai(mut query: Query<(&Transform, &mut MoveType, &Lane, &Team, &mut MidCr
                         * MAP_SIZE,
                 );
             }
-            MoveType::Move(pos) => {
-                if (pos - transform.translation.truncate()).length() < UNIT_LOCATION_RADIUS {
-                    mid_crossed.0 = true;
-                    *move_type = MoveType::Stationary;
-                }
-            }
             MoveType::AttackMove(pos) => {
                 if (pos - transform.translation.truncate()).length() < UNIT_LOCATION_RADIUS {
                     mid_crossed.0 = true;
                     *move_type = MoveType::Stationary;
                 }
             }
-            MoveType::Attack(target) => {}
+            MoveType::Move(_) | MoveType::Attack(_) => {}
         }
     }
 }
@@ -109,39 +169,19 @@ fn move_units(
     time: Res<Time>,
 ) {
     for (mut transform, move_type) in &mut query {
-        match *move_type {
-            MoveType::Stationary => {}
-            MoveType::Move(pos) => {
-                let wriggle = UNIT_WRIGGLE
-                    * Vec2::new(
-                        thread_rng().gen_range(-1.0..=1.0),
-                        thread_rng().gen_range(-1.0..=1.0),
-                    );
-                let direction = (pos - transform.translation.truncate() + wriggle).normalize();
-                transform.translation += direction.extend(0.) * UNIT_SPEED * time.delta_seconds();
-                transform.rotation = Quat::from_rotation_z(direction.to_angle());
-            }
-            MoveType::AttackMove(pos) => {
-                let wriggle = UNIT_WRIGGLE
-                    * Vec2::new(
-                        thread_rng().gen_range(-1.0..=1.0),
-                        thread_rng().gen_range(-1.0..=1.0),
-                    );
-                let direction = (pos - transform.translation.truncate() + wriggle).normalize();
-                transform.translation += direction.extend(0.) * UNIT_SPEED * time.delta_seconds();
-                transform.rotation = Quat::from_rotation_z(direction.to_angle());
-            }
-            MoveType::Attack(target) => {
-                let pos = old_pos_query.get(target).unwrap().0;
-                let wriggle = UNIT_WRIGGLE
-                    * Vec2::new(
-                        thread_rng().gen_range(-1.0..=1.0),
-                        thread_rng().gen_range(-1.0..=1.0),
-                    );
-                let direction = (pos - transform.translation.truncate() + wriggle).normalize();
-                transform.translation += direction.extend(0.) * UNIT_SPEED * time.delta_seconds();
-                transform.rotation = Quat::from_rotation_z(direction.to_angle());
-            }
+        let pos = match *move_type {
+            MoveType::Stationary => None,
+            MoveType::Move(pos) | MoveType::AttackMove(pos) => Some(pos),
+            MoveType::Attack(target) => Some(old_pos_query.get(target).unwrap().0),
+        };
+        if let Some(pos) = pos {
+            let wriggle = Vec2::new(
+                thread_rng().gen_range(-1.0..=1.0),
+                thread_rng().gen_range(-1.0..=1.0),
+            ) * UNIT_WRIGGLE;
+            let direction = (pos - transform.translation.truncate() + wriggle).normalize();
+            transform.translation += direction.extend(0.) * UNIT_SPEED * time.delta_seconds();
+            transform.rotation = Quat::from_rotation_z(direction.to_angle());
         }
     }
 }

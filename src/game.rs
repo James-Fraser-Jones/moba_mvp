@@ -1,22 +1,22 @@
 mod camera;
-mod init;
+mod graphics;
+mod logic;
 mod quit;
-mod update;
 
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use camera::*;
-use init::*;
+use graphics::*;
+use logic::*;
 use quit::*;
-use update::*;
 
 pub struct GamePlugins;
 
 impl PluginGroup for GamePlugins {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
-            .add(QuitPlugin)
+            .add(LogicPlugin)
+            .add(GraphicsPlugin)
             .add(CameraPlugin)
-            .add(InitPlugin)
-            .add(UpdatePlugin)
+            .add(QuitPlugin)
     }
 }
