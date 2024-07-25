@@ -8,6 +8,13 @@ pub const ZOOM_SPEED: f32 = 0.1;
 //unit
 pub const UNIT_SPEED: f32 = 100.;
 pub const UNIT_RADIUS: f32 = 10.; //if set to factor of GCD of SCREEN_WIDTH and SCREEN_HEIGHT, can have a grid with square cells that fits the screen perfectly (currently: 120)
+pub const UNIT_LOCATION_RADIUS: f32 = 20.;
+pub const UNIT_SIGHT_RADIUS: f32 = 30.;
+pub const UNIT_ATTACK_RADIUS: f32 = 20.;
+pub const UNIT_ATTACK_SPEED: f32 = 1.;
+pub const UNIT_HEALTH: f32 = 100.;
+pub const UNIT_ATTACK_DAMAGE: f32 = 10.;
+pub const UNIT_WRIGGLE: f32 = 10.;
 pub const UNIT_TRIANGLE_ANGLE: f32 = PI / 4.;
 
 //window

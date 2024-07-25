@@ -12,7 +12,7 @@ pub enum MoveType {
     Stationary,
     Move(Vec2),
     AttackMove(Vec2),
-    Attack(i32),
+    Attack(Entity),
 }
 
 //discipline
@@ -47,6 +47,9 @@ pub struct Unit;
 #[derive(Component, Default)]
 pub struct MidCrossed(pub bool);
 
+#[derive(Component, Default)]
+pub struct OldPos(pub Vec2);
+
 #[derive(Bundle, Default)]
 pub struct UnitBundle {
     pub spatial: SpatialBundle,
@@ -55,6 +58,7 @@ pub struct UnitBundle {
     pub lane: Lane,
     pub move_type: MoveType,
     pub mid_crossed: MidCrossed,
+    pub old_pos: OldPos,
     pub unit: Unit, //tag for query filtering
 }
 impl UnitBundle {

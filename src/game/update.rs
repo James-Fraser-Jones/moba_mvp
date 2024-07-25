@@ -13,7 +13,8 @@ impl Plugin for UpdatePlugin {
                 manage_waves,
                 unit_ai,
                 move_units,
-                collide_units,
+                check_other_units,
+                update_old_pos,
             )
                 .chain(),
         );
@@ -67,10 +68,9 @@ fn manage_waves(
 
 fn unit_ai(mut query: Query<(&Transform, &mut MoveType, &Lane, &Team, &mut MidCrossed)>) {
     for (transform, mut move_type, lane, team, mut mid_crossed) in &mut query {
-        //println!("team: {:?}, lane: {:?}", team, lane);
         match *move_type {
             MoveType::Stationary => {
-                *move_type = MoveType::Move(
+                *move_type = MoveType::AttackMove(
                     if mid_crossed.0 {
                         match *team {
                             Team::Red => BLUE,
@@ -87,50 +87,104 @@ fn unit_ai(mut query: Query<(&Transform, &mut MoveType, &Lane, &Team, &mut MidCr
                 );
             }
             MoveType::Move(pos) => {
-                if (pos - transform.translation.truncate()).length() < UNIT_RADIUS * 2.5 {
+                if (pos - transform.translation.truncate()).length() < UNIT_LOCATION_RADIUS {
                     mid_crossed.0 = true;
                     *move_type = MoveType::Stationary;
                 }
             }
-            MoveType::Attack(id) => {}
-            MoveType::AttackMove(pos) => {}
+            MoveType::AttackMove(pos) => {
+                if (pos - transform.translation.truncate()).length() < UNIT_LOCATION_RADIUS {
+                    mid_crossed.0 = true;
+                    *move_type = MoveType::Stationary;
+                }
+            }
+            MoveType::Attack(target) => {}
         }
     }
 }
 
-fn move_units(mut query: Query<(&mut Transform, &mut MoveType), With<Unit>>, time: Res<Time>) {
+fn move_units(
+    mut query: Query<(&mut Transform, &mut MoveType), With<Unit>>,
+    old_pos_query: Query<&OldPos>,
+    time: Res<Time>,
+) {
     for (mut transform, move_type) in &mut query {
         match *move_type {
             MoveType::Stationary => {}
             MoveType::Move(pos) => {
-                let wiggle = 2.
+                let wriggle = UNIT_WRIGGLE
                     * Vec2::new(
                         thread_rng().gen_range(-1.0..=1.0),
                         thread_rng().gen_range(-1.0..=1.0),
                     );
-                let direction = (pos - transform.translation.truncate() + wiggle).normalize();
+                let direction = (pos - transform.translation.truncate() + wriggle).normalize();
                 transform.translation += direction.extend(0.) * UNIT_SPEED * time.delta_seconds();
                 transform.rotation = Quat::from_rotation_z(direction.to_angle());
             }
-            MoveType::Attack(id) => {}
-            MoveType::AttackMove(pos) => {}
+            MoveType::AttackMove(pos) => {
+                let wriggle = UNIT_WRIGGLE
+                    * Vec2::new(
+                        thread_rng().gen_range(-1.0..=1.0),
+                        thread_rng().gen_range(-1.0..=1.0),
+                    );
+                let direction = (pos - transform.translation.truncate() + wriggle).normalize();
+                transform.translation += direction.extend(0.) * UNIT_SPEED * time.delta_seconds();
+                transform.rotation = Quat::from_rotation_z(direction.to_angle());
+            }
+            MoveType::Attack(target) => {
+                let pos = old_pos_query.get(target).unwrap().0;
+                let wriggle = UNIT_WRIGGLE
+                    * Vec2::new(
+                        thread_rng().gen_range(-1.0..=1.0),
+                        thread_rng().gen_range(-1.0..=1.0),
+                    );
+                let direction = (pos - transform.translation.truncate() + wriggle).normalize();
+                transform.translation += direction.extend(0.) * UNIT_SPEED * time.delta_seconds();
+                transform.rotation = Quat::from_rotation_z(direction.to_angle());
+            }
         }
     }
 }
 
-fn collide_units(mut query: Query<&mut Transform, With<Unit>>) {
+fn check_other_units(mut query: Query<(Entity, &mut Transform, &mut MoveType), With<Unit>>) {
     let mut transforms = query.iter_combinations_mut(); //combinations don't include pairs of refs to a single entity
-    while let Some([mut transform_a, mut transform_b]) = transforms.fetch_next() {
+    while let Some(
+        [(self_ref_a, mut transform_a, mut move_type_a), (self_ref_b, mut transform_b, mut move_type_b)],
+    ) = transforms.fetch_next()
+    {
         let mut pos_a = transform_a.translation.truncate();
         let mut pos_b = transform_b.translation.truncate();
         let a_to_b = pos_b - pos_a;
-        let collide_dist = 2. * UNIT_RADIUS - a_to_b.length();
-        if collide_dist > 0. {
+
+        if a_to_b.length() < UNIT_RADIUS + UNIT_SIGHT_RADIUS {
+            //unit attack
+            *move_type_a = match *move_type_a {
+                MoveType::Stationary => MoveType::Attack(self_ref_b),
+                MoveType::AttackMove(_) => MoveType::Attack(self_ref_b),
+                MoveType::Move(pos) => MoveType::Move(pos),
+                MoveType::Attack(id) => MoveType::Attack(id),
+            };
+            *move_type_b = match *move_type_b {
+                MoveType::Stationary => MoveType::Attack(self_ref_a),
+                MoveType::AttackMove(_) => MoveType::Attack(self_ref_a),
+                MoveType::Move(pos) => MoveType::Move(pos),
+                MoveType::Attack(id) => MoveType::Attack(id),
+            };
+        }
+        if a_to_b.length() < UNIT_RADIUS + UNIT_RADIUS {
+            //unit collision
+            let collide_dist = 2. * UNIT_RADIUS - a_to_b.length();
             let a_to_b_dir = a_to_b.normalize();
             pos_a -= a_to_b_dir * collide_dist / 2.;
             pos_b += a_to_b_dir * collide_dist / 2.;
             transform_a.translation = pos_a.extend(transform_a.translation.z);
             transform_b.translation = pos_b.extend(transform_b.translation.z);
         }
+    }
+}
+
+fn update_old_pos(mut query: Query<(&Transform, &mut OldPos), With<Unit>>) {
+    for (transform, mut old_pos) in &mut query {
+        *old_pos = OldPos(trans_to_vec4(transform).truncate().truncate());
     }
 }
