@@ -1,5 +1,4 @@
-use crate::game::types::*;
-use crate::game::{consts::*, utils::*};
+use crate::game::{consts::*, types::*, utils::*};
 use bevy::prelude::*;
 use rand::prelude::*;
 

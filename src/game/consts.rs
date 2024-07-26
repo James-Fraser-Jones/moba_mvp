@@ -2,19 +2,19 @@ use bevy::prelude::*;
 use std::f32::consts::PI;
 
 //camera
-pub const CAMERA_SPEED: f32 = 500.;
+pub const CAMERA_SPEED: f32 = 0.93;
 pub const ZOOM_SPEED: f32 = 0.1;
 
 //unit
-pub const UNIT_SPEED: f32 = 100.;
-pub const UNIT_RADIUS: f32 = 10.; //if set to factor of GCD of SCREEN_WIDTH and SCREEN_HEIGHT, can have a grid with square cells that fits the screen perfectly (currently: 120)
-pub const UNIT_LOCATION_RADIUS: f32 = 20.;
-pub const UNIT_SIGHT_RADIUS: f32 = 30.;
-pub const UNIT_ATTACK_RADIUS: f32 = 20.;
+pub const UNIT_SPEED: f32 = 0.185;
+pub const UNIT_RADIUS: f32 = 0.0185; //if set to factor of GCD of SCREEN_WIDTH and SCREEN_HEIGHT, can have a grid with square cells that fits the screen perfectly (currently: 120)
+pub const UNIT_LOCATION_RADIUS: f32 = 0.037;
+pub const UNIT_SIGHT_RADIUS: f32 = 0.0556;
+pub const UNIT_ATTACK_RADIUS: f32 = 0.037;
 pub const UNIT_ATTACK_SPEED: f32 = 1.;
 pub const UNIT_HEALTH: f32 = 100.;
 pub const UNIT_ATTACK_DAMAGE: f32 = 10.;
-pub const UNIT_WRIGGLE: f32 = 10.;
+pub const UNIT_WRIGGLE: f32 = 0.0185;
 pub const UNIT_TRIANGLE_ANGLE: f32 = PI / 4.;
 
 //window
@@ -33,7 +33,7 @@ pub const YELLOW_HUE: f32 = 60.;
 pub const PURPLE_HUE: f32 = 275.;
 
 //map
-pub const MAP_SIZE: f32 = SCREEN_HEIGHT;
+pub const MAP_SIZE: f32 = 2.;
 pub const LANE_WIDTH: f32 = 0.12;
 pub const RIVER_WIDTH: f32 = 0.1;
 pub const BASE_RADIUS: f32 = 0.18;
@@ -52,7 +52,7 @@ pub const WAVE_DELAY: f32 = 20.;
 pub const WAVE_NUM_UNITS: i32 = 6;
 
 //spawners
-pub const SPAWNER_RADIUS: f32 = 15.;
+pub const SPAWNER_RADIUS: f32 = 0.0278;
 pub const SPAWNER_POS_RADIUS: f32 = 0.15;
 pub const SPAWNER_DELAY: f32 = 1.;
 

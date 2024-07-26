@@ -2,6 +2,7 @@ use crate::game::consts::*;
 use bevy::{
     input::mouse::{MouseScrollUnit, MouseWheel},
     prelude::*,
+    render::camera::{OrthographicProjection, ScalingMode},
 };
 
 pub struct CameraPlugin;
@@ -21,6 +22,12 @@ fn init_camera(mut commands: Commands) {
         Camera2dBundle {
             camera: Camera {
                 clear_color: ClearColorConfig::Custom(Color::BLACK),
+                ..default()
+            },
+            projection: OrthographicProjection {
+                scaling_mode: ScalingMode::FixedVertical(2.),
+                far: 1000.,
+                near: -1000.,
                 ..default()
             },
             ..default()
