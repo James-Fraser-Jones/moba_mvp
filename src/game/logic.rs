@@ -34,7 +34,6 @@ fn init_map(mut commands: Commands) {
         for (lane_pos, lane) in [(TOP, Lane::Top), (MID, Lane::Mid), (BOT, Lane::Bot)] {
             for (team_pos, team) in [(RED, Team::Red), (BLUE, Team::Blue)] {
                 let diff = (lane_pos - team_pos).normalize();
-                println!("{:?}", diff);
                 let ang = -diff.angle_between(Vec2::X);
                 let pos = team_pos + diff * (BASE_RADIUS - LANE_WIDTH);
                 SpawnerBundle::new(pos.extend(-1.).extend(ang), team, lane).spawn(&mut root);
