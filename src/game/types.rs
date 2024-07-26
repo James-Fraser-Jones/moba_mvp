@@ -133,35 +133,35 @@ impl MapBundle {
                 builder.spawn(MeshBundle::new(
                     "lane",
                     "yellow",
-                    vec4_to_trans(Vec4::new(-MID_LANE * MAP_SIZE, 0., -3., 0.)),
+                    vec4_to_trans(Vec4::new(-MID_LANE_RADIUS, 0., -3., 0.)),
                 ));
                 //blue top
                 builder.spawn(MeshBundle::new(
                     "lane",
                     "yellow",
-                    vec4_to_trans(Vec4::new(0., MID_LANE * MAP_SIZE, -3., 2. * PI / 4.)),
+                    vec4_to_trans(Vec4::new(0., MID_LANE_RADIUS, -3., 2. * PI / 4.)),
                 ));
                 //red bot
                 builder.spawn(MeshBundle::new(
                     "lane",
                     "yellow",
-                    vec4_to_trans(Vec4::new(0., -MID_LANE * MAP_SIZE, -3., 2. * PI / 4.)),
+                    vec4_to_trans(Vec4::new(0., -MID_LANE_RADIUS, -3., 2. * PI / 4.)),
                 ));
                 //blue bot
                 builder.spawn(MeshBundle::new(
                     "lane",
                     "yellow",
-                    vec4_to_trans(Vec4::new(MID_LANE * MAP_SIZE, 0., -3., 0.)),
+                    vec4_to_trans(Vec4::new(MID_LANE_RADIUS, 0., -3., 0.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "base",
                     "red",
-                    vec4_to_trans(Vec4::new(-MAP_SIZE / 2., -MAP_SIZE / 2., -2., -PI / 4.)),
+                    vec4_to_trans(Vec4::new(-1000., -1000., -2., -PI / 4.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "base",
                     "blue",
-                    vec4_to_trans(Vec4::new(MAP_SIZE / 2., MAP_SIZE / 2., -2., 3. * PI / 4.)),
+                    vec4_to_trans(Vec4::new(1000., 1000., -2., 3. * PI / 4.)),
                 ));
             })
             .id();

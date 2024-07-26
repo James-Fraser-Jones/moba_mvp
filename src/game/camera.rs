@@ -25,7 +25,7 @@ fn init_camera(mut commands: Commands) {
                 ..default()
             },
             projection: OrthographicProjection {
-                scaling_mode: ScalingMode::FixedVertical(2.),
+                scaling_mode: ScalingMode::FixedVertical(2000.),
                 far: 1000.,
                 near: -1000.,
                 ..default()

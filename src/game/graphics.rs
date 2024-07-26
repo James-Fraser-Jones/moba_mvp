@@ -53,31 +53,25 @@ fn init_assets(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     commands.insert_resource(Meshes(HashMap::from([
-        ("plain", meshes.add(Rectangle::from_length(MAP_SIZE))),
+        ("plain", meshes.add(Rectangle::from_length(2000.))),
         (
             "river",
             meshes.add(Rectangle::new(
-                RIVER_WIDTH * MAP_SIZE,
-                f32::sqrt(2.) * NON_LANE_WIDTH * MAP_SIZE,
+                RIVER_WIDTH,
+                f32::sqrt(2.) * NON_LANE_RADIUS * 2.,
             )),
         ),
         (
             "mid",
             meshes.add(Rectangle::new(
-                LANE_WIDTH * MAP_SIZE,
-                f32::sqrt(2.) * NON_LANE_WIDTH * MAP_SIZE,
+                LANE_WIDTH,
+                f32::sqrt(2.) * NON_LANE_RADIUS * 2.,
             )),
         ),
-        (
-            "lane",
-            meshes.add(Rectangle::new(LANE_WIDTH * MAP_SIZE, MAP_SIZE)),
-        ),
+        ("lane", meshes.add(Rectangle::new(LANE_WIDTH, 2000.))),
         (
             "base",
-            meshes.add(CircularSector::from_radians(
-                BASE_RADIUS * MAP_SIZE,
-                2. * PI / 4.,
-            )),
+            meshes.add(CircularSector::from_radians(BASE_RADIUS, 2. * PI / 4.)),
         ),
         ("spawner", meshes.add(Circle::new(SPAWNER_RADIUS))),
         ("unit", meshes.add(Circle::new(UNIT_RADIUS))),

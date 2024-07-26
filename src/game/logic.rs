@@ -42,7 +42,7 @@ fn init_map(mut commands: Commands) {
             ] {
                 let diff = (lane_pos - team_pos).normalize();
                 let ang = -diff.angle_between(Vec2::X);
-                let pos = (team_pos + diff * SPAWNER_POS_RADIUS) * MID_LANE * MAP_SIZE;
+                let pos = (team_pos + diff * SPAWNER_POS_RADIUS) * MID_LANE_RADIUS;
                 SpawnerBundle::new(pos.extend(-1.).extend(ang), team, lane).spawn(&mut root);
             }
         }
@@ -112,8 +112,7 @@ fn unit_ai(mut query: Query<(&Transform, &mut MoveType, &Lane, &Team, &mut MidCr
                             Lane::Mid => MID,
                             Lane::Top => TOP,
                         }
-                    } * MID_LANE
-                        * MAP_SIZE,
+                    } * MID_LANE_RADIUS,
                 );
             }
             MoveType::AttackMove(pos) => {
