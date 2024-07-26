@@ -34,11 +34,9 @@ pub const PURPLE_HUE: f32 = 275.;
 
 //map
 pub const MAP_SIZE: f32 = SCREEN_HEIGHT;
-
 pub const LANE_WIDTH: f32 = 0.12;
 pub const RIVER_WIDTH: f32 = 0.1;
 pub const BASE_RADIUS: f32 = 0.18;
-
 pub const MID_LANE: f32 = (1. - LANE_WIDTH) / 2.;
 pub const NON_LANE_WIDTH: f32 = 1. - 2. * LANE_WIDTH;
 

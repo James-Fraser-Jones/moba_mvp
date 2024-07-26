@@ -1,8 +1,7 @@
-use crate::game::graphics::MeshBundle;
-use crate::helpers::{consts::*, types::*, utils::*};
-use bevy::{ecs::system::EntityCommands, prelude::*};
+use crate::game::types::*;
+use crate::game::{consts::*, utils::*};
+use bevy::prelude::*;
 use rand::prelude::*;
-use std::f32::consts::PI;
 
 pub struct LogicPlugin;
 
@@ -24,111 +23,15 @@ impl Plugin for LogicPlugin {
     }
 }
 
-//========================== NEEDS TO BE MOVED ===============================
-
-fn spawn_map(commands: &mut Commands, map_bundle: MapBundle) -> Entity {
-    commands
-        .spawn(map_bundle)
-        .with_children(|builder| {
-            builder.spawn(MeshBundle::new(
-                "plain",
-                "green",
-                vec4_to_trans(Vec4::new(0., 0., -5., 0.)),
-            ));
-            builder.spawn(MeshBundle::new(
-                "river",
-                "teal",
-                vec4_to_trans(Vec4::new(0., 0., -4., PI / 4.)),
-            ));
-            builder.spawn(MeshBundle::new(
-                "mid",
-                "yellow",
-                vec4_to_trans(Vec4::new(0., 0., -3., -PI / 4.)),
-            ));
-            //red top
-            builder.spawn(MeshBundle::new(
-                "lane",
-                "yellow",
-                vec4_to_trans(Vec4::new(-MID_LANE * MAP_SIZE, 0., -3., 0.)),
-            ));
-            //blue top
-            builder.spawn(MeshBundle::new(
-                "lane",
-                "yellow",
-                vec4_to_trans(Vec4::new(0., MID_LANE * MAP_SIZE, -3., 2. * PI / 4.)),
-            ));
-            //red bot
-            builder.spawn(MeshBundle::new(
-                "lane",
-                "yellow",
-                vec4_to_trans(Vec4::new(0., -MID_LANE * MAP_SIZE, -3., 2. * PI / 4.)),
-            ));
-            //blue bot
-            builder.spawn(MeshBundle::new(
-                "lane",
-                "yellow",
-                vec4_to_trans(Vec4::new(MID_LANE * MAP_SIZE, 0., -3., 0.)),
-            ));
-            builder.spawn(MeshBundle::new(
-                "base",
-                "red",
-                vec4_to_trans(Vec4::new(-MAP_SIZE / 2., -MAP_SIZE / 2., -2., -PI / 4.)),
-            ));
-            builder.spawn(MeshBundle::new(
-                "base",
-                "blue",
-                vec4_to_trans(Vec4::new(MAP_SIZE / 2., MAP_SIZE / 2., -2., 3. * PI / 4.)),
-            ));
-        })
-        .id()
-}
-
-fn spawn_spawner(map: &mut EntityCommands, spawner_bundle: SpawnerBundle) {
-    let spawner = map
-        .commands()
-        .spawn(spawner_bundle)
-        .with_children(|builder| {
-            builder.spawn(MeshBundle::new(
-                "spawner",
-                "purple",
-                vec4_to_trans(Vec4::new(0., 0., 0., 0.)),
-            ));
-        })
-        .id();
-    map.add_child(spawner);
-}
-
-fn spawn_unit(map: &mut EntityCommands, unit_bundle: UnitBundle) {
-    let team = match unit_bundle.team {
-        Team::Red => "red",
-        Team::Blue => "blue",
-    };
-    let unit = map
-        .commands()
-        .spawn(unit_bundle)
-        .with_children(|builder| {
-            builder.spawn(MeshBundle::new(
-                "unit",
-                "green",
-                vec4_to_trans(Vec4::new(0., 0., 0., 0.)),
-            ));
-            builder.spawn(MeshBundle::new(
-                "direction",
-                team,
-                vec4_to_trans(Vec4::new(0., 0., 1., 0.)),
-            ));
-        })
-        .id();
-    map.add_child(unit);
-}
-
 fn init_map(mut commands: Commands) {
-    let map_id = spawn_map(&mut commands, MapBundle::new());
-    if let Some(mut map) = commands.get_entity(map_id) {
-        //add wave manager resource
-        map.commands().insert_resource(WaveManager::new());
-
-        //add spawners
+    //add resources
+    commands.insert_resource(WaveManager::new());
+    //add entities
+    let root_id = RootBundle::new().spawn(&mut commands);
+    if let Some(mut root) = commands.get_entity(root_id) {
+        //map
+        MapBundle::new().spawn(&mut root);
+        //spawners
         for (lane_pos, lane) in [
             (Vec2::new(-1., 1.), Lane::Top),
             (Vec2::new(0., 0.), Lane::Mid),
@@ -141,14 +44,11 @@ fn init_map(mut commands: Commands) {
                 let diff = (lane_pos - team_pos).normalize();
                 let ang = -diff.angle_between(Vec2::X);
                 let pos = (team_pos + diff * SPAWNER_POS_RADIUS) * MID_LANE * MAP_SIZE;
-                let spawner = SpawnerBundle::new(pos.extend(-1.).extend(ang), team, lane);
-                spawn_spawner(&mut map, spawner);
+                SpawnerBundle::new(pos.extend(-1.).extend(ang), team, lane).spawn(&mut root);
             }
         }
     }
 }
-
-//========================== NEEDS TO BE MOVED ===============================
 
 fn update_timers(mut query: Query<&mut FixedTimer>, time: Res<Time>) {
     for mut timer in &mut query {
@@ -161,10 +61,10 @@ fn manage_waves(
     spawner_query: Query<(&Transform, &Team, &Lane), With<Spawner>>,
     mut commands: Commands,
     time: Res<Time>,
-    map_query: Query<Entity, With<Map>>,
+    root_query: Query<Entity, With<Root>>,
 ) {
-    let map_id = map_query.single();
-    if let Some(mut map) = commands.get_entity(map_id) {
+    let root_id = root_query.single();
+    if let Some(mut root) = commands.get_entity(root_id) {
         //advance time
         wave_manager.wave_timer.tick(time.delta());
         wave_manager.spawn_timer.tick(time.delta()); //does nothing if paused
@@ -178,8 +78,7 @@ fn manage_waves(
                     for (transform, team, lane) in &spawner_query {
                         let mut vec4 = trans_to_vec4(transform);
                         vec4.z = 0.; //reset z-index;
-                        let unit = UnitBundle::new(vec4, *team, Discipline::Melee, *lane);
-                        spawn_unit(&mut map, unit);
+                        UnitBundle::new(vec4, *team, Discipline::Melee, *lane).spawn(&mut root);
                     }
                     wave_manager.spawn_index += 1;
                 }

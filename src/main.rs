@@ -1,9 +1,8 @@
 mod game;
-mod helpers;
 
 use bevy::{prelude::*, window::WindowMode};
+use consts::*;
 use game::*;
-use helpers::consts::*;
 
 fn main() -> AppExit {
     App::new()

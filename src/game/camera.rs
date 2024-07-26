@@ -1,9 +1,8 @@
+use crate::game::consts::*;
 use bevy::{
     input::mouse::{MouseScrollUnit, MouseWheel},
     prelude::*,
 };
-
-use crate::helpers::consts::*;
 
 pub struct CameraPlugin;
 
