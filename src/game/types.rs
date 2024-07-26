@@ -117,41 +117,37 @@ impl MapBundle {
                 builder.spawn(MeshBundle::new(
                     "plain",
                     "green",
-                    vec4_to_trans(Vec4::new(0., 0., -5., 0.)),
+                    vec4_to_trans(MID.extend(-5.).extend(0.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "river",
                     "teal",
-                    vec4_to_trans(Vec4::new(0., 0., -4., PI / 4.)),
+                    vec4_to_trans(MID.extend(-4.).extend(-PI / 4.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "mid",
                     "yellow",
-                    vec4_to_trans(Vec4::new(0., 0., -3., -PI / 4.)),
+                    vec4_to_trans(MID.extend(-3.).extend(-PI / 4.)),
                 ));
-                //red top
                 builder.spawn(MeshBundle::new(
                     "lane",
                     "yellow",
-                    vec4_to_trans(Vec4::new(-MID_LANE_RADIUS, 0., -3., 0.)),
+                    vec4_to_trans(RED_TOP.extend(-3.).extend(0.)),
                 ));
-                //blue top
                 builder.spawn(MeshBundle::new(
                     "lane",
                     "yellow",
-                    vec4_to_trans(Vec4::new(0., MID_LANE_RADIUS, -3., 2. * PI / 4.)),
+                    vec4_to_trans(BLUE_TOP.extend(-3.).extend(PI / 2.)),
                 ));
-                //red bot
                 builder.spawn(MeshBundle::new(
                     "lane",
                     "yellow",
-                    vec4_to_trans(Vec4::new(0., -MID_LANE_RADIUS, -3., 2. * PI / 4.)),
+                    vec4_to_trans(RED_BOT.extend(-3.).extend(PI / 2.)),
                 ));
-                //blue bot
                 builder.spawn(MeshBundle::new(
                     "lane",
                     "yellow",
-                    vec4_to_trans(Vec4::new(MID_LANE_RADIUS, 0., -3., 0.)),
+                    vec4_to_trans(BLUE_BOT.extend(-3.).extend(0.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "base",

@@ -19,7 +19,7 @@ pub const UNIT_TRIANGLE_ANGLE: f32 = PI / 4.;
 
 //window
 pub const APP_NAME: &str = "Moba MVP";
-pub const SCREEN_WIDTH: f32 = 1920.;
+pub const SCREEN_WIDTH: f32 = 1080.;
 pub const SCREEN_HEIGHT: f32 = 1080.;
 
 //colors
@@ -36,15 +36,19 @@ pub const PURPLE_HUE: f32 = 275.;
 pub const LANE_WIDTH: f32 = 240.;
 pub const RIVER_WIDTH: f32 = 200.;
 pub const BASE_RADIUS: f32 = 360.;
-pub const MID_LANE_RADIUS: f32 = 1000. - LANE_WIDTH / 2.;
-pub const NON_LANE_RADIUS: f32 = 1000. - LANE_WIDTH;
 
 //locations
-pub const TOP: Vec2 = Vec2::new(-1., 1.);
+pub const NON_LANE_RADIUS: f32 = 1000. - LANE_WIDTH;
+pub const MID_LANE_RADIUS: f32 = 1000. - LANE_WIDTH / 2.;
+pub const TOP: Vec2 = Vec2::new(-MID_LANE_RADIUS, MID_LANE_RADIUS);
+pub const RED_TOP: Vec2 = Vec2::new(-MID_LANE_RADIUS, 0.);
+pub const BLUE_TOP: Vec2 = Vec2::new(0., MID_LANE_RADIUS);
 pub const MID: Vec2 = Vec2::new(0., 0.);
-pub const BOT: Vec2 = Vec2::new(1., -1.);
-pub const RED: Vec2 = Vec2::new(-1., -1.);
-pub const BLUE: Vec2 = Vec2::new(1., 1.);
+pub const BOT: Vec2 = Vec2::new(MID_LANE_RADIUS, -MID_LANE_RADIUS);
+pub const RED_BOT: Vec2 = Vec2::new(0., -MID_LANE_RADIUS);
+pub const BLUE_BOT: Vec2 = Vec2::new(MID_LANE_RADIUS, 0.);
+pub const RED: Vec2 = Vec2::new(-MID_LANE_RADIUS, -MID_LANE_RADIUS);
+pub const BLUE: Vec2 = Vec2::new(MID_LANE_RADIUS, MID_LANE_RADIUS);
 
 //waves
 pub const WAVE_DELAY: f32 = 20.;

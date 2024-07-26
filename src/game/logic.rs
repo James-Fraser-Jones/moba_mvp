@@ -31,18 +31,12 @@ fn init_map(mut commands: Commands) {
         //map
         MapBundle::new().spawn(&mut root);
         //spawners
-        for (lane_pos, lane) in [
-            (Vec2::new(-1., 1.), Lane::Top),
-            (Vec2::new(0., 0.), Lane::Mid),
-            (Vec2::new(1., -1.), Lane::Bot),
-        ] {
-            for (team_pos, team) in [
-                (Vec2::new(-1., -1.), Team::Red),
-                (Vec2::new(1., 1.), Team::Blue),
-            ] {
+        for (lane_pos, lane) in [(TOP, Lane::Top), (MID, Lane::Mid), (BOT, Lane::Bot)] {
+            for (team_pos, team) in [(RED, Team::Red), (BLUE, Team::Blue)] {
                 let diff = (lane_pos - team_pos).normalize();
+                println!("{:?}", diff);
                 let ang = -diff.angle_between(Vec2::X);
-                let pos = (team_pos + diff * SPAWNER_POS_RADIUS) * MID_LANE_RADIUS;
+                let pos = team_pos + diff * (BASE_RADIUS - LANE_WIDTH);
                 SpawnerBundle::new(pos.extend(-1.).extend(ang), team, lane).spawn(&mut root);
             }
         }
@@ -100,20 +94,18 @@ fn unit_ai(mut query: Query<(&Transform, &mut MoveType, &Lane, &Team, &mut MidCr
     for (transform, mut move_type, lane, team, mut mid_crossed) in &mut query {
         match *move_type {
             MoveType::Stationary => {
-                *move_type = MoveType::AttackMove(
-                    if mid_crossed.0 {
-                        match *team {
-                            Team::Red => BLUE,
-                            Team::Blue => RED,
-                        }
-                    } else {
-                        match *lane {
-                            Lane::Bot => BOT,
-                            Lane::Mid => MID,
-                            Lane::Top => TOP,
-                        }
-                    } * MID_LANE_RADIUS,
-                );
+                *move_type = MoveType::AttackMove(if mid_crossed.0 {
+                    match *team {
+                        Team::Red => BLUE,
+                        Team::Blue => RED,
+                    }
+                } else {
+                    match *lane {
+                        Lane::Bot => BOT,
+                        Lane::Mid => MID,
+                        Lane::Top => TOP,
+                    }
+                });
             }
             MoveType::AttackMove(pos) => {
                 if (pos - transform.translation.truncate()).length() < UNIT_LOCATION_RADIUS {
