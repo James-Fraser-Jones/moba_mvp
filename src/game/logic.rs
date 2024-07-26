@@ -1,12 +1,14 @@
+use crate::game::graphics::MeshBundle;
 use crate::helpers::{consts::*, types::*, utils::*};
-use bevy::prelude::*;
+use bevy::{ecs::system::EntityCommands, prelude::*};
 use rand::prelude::*;
+use std::f32::consts::PI;
 
 pub struct LogicPlugin;
 
 impl Plugin for LogicPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (init_map, init_spawners).chain());
+        app.add_systems(Startup, init_map);
         app.add_systems(
             FixedUpdate,
             (
@@ -19,70 +21,134 @@ impl Plugin for LogicPlugin {
             )
                 .chain(),
         );
-        app.add_event::<GraphicsEvent>();
     }
 }
 
-fn spawn_spawner(
-    spawner: SpawnerBundle,
-    map: Entity,
-    commands: &mut Commands,
-    ev_graphics: &mut EventWriter<GraphicsEvent>,
-) {
-    if let Some(mut map) = commands.get_entity(map) {
-        let spawner_entity = map.commands().spawn(spawner).id();
-        map.add_child(spawner_entity);
-        ev_graphics.send(GraphicsEvent::new(spawner_entity));
-    }
+//========================== NEEDS TO BE MOVED ===============================
+
+fn spawn_map(commands: &mut Commands, map_bundle: MapBundle) -> Entity {
+    commands
+        .spawn(map_bundle)
+        .with_children(|builder| {
+            builder.spawn(MeshBundle::new(
+                "plain",
+                "green",
+                vec4_to_trans(Vec4::new(0., 0., -5., 0.)),
+            ));
+            builder.spawn(MeshBundle::new(
+                "river",
+                "teal",
+                vec4_to_trans(Vec4::new(0., 0., -4., PI / 4.)),
+            ));
+            builder.spawn(MeshBundle::new(
+                "mid",
+                "yellow",
+                vec4_to_trans(Vec4::new(0., 0., -3., -PI / 4.)),
+            ));
+            //red top
+            builder.spawn(MeshBundle::new(
+                "lane",
+                "yellow",
+                vec4_to_trans(Vec4::new(-MID_LANE * MAP_SIZE, 0., -3., 0.)),
+            ));
+            //blue top
+            builder.spawn(MeshBundle::new(
+                "lane",
+                "yellow",
+                vec4_to_trans(Vec4::new(0., MID_LANE * MAP_SIZE, -3., 2. * PI / 4.)),
+            ));
+            //red bot
+            builder.spawn(MeshBundle::new(
+                "lane",
+                "yellow",
+                vec4_to_trans(Vec4::new(0., -MID_LANE * MAP_SIZE, -3., 2. * PI / 4.)),
+            ));
+            //blue bot
+            builder.spawn(MeshBundle::new(
+                "lane",
+                "yellow",
+                vec4_to_trans(Vec4::new(MID_LANE * MAP_SIZE, 0., -3., 0.)),
+            ));
+            builder.spawn(MeshBundle::new(
+                "base",
+                "red",
+                vec4_to_trans(Vec4::new(-MAP_SIZE / 2., -MAP_SIZE / 2., -2., -PI / 4.)),
+            ));
+            builder.spawn(MeshBundle::new(
+                "base",
+                "blue",
+                vec4_to_trans(Vec4::new(MAP_SIZE / 2., MAP_SIZE / 2., -2., 3. * PI / 4.)),
+            ));
+        })
+        .id()
 }
 
-fn spawn_unit(
-    unit: UnitBundle,
-    map: Entity,
-    commands: &mut Commands,
-    ev_graphics: &mut EventWriter<GraphicsEvent>,
-) {
-    if let Some(mut map) = commands.get_entity(map) {
-        let unit_entity = map.commands().spawn(unit).id();
-        map.add_child(unit_entity);
-        ev_graphics.send(GraphicsEvent::new(unit_entity));
-    }
+fn spawn_spawner(map: &mut EntityCommands, spawner_bundle: SpawnerBundle) {
+    let spawner = map
+        .commands()
+        .spawn(spawner_bundle)
+        .with_children(|builder| {
+            builder.spawn(MeshBundle::new(
+                "spawner",
+                "purple",
+                vec4_to_trans(Vec4::new(0., 0., 0., 0.)),
+            ));
+        })
+        .id();
+    map.add_child(spawner);
 }
 
-fn init_map(mut commands: Commands, mut ev_graphics: EventWriter<GraphicsEvent>) {
-    //add map entity
-    let map = MapBundle::new();
-    let map_entity = commands.spawn(map).id();
-    ev_graphics.send(GraphicsEvent::new(map_entity));
-
-    //add wave manager resource
-    commands.insert_resource(WaveManager::new());
+fn spawn_unit(map: &mut EntityCommands, unit_bundle: UnitBundle) {
+    let team = match unit_bundle.team {
+        Team::Red => "red",
+        Team::Blue => "blue",
+    };
+    let unit = map
+        .commands()
+        .spawn(unit_bundle)
+        .with_children(|builder| {
+            builder.spawn(MeshBundle::new(
+                "unit",
+                "green",
+                vec4_to_trans(Vec4::new(0., 0., 0., 0.)),
+            ));
+            builder.spawn(MeshBundle::new(
+                "direction",
+                team,
+                vec4_to_trans(Vec4::new(0., 0., 1., 0.)),
+            ));
+        })
+        .id();
+    map.add_child(unit);
 }
 
-fn init_spawners(
-    mut commands: Commands,
-    mut ev_graphics: EventWriter<GraphicsEvent>,
-    map_query: Query<Entity, With<Map>>,
-) {
-    let map = map_query.single();
+fn init_map(mut commands: Commands) {
+    let map_id = spawn_map(&mut commands, MapBundle::new());
+    if let Some(mut map) = commands.get_entity(map_id) {
+        //add wave manager resource
+        map.commands().insert_resource(WaveManager::new());
 
-    for (lane_pos, lane) in [
-        (Vec2::new(-1., 1.), Lane::Top),
-        (Vec2::new(0., 0.), Lane::Mid),
-        (Vec2::new(1., -1.), Lane::Bot),
-    ] {
-        for (team_pos, team) in [
-            (Vec2::new(-1., -1.), Team::Red),
-            (Vec2::new(1., 1.), Team::Blue),
+        //add spawners
+        for (lane_pos, lane) in [
+            (Vec2::new(-1., 1.), Lane::Top),
+            (Vec2::new(0., 0.), Lane::Mid),
+            (Vec2::new(1., -1.), Lane::Bot),
         ] {
-            let diff = (lane_pos - team_pos).normalize();
-            let ang = -diff.angle_between(Vec2::X);
-            let pos = (team_pos + diff * SPAWNER_POS_RADIUS) * MID_LANE * MAP_SIZE;
-            let spawner = SpawnerBundle::new(pos.extend(-1.).extend(ang), team, lane);
-            spawn_spawner(spawner, map, &mut commands, &mut ev_graphics);
+            for (team_pos, team) in [
+                (Vec2::new(-1., -1.), Team::Red),
+                (Vec2::new(1., 1.), Team::Blue),
+            ] {
+                let diff = (lane_pos - team_pos).normalize();
+                let ang = -diff.angle_between(Vec2::X);
+                let pos = (team_pos + diff * SPAWNER_POS_RADIUS) * MID_LANE * MAP_SIZE;
+                let spawner = SpawnerBundle::new(pos.extend(-1.).extend(ang), team, lane);
+                spawn_spawner(&mut map, spawner);
+            }
         }
     }
 }
+
+//========================== NEEDS TO BE MOVED ===============================
 
 fn update_timers(mut query: Query<&mut FixedTimer>, time: Res<Time>) {
     for mut timer in &mut query {
@@ -95,39 +161,39 @@ fn manage_waves(
     spawner_query: Query<(&Transform, &Team, &Lane), With<Spawner>>,
     mut commands: Commands,
     time: Res<Time>,
-    mut ev_graphics: EventWriter<GraphicsEvent>,
     map_query: Query<Entity, With<Map>>,
 ) {
-    let map = map_query.single();
+    let map_id = map_query.single();
+    if let Some(mut map) = commands.get_entity(map_id) {
+        //advance time
+        wave_manager.wave_timer.tick(time.delta());
+        wave_manager.spawn_timer.tick(time.delta()); //does nothing if paused
 
-    //advance time
-    wave_manager.wave_timer.tick(time.delta());
-    wave_manager.spawn_timer.tick(time.delta()); //does nothing if paused
-
-    if !wave_manager.spawn_timer.paused() {
-        //if we are currently spawning a wave
-        if wave_manager.spawn_index < WAVE_NUM_UNITS {
-            //if we have not reached the end of this wave
-            if wave_manager.spawn_timer.finished() {
-                //spawn a unit at each spawner
-                for (transform, team, lane) in &spawner_query {
-                    let mut vec4 = trans_to_vec4(transform);
-                    vec4.z = 0.; //reset z-index;
-                    let unit = UnitBundle::new(vec4, *team, Discipline::Melee, *lane);
-                    spawn_unit(unit, map, &mut commands, &mut ev_graphics);
+        if !wave_manager.spawn_timer.paused() {
+            //if we are currently spawning a wave
+            if wave_manager.spawn_index < WAVE_NUM_UNITS {
+                //if we have not reached the end of this wave
+                if wave_manager.spawn_timer.finished() {
+                    //spawn a unit at each spawner
+                    for (transform, team, lane) in &spawner_query {
+                        let mut vec4 = trans_to_vec4(transform);
+                        vec4.z = 0.; //reset z-index;
+                        let unit = UnitBundle::new(vec4, *team, Discipline::Melee, *lane);
+                        spawn_unit(&mut map, unit);
+                    }
+                    wave_manager.spawn_index += 1;
                 }
-                wave_manager.spawn_index += 1;
+            } else {
+                //if we have reached the end of this wave
+                wave_manager.spawn_timer.reset();
+                wave_manager.spawn_timer.pause();
+                wave_manager.spawn_index = 0;
             }
         } else {
-            //if we have reached the end of this wave
-            wave_manager.spawn_timer.reset();
-            wave_manager.spawn_timer.pause();
-            wave_manager.spawn_index = 0;
-        }
-    } else {
-        //if we are not spawning a wave
-        if wave_manager.wave_timer.finished() {
-            wave_manager.spawn_timer.unpause();
+            //if we are not spawning a wave
+            if wave_manager.wave_timer.finished() {
+                wave_manager.spawn_timer.unpause();
+            }
         }
     }
 }
