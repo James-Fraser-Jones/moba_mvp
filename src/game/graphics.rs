@@ -97,12 +97,24 @@ fn init_assets(
             materials.add(Color::hsl(RED_HUE, SATURATION, BRIGHTNESS)),
         ),
         (
+            "dark_red",
+            materials.add(Color::hsl(RED_HUE, SATURATION, BRIGHTNESS / 2.)),
+        ),
+        (
             "green",
             materials.add(Color::hsl(GREEN_HUE, SATURATION, BRIGHTNESS)),
         ),
         (
+            "dark_green",
+            materials.add(Color::hsl(GREEN_HUE, SATURATION, BRIGHTNESS / 2.)),
+        ),
+        (
             "blue",
             materials.add(Color::hsl(BLUE_HUE, SATURATION, BRIGHTNESS)),
+        ),
+        (
+            "dark_blue",
+            materials.add(Color::hsl(BLUE_HUE, SATURATION, BRIGHTNESS / 2.)),
         ),
         (
             "yellow",

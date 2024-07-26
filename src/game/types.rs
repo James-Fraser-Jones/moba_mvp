@@ -116,13 +116,13 @@ impl MapBundle {
             .with_children(|builder| {
                 builder.spawn(MeshBundle::new(
                     "plain",
-                    "green",
+                    "dark_green",
                     vec4_to_trans(MID.extend(-5.).extend(0.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "river",
                     "teal",
-                    vec4_to_trans(MID.extend(-4.).extend(-PI / 4.)),
+                    vec4_to_trans(MID.extend(-4.).extend(PI / 4.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "mid",
@@ -151,12 +151,12 @@ impl MapBundle {
                 ));
                 builder.spawn(MeshBundle::new(
                     "base",
-                    "red",
+                    "dark_red",
                     vec4_to_trans(Vec4::new(-1000., -1000., -2., -PI / 4.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "base",
-                    "blue",
+                    "dark_blue",
                     vec4_to_trans(Vec4::new(1000., 1000., -2., 3. * PI / 4.)),
                 ));
             })
@@ -190,11 +190,11 @@ impl SpawnerBundle {
             .commands()
             .spawn(self)
             .with_children(|builder| {
-                builder.spawn(MeshBundle::new(
-                    "spawner",
-                    "purple",
-                    vec4_to_trans(Vec4::new(0., 0., 0., 0.)),
-                ));
+                // builder.spawn(MeshBundle::new(
+                //     "spawner",
+                //     "purple",
+                //     vec4_to_trans(Vec4::new(0., 0., 0., 0.)),
+                // ));
             })
             .id();
         root.add_child(spawner);
@@ -235,11 +235,11 @@ impl UnitBundle {
             .commands()
             .spawn(self)
             .with_children(|builder| {
-                builder.spawn(MeshBundle::new(
-                    "unit",
-                    "green",
-                    vec4_to_trans(Vec4::new(0., 0., 0., 0.)),
-                ));
+                // builder.spawn(MeshBundle::new(
+                //     "unit",
+                //     "green",
+                //     vec4_to_trans(Vec4::new(0., 0., 0., 0.)),
+                // ));
                 builder.spawn(MeshBundle::new(
                     "direction",
                     team,
