@@ -12,6 +12,7 @@ use std::f32::consts::PI;
 pub enum MoveType {
     #[default]
     Stationary,
+    #[allow(dead_code)]
     Move(Vec2),
     AttackMove(Vec2),
     Attack(Entity),
@@ -22,6 +23,7 @@ pub enum MoveType {
 pub enum Discipline {
     #[default]
     Melee,
+    #[allow(dead_code)]
     Ranged,
 }
 

@@ -3,6 +3,7 @@ pub mod consts;
 mod graphics;
 mod logic;
 mod quit;
+mod threedee;
 mod types;
 mod utils;
 
@@ -11,15 +12,17 @@ use camera::*;
 use graphics::*;
 use logic::*;
 use quit::*;
+use threedee::*;
 
 pub struct GamePlugins;
 
 impl PluginGroup for GamePlugins {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
-            .add(LogicPlugin)
+            //.add(LogicPlugin)
             .add(GraphicsPlugin)
-            .add(CameraPlugin)
+            //.add(CameraPlugin)
             .add(QuitPlugin)
+            .add(ThreeDeePlugin)
     }
 }

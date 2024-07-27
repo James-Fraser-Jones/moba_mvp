@@ -10,9 +10,13 @@ pub const UNIT_SPEED: f32 = 185.;
 pub const UNIT_RADIUS: f32 = 18.5; //if set to factor of GCD of SCREEN_WIDTH and SCREEN_HEIGHT, can have a grid with square cells that fits the screen perfectly (currently: 120)
 pub const UNIT_LOCATION_RADIUS: f32 = 37.;
 pub const UNIT_SIGHT_RADIUS: f32 = 55.6;
+#[allow(dead_code)]
 pub const UNIT_ATTACK_RADIUS: f32 = 37.;
+#[allow(dead_code)]
 pub const UNIT_ATTACK_SPEED: f32 = 1.;
+#[allow(dead_code)]
 pub const UNIT_HEALTH: f32 = 100.;
+#[allow(dead_code)]
 pub const UNIT_ATTACK_DAMAGE: f32 = 10.;
 pub const UNIT_WRIGGLE: f32 = 18.5;
 pub const UNIT_TRIANGLE_ANGLE: f32 = PI / 4.;
@@ -56,15 +60,4 @@ pub const WAVE_NUM_UNITS: i32 = 6;
 
 //spawners
 pub const SPAWNER_RADIUS: f32 = 27.8;
-pub const SPAWNER_POS_RADIUS: f32 = 0.15;
 pub const SPAWNER_DELAY: f32 = 1.;
-
-//directions
-pub const NORTH: f32 = 2. * PI / 4.;
-pub const NORTH_EAST: f32 = 1. * PI / 4.;
-pub const EAST: f32 = 0. * PI / 4.;
-pub const SOUTH_EAST: f32 = 7. * PI / 4.;
-pub const SOUTH: f32 = 6. * PI / 4.;
-pub const SOUTH_WEST: f32 = 5. * PI / 4.;
-pub const WEST: f32 = 4. * PI / 4.;
-pub const NORTH_WEST: f32 = 3. * PI / 4.;
