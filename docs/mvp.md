@@ -75,7 +75,29 @@
 
 10. **(DONE)** make minions walk to midpoints of lanes and then turn and walk the rest
 
-11. make minions switch into attack mode when they see nearby enemies
+11. **(DONE)** make minions switch into attack mode when they see nearby enemies
+
+---
+
+3D Detour
+
+12. Loading models
+
+13. Instancing many of the same model (for minions??)
+
+14. Do unlit materials work well?
+
+15. Render graph, blending animations (specifically walk/run)
+
+16. Fog of war effect with alpha blending or some other technique
+
+17. 3D camera positioned correctly, pannable, zoomable
+
+18. 3D unit space still -1000, 1000 in all axes
+
+19. Loading/unloading extra parts of the mesh (weapons etc..)
+
+---
 
 12. split minions into melee and ranged with differing attack ranges
 

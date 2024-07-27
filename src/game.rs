@@ -19,10 +19,10 @@ pub struct GamePlugins;
 impl PluginGroup for GamePlugins {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
-            //.add(LogicPlugin)
+            .add(LogicPlugin)
             .add(GraphicsPlugin)
-            //.add(CameraPlugin)
+            .add(CameraPlugin)
             .add(QuitPlugin)
-            .add(ThreeDeePlugin)
+        //.add(ThreeDeePlugin)
     }
 }

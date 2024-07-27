@@ -1,3 +1,5 @@
+use std::ops::DerefMut;
+
 use crate::game::consts::*;
 use bevy::{
     input::mouse::{MouseScrollUnit, MouseWheel},
@@ -19,17 +21,17 @@ struct MainCamera;
 
 fn init_camera(mut commands: Commands) {
     commands.spawn((
-        Camera2dBundle {
+        Camera3dBundle {
             camera: Camera {
                 clear_color: ClearColorConfig::Custom(Color::BLACK),
                 ..default()
             },
-            projection: OrthographicProjection {
+            projection: Projection::from(OrthographicProjection {
                 scaling_mode: ScalingMode::FixedVertical(2000.),
                 far: 1000.,
                 near: -1000.,
                 ..default()
-            },
+            }),
             ..default()
         },
         MainCamera,
@@ -37,7 +39,7 @@ fn init_camera(mut commands: Commands) {
 }
 
 fn update_camera(
-    mut query: Query<(&mut Transform, &mut OrthographicProjection), With<MainCamera>>,
+    mut query: Query<(&mut Transform, &mut Projection), With<MainCamera>>,
     mut mouse: EventReader<MouseWheel>,
     keyboard: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
@@ -61,7 +63,12 @@ fn update_camera(
     transform.translation += direction.extend(0.);
     for scroll_event in mouse.read() {
         if scroll_event.unit == MouseScrollUnit::Line {
-            projection.scale -= scroll_event.y * ZOOM_SPEED;
+            match projection.deref_mut() {
+                Projection::Orthographic(ref mut projection) => {
+                    projection.scale -= scroll_event.y * ZOOM_SPEED
+                }
+                Projection::Perspective(_) => {}
+            }
         }
         //pinch zoom unsupported because mobas use mice
     }

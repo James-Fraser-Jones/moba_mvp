@@ -19,7 +19,7 @@ pub const UNIT_HEALTH: f32 = 100.;
 #[allow(dead_code)]
 pub const UNIT_ATTACK_DAMAGE: f32 = 10.;
 pub const UNIT_WRIGGLE: f32 = 18.5;
-pub const UNIT_TRIANGLE_ANGLE: f32 = PI / 4.;
+pub const UNIT_TRIANGLE_ANGLE: f32 = PI / 8.;
 
 //window
 pub const APP_NAME: &str = "Moba MVP";

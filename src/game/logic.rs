@@ -34,11 +34,11 @@ fn init_map(mut commands: Commands) {
         for (lane_pos, lane) in [(TOP, Lane::Top), (MID, Lane::Mid), (BOT, Lane::Bot)] {
             for (team_pos, team) in [(RED, Team::Red), (BLUE, Team::Blue)] {
                 let diff = (lane_pos - team_pos).normalize();
-                let ang = -diff.angle_between(Vec2::X);
-                let pos = team_pos + diff * (BASE_RADIUS - LANE_WIDTH);
-                SpawnerBundle::new(pos.extend(-1.).extend(ang), team, lane).spawn(&mut root);
+                let vec2 = team_pos + diff * (BASE_RADIUS - LANE_WIDTH);
+                SpawnerBundle::new(vec2, team, lane).spawn(&mut root);
             }
         }
+        //UnitBundle::new(Vec2::ZERO, Team::Red, Discipline::Melee, Lane::Top).spawn(&mut root);
     }
 }
 
@@ -68,9 +68,8 @@ fn manage_waves(
                 if wave_manager.spawn_timer.finished() {
                     //spawn a unit at each spawner
                     for (transform, team, lane) in &spawner_query {
-                        let mut vec4 = trans_to_vec4(transform);
-                        vec4.z = 0.; //reset z-index;
-                        UnitBundle::new(vec4, *team, Discipline::Melee, *lane).spawn(&mut root);
+                        let vec2 = trans_to_vec4(transform).truncate().truncate();
+                        UnitBundle::new(vec2, *team, Discipline::Melee, *lane).spawn(&mut root);
                     }
                     wave_manager.spawn_index += 1;
                 }

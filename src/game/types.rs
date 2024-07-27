@@ -109,7 +109,12 @@ pub struct MapBundle {
 }
 impl MapBundle {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            spatial: SpatialBundle::from_transform(vec4_to_trans(
+                Vec2::ZERO.extend(-6.).extend(0.),
+            )),
+            ..default()
+        }
     }
     pub fn spawn(self, root: &mut EntityCommands) -> Entity {
         let map = root
@@ -119,47 +124,47 @@ impl MapBundle {
                 builder.spawn(MeshBundle::new(
                     "plain",
                     "dark_green",
-                    vec4_to_trans(MID.extend(-5.).extend(0.)),
+                    vec4_to_trans(MID.extend(0.).extend(0.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "river",
                     "teal",
-                    vec4_to_trans(MID.extend(-4.).extend(PI / 4.)),
+                    vec4_to_trans(MID.extend(2.5).extend(PI / 4.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "mid",
                     "yellow",
-                    vec4_to_trans(MID.extend(-3.).extend(-PI / 4.)),
+                    vec4_to_trans(MID.extend(5.).extend(-PI / 4.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "lane",
                     "yellow",
-                    vec4_to_trans(RED_TOP.extend(-3.).extend(0.)),
+                    vec4_to_trans(RED_TOP.extend(5.).extend(0.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "lane",
                     "yellow",
-                    vec4_to_trans(BLUE_TOP.extend(-3.).extend(PI / 2.)),
+                    vec4_to_trans(BLUE_TOP.extend(5.).extend(PI / 2.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "lane",
                     "yellow",
-                    vec4_to_trans(RED_BOT.extend(-3.).extend(PI / 2.)),
+                    vec4_to_trans(RED_BOT.extend(5.).extend(PI / 2.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "lane",
                     "yellow",
-                    vec4_to_trans(BLUE_BOT.extend(-3.).extend(0.)),
+                    vec4_to_trans(BLUE_BOT.extend(5.).extend(0.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "base",
                     "dark_red",
-                    vec4_to_trans(Vec4::new(-1000., -1000., -2., -PI / 4.)),
+                    vec4_to_trans(Vec4::new(-1000., -1000., 6., -PI / 4.)),
                 ));
                 builder.spawn(MeshBundle::new(
                     "base",
                     "dark_blue",
-                    vec4_to_trans(Vec4::new(1000., 1000., -2., 3. * PI / 4.)),
+                    vec4_to_trans(Vec4::new(1000., 1000., 6., 3. * PI / 4.)),
                 ));
             })
             .id();
@@ -179,9 +184,9 @@ pub struct SpawnerBundle {
     pub spawner: Spawner,
 }
 impl SpawnerBundle {
-    pub fn new(vec4: Vec4, team: Team, lane: Lane) -> Self {
+    pub fn new(vec2: Vec2, team: Team, lane: Lane) -> Self {
         Self {
-            spatial: SpatialBundle::from_transform(vec4_to_trans(vec4)),
+            spatial: SpatialBundle::from_transform(vec4_to_trans(vec2.extend(0.).extend(0.))),
             team,
             lane,
             ..default()
@@ -192,11 +197,11 @@ impl SpawnerBundle {
             .commands()
             .spawn(self)
             .with_children(|builder| {
-                // builder.spawn(MeshBundle::new(
-                //     "spawner",
-                //     "purple",
-                //     vec4_to_trans(Vec4::new(0., 0., 0., 0.)),
-                // ));
+                builder.spawn(MeshBundle::new(
+                    "spawner",
+                    "purple",
+                    vec4_to_trans(Vec4::new(0., 0., SPAWNER_RADIUS, 0.)),
+                ));
             })
             .id();
         root.add_child(spawner);
@@ -219,9 +224,9 @@ pub struct UnitBundle {
     pub unit: Unit, //tag for query filtering
 }
 impl UnitBundle {
-    pub fn new(vec4: Vec4, team: Team, discipline: Discipline, lane: Lane) -> Self {
+    pub fn new(vec2: Vec2, team: Team, discipline: Discipline, lane: Lane) -> Self {
         Self {
-            spatial: SpatialBundle::from_transform(vec4_to_trans(vec4)),
+            spatial: SpatialBundle::from_transform(vec4_to_trans(vec2.extend(0.).extend(0.))),
             team,
             discipline,
             lane,
@@ -237,15 +242,20 @@ impl UnitBundle {
             .commands()
             .spawn(self)
             .with_children(|builder| {
-                // builder.spawn(MeshBundle::new(
-                //     "unit",
-                //     "green",
-                //     vec4_to_trans(Vec4::new(0., 0., 0., 0.)),
-                // ));
+                builder.spawn(MeshBundle::new(
+                    "unit",
+                    "green_trans",
+                    vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
+                ));
                 builder.spawn(MeshBundle::new(
                     "direction",
                     team,
-                    vec4_to_trans(Vec4::new(0., 0., 1., 0.)),
+                    vec4_to_trans(Vec4::new(
+                        UNIT_RADIUS * (1. - UNIT_TRIANGLE_ANGLE.cos().powf(2.)),
+                        0.,
+                        UNIT_RADIUS,
+                        -PI / 2.,
+                    )),
                 ));
             })
             .id();
