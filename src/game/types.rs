@@ -242,11 +242,11 @@ impl UnitBundle {
             .commands()
             .spawn(self)
             .with_children(|builder| {
-                builder.spawn(MeshBundle::new(
-                    "unit",
-                    "green_trans",
-                    vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
-                ));
+                // builder.spawn(MeshBundle::new(
+                //     "unit",
+                //     "green_trans",
+                //     vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
+                // ));
                 builder.spawn(MeshBundle::new(
                     "direction",
                     team,

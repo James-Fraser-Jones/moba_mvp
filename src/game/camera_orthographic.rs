@@ -7,12 +7,12 @@ use bevy::{
     render::camera::{OrthographicProjection, ScalingMode},
 };
 
-pub struct CameraPlugin;
+pub struct CameraOrthographicPlugin;
 
-impl Plugin for CameraPlugin {
+impl Plugin for CameraOrthographicPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init_camera);
-        app.add_systems(Update, update_camera);
+        app.add_systems(Update, update_camera_pan);
     }
 }
 
@@ -38,13 +38,25 @@ fn init_camera(mut commands: Commands) {
     ));
 }
 
-fn update_camera(
+fn update_camera_pan(
     mut query: Query<(&mut Transform, &mut Projection), With<MainCamera>>,
     mut mouse: EventReader<MouseWheel>,
     keyboard: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
 ) {
     let (mut transform, mut projection) = query.single_mut(); //okay when entity known to exist and be unique
+
+    //reset position
+    if keyboard.pressed(KeyCode::KeyR) {
+        match projection.deref_mut() {
+            Projection::Orthographic(ref mut projection) => {
+                projection.scale = 1.;
+            }
+            Projection::Perspective(_) => {}
+        }
+        *transform = Transform::default();
+    }
+
     let mut direction: Vec2 = Vec2::ZERO;
     if keyboard.pressed(KeyCode::KeyA) {
         direction.x -= 1.;
@@ -65,7 +77,7 @@ fn update_camera(
         if scroll_event.unit == MouseScrollUnit::Line {
             match projection.deref_mut() {
                 Projection::Orthographic(ref mut projection) => {
-                    projection.scale -= scroll_event.y * ZOOM_SPEED
+                    projection.scale -= scroll_event.y * ORTHOGRAPHIC_ZOOM_SPEED
                 }
                 Projection::Perspective(_) => {}
             }

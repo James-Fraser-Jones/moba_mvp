@@ -1,4 +1,5 @@
-mod camera;
+mod camera_orthographic;
+mod camera_perspective;
 pub mod consts;
 mod graphics;
 mod logic;
@@ -8,7 +9,8 @@ mod types;
 mod utils;
 
 use bevy::{app::PluginGroupBuilder, prelude::*};
-use camera::*;
+use camera_orthographic::*;
+use camera_perspective::*;
 use graphics::*;
 use logic::*;
 use quit::*;
@@ -21,7 +23,7 @@ impl PluginGroup for GamePlugins {
         PluginGroupBuilder::start::<Self>()
             .add(LogicPlugin)
             .add(GraphicsPlugin)
-            .add(CameraPlugin)
+            .add(CameraPerspectivePlugin)
             .add(QuitPlugin)
         //.add(ThreeDeePlugin)
     }

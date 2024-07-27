@@ -1,6 +1,9 @@
 mod game;
 
-use bevy::{prelude::*, window::WindowMode};
+use bevy::{
+    prelude::*,
+    window::{Cursor, CursorGrabMode, WindowMode},
+};
 use consts::*;
 use game::*;
 
@@ -14,6 +17,11 @@ fn main() -> AppExit {
                     position: WindowPosition::At(IVec2::ZERO),
                     resolution: (SCREEN_WIDTH, SCREEN_HEIGHT).into(),
                     mode: WindowMode::Windowed,
+                    cursor: Cursor {
+                        grab_mode: CursorGrabMode::Confined,
+                        visible: false,
+                        ..default()
+                    },
                     ..default()
                 }),
                 ..default()

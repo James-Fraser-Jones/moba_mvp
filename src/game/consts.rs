@@ -2,8 +2,11 @@ use bevy::prelude::*;
 use std::f32::consts::PI;
 
 //camera
-pub const CAMERA_SPEED: f32 = 926.;
-pub const ZOOM_SPEED: f32 = 0.1;
+pub const CAMERA_SPEED: f32 = 800.;
+pub const CAMERA_TURN_SPEED: f32 = PI / 20.;
+pub const PERSPECTIVE_ZOOM_SPEED: f32 = 0.01;
+pub const ORTHOGRAPHIC_ZOOM_SPEED: f32 = 0.1;
+pub const FOV: f32 = PI / 4.;
 
 //unit
 pub const UNIT_SPEED: f32 = 185.;
