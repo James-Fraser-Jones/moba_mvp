@@ -1,21 +1,40 @@
 use crate::game::graphics::MeshBundle;
 use crate::game::{consts::*, utils::*};
 use bevy::{ecs::system::EntityCommands, prelude::*};
+use std::collections::{HashMap, HashSet};
 use std::f32::consts::PI;
 
 //================================================================================
 // Generic Components ============================================================
 //================================================================================
 
-//movetype
+//attack override
 #[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
-pub enum MoveType {
+pub enum AttackOverride {
     #[default]
-    Stationary,
-    #[allow(dead_code)]
-    Move(Vec2),
-    AttackMove(Vec2),
-    Attack(Entity),
+    Attack, //Unit will be distracted from current action to attack enemies within attack range
+    Ignore, //Unit will not be distracted from current action
+}
+
+//attack behaviour
+#[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
+pub enum AttackBehaviour {
+    #[default]
+    Pursue, //Unit pursues target to within attack range
+    Attack, //Unit attacks on cooldown
+}
+
+//movetype
+#[derive(Component, PartialEq, Copy, Clone, Debug)]
+pub enum Action {
+    Stop(AttackOverride),            //Unit remains stationary
+    Move(Vec2, AttackOverride),      //Unit moves to the location
+    Attack(Entity, AttackBehaviour), //Unit moves within attack range of enemy
+}
+impl Default for Action {
+    fn default() -> Self {
+        Self::Stop(AttackOverride::Attack)
+    }
 }
 
 //discipline
@@ -23,7 +42,6 @@ pub enum MoveType {
 pub enum Discipline {
     #[default]
     Melee,
-    #[allow(dead_code)]
     Ranged,
 }
 
@@ -76,6 +94,54 @@ impl WaveManager {
             ..default()
         }
     }
+}
+
+#[derive(Resource, Default)]
+pub struct SpatialIndex(HashMap<(i32, i32), HashSet<Entity>>);
+impl SpatialIndex {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn get_nearby(&self, pos: Vec2) -> Vec<Entity> {
+        let tile = get_tile(pos);
+        let mut nearby = Vec::new();
+        for x in -1..=1 {
+            for y in -1..=1 {
+                if let Some(units) = self.0.get(&(tile.0 + x, tile.1 + y)) {
+                    nearby.extend(units.iter());
+                }
+            }
+        }
+        nearby
+    }
+    pub fn add_unit(&mut self, entity: Entity, pos: Vec2) {
+        let tile = get_tile(pos);
+        if let Some(set) = self.0.get_mut(&tile) {
+            set.insert(entity);
+        } else {
+            self.0.insert(tile, HashSet::from([entity]));
+        }
+    }
+    pub fn remove_unit(&mut self, entity: Entity, pos: Vec2) {
+        let tile = get_tile(pos);
+        self.0.get_mut(&tile).unwrap().remove(&entity);
+    }
+    pub fn move_unit(&mut self, entity: Entity, old_pos: Vec2, new_pos: Vec2) {
+        let old_tile = get_tile(old_pos);
+        let new_tile = get_tile(new_pos);
+        if old_tile != new_tile {
+            self.0.get_mut(&old_tile).unwrap().remove(&entity);
+            if let Some(set) = self.0.get_mut(&new_tile) {
+                set.insert(entity);
+            } else {
+                self.0.insert(new_tile, HashSet::from([entity]));
+            }
+        }
+    }
+}
+fn get_tile(pos: Vec2) -> (i32, i32) {
+    let rounded = (pos / SPACIAL_INDEX_CELL_SIZE).round();
+    (rounded.x as i32, rounded.y as i32)
 }
 
 //================================================================================
@@ -215,21 +281,24 @@ pub struct Unit;
 #[derive(Bundle, Default)]
 pub struct UnitBundle {
     pub spatial: SpatialBundle,
+    //unit type
     pub team: Team,
     pub discipline: Discipline,
-    pub lane: Lane,
-    pub move_type: MoveType,
+    //AI data
+    pub action: Action,
     pub mid_crossed: MidCrossed,
+    pub attack_timer: FixedTimer,
+    //previous-frame data
     pub old_pos: OldPos,
-    pub unit: Unit, //tag for query filtering
+    //tag for query filtering
+    pub unit: Unit,
 }
 impl UnitBundle {
-    pub fn new(vec2: Vec2, team: Team, discipline: Discipline, lane: Lane) -> Self {
+    pub fn new(vec2: Vec2, team: Team, discipline: Discipline) -> Self {
         Self {
             spatial: SpatialBundle::from_transform(vec4_to_trans(vec2.extend(0.).extend(0.))),
             team,
             discipline,
-            lane,
             ..default()
         }
     }

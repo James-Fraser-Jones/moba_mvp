@@ -11,7 +11,6 @@ pub const FOV: f32 = PI / 4.;
 //unit
 pub const UNIT_SPEED: f32 = 185.;
 pub const UNIT_RADIUS: f32 = 18.5; //if set to factor of GCD of SCREEN_WIDTH and SCREEN_HEIGHT, can have a grid with square cells that fits the screen perfectly (currently: 120)
-pub const UNIT_LOCATION_RADIUS: f32 = 37.;
 pub const UNIT_SIGHT_RADIUS: f32 = 55.6;
 #[allow(dead_code)]
 pub const UNIT_ATTACK_RADIUS: f32 = 37.;
@@ -65,3 +64,6 @@ pub const WAVE_NUM_UNITS: i32 = 6;
 //spawners
 pub const SPAWNER_RADIUS: f32 = 27.8;
 pub const SPAWNER_DELAY: f32 = 1.;
+
+//spacial index
+pub const SPACIAL_INDEX_CELL_SIZE: f32 = 2.1 * UNIT_RADIUS; //slightly larger than unit diameter
