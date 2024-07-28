@@ -5,7 +5,7 @@ use std::f32::consts::PI;
 pub const CAMERA_SPEED: f32 = 800.;
 pub const CAMERA_TURN_SPEED: f32 = PI / 20.;
 pub const PERSPECTIVE_ZOOM_SPEED: f32 = 0.01;
-pub const ORTHOGRAPHIC_ZOOM_SPEED: f32 = 0.1;
+pub const ORTHOGRAPHIC_ZOOM_SPEED: f32 = 0.3;
 pub const FOV: f32 = PI / 4.;
 
 //unit
@@ -26,10 +26,10 @@ pub const UNIT_TRIANGLE_ANGLE: f32 = PI / 8.;
 
 //window
 pub const APP_NAME: &str = "Moba MVP";
-pub const SCREEN_WIDTH: f32 = 1080.;
+pub const SCREEN_WIDTH: f32 = 1920.;
 pub const SCREEN_HEIGHT: f32 = 1080.;
 
-//colors
+//materials
 pub const SATURATION: f32 = 0.75;
 pub const BRIGHTNESS: f32 = 0.5;
 pub const RED_HUE: f32 = 0.;
@@ -38,6 +38,7 @@ pub const BLUE_HUE: f32 = 240.;
 pub const TEAL_HUE: f32 = 190.;
 pub const YELLOW_HUE: f32 = 60.;
 pub const PURPLE_HUE: f32 = 275.;
+pub const UNLIT: bool = true;
 
 //map
 pub const LANE_WIDTH: f32 = 240.;

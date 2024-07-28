@@ -7,7 +7,7 @@ pub struct GraphicsPlugin;
 
 impl Plugin for GraphicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (add_lights, init_assets));
+        app.add_systems(Startup, (init_assets));
         app.add_systems(Update, (handle_mesh_requests, handle_material_requests));
     }
 }
@@ -118,43 +118,84 @@ fn init_assets(
     commands.insert_resource(Materials(HashMap::from([
         (
             "red",
-            materials.add(Color::hsl(RED_HUE, SATURATION, BRIGHTNESS)),
+            materials.add(StandardMaterial {
+                base_color: Color::hsl(RED_HUE, SATURATION, BRIGHTNESS),
+                unlit: UNLIT,
+                ..default()
+            }),
         ),
         (
             "dark_red",
-            materials.add(Color::hsl(RED_HUE, SATURATION, BRIGHTNESS / 2.)),
+            materials.add(StandardMaterial {
+                base_color: Color::hsl(RED_HUE, SATURATION, BRIGHTNESS / 2.),
+                unlit: UNLIT,
+                ..default()
+            }),
         ),
         (
             "green",
-            materials.add(Color::hsl(GREEN_HUE, SATURATION, BRIGHTNESS)),
+            materials.add(StandardMaterial {
+                base_color: Color::hsl(GREEN_HUE, SATURATION, BRIGHTNESS),
+                unlit: UNLIT,
+                ..default()
+            }),
         ),
         (
             "green_trans",
-            materials.add(Color::hsla(GREEN_HUE, SATURATION, BRIGHTNESS, 0.3)),
+            materials.add(StandardMaterial {
+                base_color: Color::hsla(GREEN_HUE, SATURATION, BRIGHTNESS, 0.3),
+                unlit: UNLIT,
+                alpha_mode: AlphaMode::Blend,
+                ..default()
+            }),
         ),
         (
             "dark_green",
-            materials.add(Color::hsl(GREEN_HUE, SATURATION, BRIGHTNESS / 2.)),
+            materials.add(StandardMaterial {
+                base_color: Color::hsl(GREEN_HUE, SATURATION, BRIGHTNESS / 2.),
+                unlit: UNLIT,
+                ..default()
+            }),
         ),
         (
             "blue",
-            materials.add(Color::hsl(BLUE_HUE, SATURATION, BRIGHTNESS)),
+            materials.add(StandardMaterial {
+                base_color: Color::hsl(BLUE_HUE, SATURATION, BRIGHTNESS),
+                unlit: UNLIT,
+                ..default()
+            }),
         ),
         (
             "dark_blue",
-            materials.add(Color::hsl(BLUE_HUE, SATURATION, BRIGHTNESS / 2.)),
+            materials.add(StandardMaterial {
+                base_color: Color::hsl(BLUE_HUE, SATURATION, BRIGHTNESS / 2.),
+                unlit: UNLIT,
+                ..default()
+            }),
         ),
         (
             "yellow",
-            materials.add(Color::hsl(YELLOW_HUE, SATURATION, BRIGHTNESS)),
+            materials.add(StandardMaterial {
+                base_color: Color::hsl(YELLOW_HUE, SATURATION, BRIGHTNESS),
+                unlit: UNLIT,
+                ..default()
+            }),
         ),
         (
             "teal",
-            materials.add(Color::hsl(TEAL_HUE, SATURATION, BRIGHTNESS)),
+            materials.add(StandardMaterial {
+                base_color: Color::hsl(TEAL_HUE, SATURATION, BRIGHTNESS),
+                unlit: UNLIT,
+                ..default()
+            }),
         ),
         (
             "purple",
-            materials.add(Color::hsl(PURPLE_HUE, SATURATION, BRIGHTNESS)),
+            materials.add(StandardMaterial {
+                base_color: Color::hsl(PURPLE_HUE, SATURATION, BRIGHTNESS),
+                unlit: UNLIT,
+                ..default()
+            }),
         ),
     ])));
 }

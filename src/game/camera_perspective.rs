@@ -18,6 +18,11 @@ impl Plugin for CameraPerspectivePlugin {
 #[derive(Component, Default)]
 struct MainCamera;
 
+fn inital_transform() -> Transform {
+    let initial = Transform::from_xyz(0., 0., 1000. / (FOV / 2.).tan());
+    initial.looking_at(Vec3::ZERO, Vec3::Y)
+}
+
 fn init_camera(mut commands: Commands) {
     commands.spawn((
         Camera3dBundle {
@@ -27,11 +32,10 @@ fn init_camera(mut commands: Commands) {
             },
             projection: Projection::from(PerspectiveProjection {
                 fov: FOV,
-                far: 2000.,
+                far: 1000. / (FOV / 2.).tan() + 10.,
                 ..default()
             }),
-            transform: Transform::from_xyz(0., 0., 1000. / (FOV / 2.).tan())
-                .looking_at(Vec3::ZERO, Vec3::Y),
+            transform: inital_transform(),
             ..default()
         },
         MainCamera,
@@ -47,7 +51,7 @@ fn update_camera_fly(
 ) {
     let (mut transform, mut projection) = query.single_mut();
 
-    //reset position
+    //reset position and zoom
     if keyboard.pressed(KeyCode::KeyR) {
         match projection.deref_mut() {
             Projection::Perspective(ref mut projection) => {
@@ -55,8 +59,7 @@ fn update_camera_fly(
             }
             Projection::Orthographic(_) => {}
         };
-        *transform =
-            Transform::from_xyz(0., 0., 1000. / (FOV / 2.).tan()).looking_at(Vec3::ZERO, Vec3::Y);
+        *transform = inital_transform();
     }
 
     //rotate
@@ -67,6 +70,7 @@ fn update_camera_fly(
     rot *= CAMERA_TURN_SPEED * time.delta_seconds();
     transform.rotate_z(rot.x);
     transform.rotate_local_x(rot.y);
+
     //clamp x rotation
     let mut angles = transform.rotation.to_euler(EulerRot::ZYX);
     angles.2 -= 0.01;
@@ -108,6 +112,8 @@ fn update_camera_fly(
         .extend(0.);
     transform.translation += direction_xy;
     transform.translation.z += direction.z;
+
+    //zoom
     for scroll_event in mouse.read() {
         if scroll_event.unit == MouseScrollUnit::Line {
             match projection.deref_mut() {

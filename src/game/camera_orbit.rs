@@ -1,18 +1,18 @@
-use std::ops::DerefMut;
-
 use crate::game::consts::*;
 use bevy::{
-    input::mouse::{MouseScrollUnit, MouseWheel},
+    input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
+    math::VectorSpace,
     prelude::*,
-    render::camera::{OrthographicProjection, ScalingMode},
 };
+use std::f32::consts::PI;
+use std::ops::DerefMut;
 
-pub struct CameraOrthographicPlugin;
+pub struct CameraOrbitPlugin;
 
-impl Plugin for CameraOrthographicPlugin {
+impl Plugin for CameraOrbitPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init_camera);
-        app.add_systems(Update, update_camera_pan);
+        app.add_systems(Update, update_camera_fly);
     }
 }
 
@@ -20,7 +20,8 @@ impl Plugin for CameraOrthographicPlugin {
 struct MainCamera;
 
 fn inital_transform() -> Transform {
-    let initial = Transform::from_xyz(0., 0., 1000. / (FOV / 2.).tan());
+    let mut initial = Transform::from_xyz(0., 0., 1000. / (FOV / 2.).tan());
+    initial.rotate_around(Vec3::ZERO, Quat::from_rotation_x(PI / 8.));
     initial.looking_at(Vec3::ZERO, Vec3::Y)
 }
 
@@ -31,8 +32,8 @@ fn init_camera(mut commands: Commands) {
                 clear_color: ClearColorConfig::Custom(Color::BLACK),
                 ..default()
             },
-            projection: Projection::from(OrthographicProjection {
-                scaling_mode: ScalingMode::FixedVertical(2000.),
+            projection: Projection::from(PerspectiveProjection {
+                fov: FOV,
                 far: 1000. / (FOV / 2.).tan() + 10.,
                 ..default()
             }),
@@ -43,24 +44,33 @@ fn init_camera(mut commands: Commands) {
     ));
 }
 
-fn update_camera_pan(
+fn update_camera_fly(
     mut query: Query<(&mut Transform, &mut Projection), With<MainCamera>>,
     mut mouse: EventReader<MouseWheel>,
     keyboard: Res<ButtonInput<KeyCode>>,
+    mut evr_motion: EventReader<MouseMotion>,
     time: Res<Time>,
 ) {
-    let (mut transform, mut projection) = query.single_mut(); //okay when entity known to exist and be unique
+    let (mut transform, mut projection) = query.single_mut();
 
-    //reset position and zoom
+    //reset position
     if keyboard.pressed(KeyCode::KeyR) {
         match projection.deref_mut() {
-            Projection::Orthographic(ref mut projection) => {
-                projection.scale = 1.;
+            Projection::Perspective(ref mut projection) => {
+                projection.fov = FOV;
             }
-            Projection::Perspective(_) => {}
-        }
+            Projection::Orthographic(_) => {}
+        };
         *transform = inital_transform();
     }
+
+    //orbit
+    let mut rot: Vec2 = Vec2::ZERO;
+    for ev in evr_motion.read() {
+        rot -= ev.delta;
+    }
+    rot *= CAMERA_TURN_SPEED * time.delta_seconds();
+    //TODO finish later
 
     //pan
     let mut direction: Vec2 = Vec2::ZERO;
@@ -84,10 +94,10 @@ fn update_camera_pan(
     for scroll_event in mouse.read() {
         if scroll_event.unit == MouseScrollUnit::Line {
             match projection.deref_mut() {
-                Projection::Orthographic(ref mut projection) => {
-                    projection.scale -= scroll_event.y * ORTHOGRAPHIC_ZOOM_SPEED
+                Projection::Perspective(ref mut projection) => {
+                    projection.fov -= scroll_event.y * PERSPECTIVE_ZOOM_SPEED
                 }
-                Projection::Perspective(_) => {}
+                Projection::Orthographic(_) => {}
             }
         }
         //pinch zoom unsupported because mobas use mice
