@@ -74,6 +74,7 @@ pub enum Team {
 #[derive(Component, Default)]
 pub struct FixedTimer(pub Timer);
 
+//TODO: remove this and simply merge it directly into spatial index
 #[derive(Component, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct PositionIndex(pub IVec2);
 impl PositionIndex {
@@ -85,6 +86,7 @@ impl PositionIndex {
 //=======================================
 // Space-logical newtypes
 
+//TODO: remove these and replace with some helper methods for accessing/modifying/updating the associated parts of transforms directly
 #[derive(Component, Default, Copy, Clone, PartialEq, Debug)]
 pub struct Position(pub Vec2);
 impl Position {
@@ -104,7 +106,7 @@ impl Orientation {
         Orientation(trans.rotation.to_euler(EulerRot::XYZ).2)
     }
     pub fn set_transform(&self, trans: &mut Transform) {
-        trans.rotation = Quat::from_euler(EulerRot::XYZ, 0., 0., self.0)
+        trans.rotation = Quat::from_rotation_z(self.0)
     }
 }
 
@@ -156,12 +158,12 @@ impl SpatialIndex {
     pub fn new() -> Self {
         Self::default()
     }
-    pub fn get_nearby_units(&self, pos: PositionIndex, radius: Radius) -> Vec<Entity> {
+    pub fn get_nearby_units(&self, position: PositionIndex, radius: Radius) -> Vec<Entity> {
         let radius_index = (radius.0 / (2. * CELL_HALF_SIZE)).ceil() as i32;
         let mut nearby = Vec::new();
         for x in -radius_index..=radius_index {
             for y in -radius_index..=radius_index {
-                if let Some(units) = self.0.get(&(PositionIndex(pos.0 + IVec2::new(x, y)))) {
+                if let Some(units) = self.0.get(&(PositionIndex(position.0 + IVec2::new(x, y)))) {
                     nearby.extend(units.iter());
                 }
             }
@@ -199,7 +201,7 @@ impl SpatialIndex {
 pub struct Root;
 #[derive(Bundle, Default)]
 pub struct RootBundle {
-    //basic
+    //rendering
     pub spatial: SpatialBundle,
     //tag
     pub root: Root,
@@ -218,7 +220,7 @@ impl RootBundle {
 pub struct Map;
 #[derive(Bundle, Default)]
 pub struct MapBundle {
-    //basic
+    //rendering
     pub spatial: SpatialBundle,
     //tag
     pub map: Map,
@@ -294,7 +296,7 @@ impl MapBundle {
 pub struct Spawner;
 #[derive(Bundle, Default)]
 pub struct SpawnerBundle {
-    //basic
+    //rendering
     pub spatial: SpatialBundle,
     //type
     pub team: Team,
@@ -333,7 +335,7 @@ impl SpawnerBundle {
 pub struct Unit;
 #[derive(Bundle, Default)]
 pub struct UnitBundle {
-    //basic
+    //rendering
     pub spatial: SpatialBundle,
     //type
     pub team: Team,
@@ -343,7 +345,7 @@ pub struct UnitBundle {
     pub mid_crossed: MidCrossed,
     pub attack_timer: FixedTimer,
     //space
-    pub position: Position,
+    pub old_position: Position,
     //tag
     pub unit: Unit,
 }
@@ -356,7 +358,7 @@ impl UnitBundle {
             team,
             discipline,
             action,
-            position,
+            old_position: position,
             ..default()
         }
     }
@@ -369,16 +371,16 @@ impl UnitBundle {
             Team::Red => "red",
             Team::Blue => "blue",
         };
-        let position = self.position;
+        let position = self.old_position;
         let unit = root
             .commands()
             .spawn(self)
             .with_children(|builder| {
-                builder.spawn(MeshBundle::new(
-                    "unit",
-                    "green_trans",
-                    vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
-                ));
+                // builder.spawn(MeshBundle::new(
+                //     "unit",
+                //     "green_trans",
+                //     vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
+                // ));
                 builder.spawn(MeshBundle::new(
                     "direction",
                     team,

@@ -12,9 +12,9 @@ impl Plugin for LogicPlugin {
             (
                 update_timers,
                 spawn_units,
-                // units_decide_action,
-                // units_execute_action,
-                // update_positions,
+                units_decide_action,
+                units_execute_action,
+                update_positions,
             )
                 .chain(),
         );
@@ -100,15 +100,19 @@ fn spawn_units(
 }
 
 fn check_for_attack_target(
+    me: Entity,
     team: Team,
     position: Position,
-    target_query: &Query<(&Team, &Position)>,
+    target_query: &Query<(&Team, &Position), With<Unit>>,
     spatial_index: &Res<SpatialIndex>,
 ) -> Option<Entity> {
     let sight_radius = Radius(UNIT_SIGHT_RADIUS + MAX_UNIT_RADIUS);
     for target in
         spatial_index.get_nearby_units(PositionIndex::from_position(position), sight_radius)
     {
+        if target == me {
+            continue;
+        }
         let (target_team, target_position) = target_query.get(target).unwrap();
         if team != *target_team {
             if position.0.distance(target_position.0) <= sight_radius.0 {
@@ -121,14 +125,14 @@ fn check_for_attack_target(
 
 fn set_attack_behaviour(
     mut action: Mut<Action>,
-    pos_query: &Query<(&Team, &Position)>,
+    position_query: &Query<(&Team, &Position), With<Unit>>,
     target: Entity,
     position: Position,
 ) {
     //TODO: more complex logic accounting for the fact that timers (sometimes) need to be reset and set to different durations
     //depending on the flip from Attack->Pursue and vice versa
     let attack_radius = Radius(UNIT_ATTACK_RADIUS + MAX_UNIT_RADIUS);
-    let (_, target_position) = pos_query.get(target).unwrap();
+    let (_, target_position) = position_query.get(target).unwrap();
     *action = Action::Attack(
         target,
         if position.0.distance(target_position.0) <= attack_radius.0 {
@@ -140,27 +144,35 @@ fn set_attack_behaviour(
 }
 
 fn units_decide_action(
-    mut query: Query<(&Transform, &mut Action, &Team, &mut MidCrossed)>,
-    position_query: Query<(&Team, &Position)>,
+    mut query: Query<(Entity, &Transform, &mut Action, &Team, &mut MidCrossed)>,
+    position_query: Query<(&Team, &Position), With<Unit>>,
     spatial_index: Res<SpatialIndex>,
 ) {
-    for (transform, mut action, team, mut mid_crossed) in &mut query {
+    for (me, transform, mut action, team, mut mid_crossed) in &mut query {
         let position = Position(transform.translation.truncate());
         match *action {
             Action::Stop(attack) => {
                 if attack == AttackOverride::Attack {
-                    if let Some(target) =
-                        check_for_attack_target(*team, position, &position_query, &spatial_index)
-                    {
+                    if let Some(target) = check_for_attack_target(
+                        me,
+                        *team,
+                        position,
+                        &position_query,
+                        &spatial_index,
+                    ) {
                         set_attack_behaviour(action, &position_query, target, position);
                     }
                 }
             }
             Action::Move(destination, attack) => {
                 if attack == AttackOverride::Attack {
-                    if let Some(target) =
-                        check_for_attack_target(*team, position, &position_query, &spatial_index)
-                    {
+                    if let Some(target) = check_for_attack_target(
+                        me,
+                        *team,
+                        position,
+                        &position_query,
+                        &spatial_index,
+                    ) {
                         set_attack_behaviour(action, &position_query, target, position);
                     }
                 } else {
@@ -187,37 +199,75 @@ fn units_decide_action(
 }
 
 fn move_unit(
+    me: Entity,
     position: Position,
     destination: Position,
     time: &Res<Time>,
     mut transform: Mut<Transform>,
+    spatial_index: &Res<SpatialIndex>,
+    position_query: &Query<&Position, With<Unit>>,
 ) {
-    let wriggle = Vec2::new(
-        thread_rng().gen_range(-1.0..=1.0),
-        thread_rng().gen_range(-1.0..=1.0),
-    ) * UNIT_WRIGGLE;
-    let direction = (destination.0 - position.0 + wriggle).normalize(); //TODO: this could cause units to oscillate back and forth
-    transform.translation += direction.extend(0.) * UNIT_SPEED * time.delta_seconds();
-    transform.rotation = Quat::from_rotation_z(direction.to_angle());
-    //TODO: collision avoidance logic
+    // let wriggle = Vec2::new(
+    //     thread_rng().gen_range(-1.0..=1.0),
+    //     thread_rng().gen_range(-1.0..=1.0),
+    // ) * UNIT_WRIGGLE;
+
+    //calculate new movement
+    let move_vec = (destination.0 - position.0).clamp_length_max(UNIT_SPEED * time.delta_seconds());
+    let new_position = Position(position.0 + move_vec);
+    let new_orientation = Orientation(move_vec.to_angle());
+    //check for collisions
+    let collision_radius = Radius(UNIT_RADIUS + MAX_UNIT_RADIUS);
+    for collider in
+        spatial_index.get_nearby_units(PositionIndex::from_position(position), collision_radius)
+    {
+        if collider == me {
+            continue;
+        }
+        let collider_position = position_query.get(collider).unwrap();
+        if new_position.0.distance(collider_position.0) <= collision_radius.0 {
+            return; //do not apply the movement as a collision has occoured
+                    //TODO: apply half the movement and request the other half to be done by the other entity, have a seperate system for this
+        }
+    }
+    //apply the movement
+    new_position.set_transform(&mut transform);
+    new_orientation.set_transform(&mut transform);
 }
 
 fn units_execute_action(
-    mut query: Query<(&mut Transform, &mut Action, &Lane, &Team, &mut MidCrossed)>,
-    position_query: Query<&Position>,
+    mut query: Query<(Entity, &mut Transform, &mut Action), With<Unit>>,
+    position_query: Query<&Position, With<Unit>>,
     time: Res<Time>,
+    spatial_index: Res<SpatialIndex>,
 ) {
-    for (mut transform, mut action, lane, team, mut mid_crossed) in &mut query {
-        let position = Position(transform.translation.truncate());
+    for (me, mut transform, mut action) in &mut query {
+        let position = Position::from_transform(&transform);
         match *action {
             Action::Stop(attack) => {}
             Action::Move(destination, attack) => {
-                move_unit(position, destination, &time, transform);
+                move_unit(
+                    me,
+                    position,
+                    destination,
+                    &time,
+                    transform,
+                    &spatial_index,
+                    &position_query,
+                );
             }
             Action::Attack(target, behaviour) => match behaviour {
                 AttackBehaviour::Pursue => {
                     let destination = position_query.get(target).unwrap();
-                    move_unit(position, *destination, &time, transform);
+                    move_unit(
+                        me,
+                        position,
+                        *destination,
+                        &time,
+                        transform,
+                        &spatial_index,
+                        &position_query,
+                    );
                 }
                 AttackBehaviour::Attack => {
                     //TODO: attack logic
@@ -227,8 +277,19 @@ fn units_execute_action(
     }
 }
 
-fn update_positions(mut query: Query<(&Transform, &mut Position), With<Unit>>) {
-    for (transform, mut pos) in &mut query {
-        *pos = Position(trans_to_vec4(transform).truncate().truncate());
+fn update_positions(
+    mut query: Query<(Entity, &Transform, &mut Position), With<Unit>>,
+    mut spatial_index: ResMut<SpatialIndex>,
+) {
+    for (entity, transform, mut position) in &mut query {
+        let new_position = Position::from_transform(transform);
+        if new_position != *position {
+            spatial_index.move_unit(
+                entity,
+                PositionIndex::from_position(*position),
+                PositionIndex::from_position(new_position),
+            );
+            *position = new_position;
+        }
     }
 }
