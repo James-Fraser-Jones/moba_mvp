@@ -4,8 +4,7 @@ mod camera_perspective;
 pub mod consts;
 mod graphics;
 mod logic;
-mod quit;
-mod threedee;
+pub mod quit;
 mod types;
 mod utils;
 
@@ -16,7 +15,6 @@ use camera_perspective::*;
 use graphics::*;
 use logic::*;
 use quit::*;
-use threedee::*;
 
 pub struct GamePlugins;
 
@@ -27,6 +25,5 @@ impl PluginGroup for GamePlugins {
             .add(GraphicsPlugin)
             .add(CameraOrbitPlugin)
             .add(QuitPlugin)
-        //.add(ThreeDeePlugin)
     }
 }

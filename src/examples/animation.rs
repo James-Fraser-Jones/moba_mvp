@@ -1,25 +1,26 @@
 //! Plays animations from a skinned glTF.
 
-use std::f32::consts::PI;
-use std::time::Duration;
-
+use crate::game::quit::*;
 use bevy::{
     animation::{animate_targets, RepeatAnimation},
     pbr::CascadeShadowConfigBuilder,
     prelude::*,
 };
+use std::f32::consts::PI;
+use std::time::Duration;
 
-pub struct ThreeDeePlugin;
+pub struct ExampleAnimationPlugin;
 
-impl Plugin for ThreeDeePlugin {
+impl Plugin for ExampleAnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(AmbientLight {
-            color: Color::WHITE,
-            brightness: 2000.,
-        })
-        .add_systems(Startup, setup)
-        .add_systems(Update, setup_scene_once_loaded.before(animate_targets))
-        .add_systems(Update, keyboard_animation_control);
+        app.add_plugins(QuitPlugin)
+            .insert_resource(AmbientLight {
+                color: Color::WHITE,
+                brightness: 2000.,
+            })
+            .add_systems(Startup, setup)
+            .add_systems(Update, setup_scene_once_loaded.before(animate_targets))
+            .add_systems(Update, keyboard_animation_control);
     }
 }
 

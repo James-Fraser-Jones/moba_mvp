@@ -1,11 +1,10 @@
+mod examples;
 mod game;
-
 use bevy::{
     prelude::*,
     window::{Cursor, CursorGrabMode, MonitorSelection, WindowMode},
 };
-use consts::*;
-use game::*;
+use game::{consts::*, GamePlugins};
 
 fn main() -> AppExit {
     App::new()
@@ -24,7 +23,9 @@ fn main() -> AppExit {
                 }),
                 ..default()
             }),
-            GamePlugins,
+            //GamePlugins,
+            //examples::animation::ExampleAnimationPlugin,
+            examples::physics::ExamplePhysicsPlugin,
         ))
         .run()
 }
