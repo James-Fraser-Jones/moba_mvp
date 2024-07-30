@@ -1,6 +1,6 @@
 use crate::game::{consts::*, graphics::MeshBundle, utils::*};
-use bevy::{ecs::system::EntityCommands, prelude::*};
-use std::collections::{HashMap, HashSet};
+use avian2d::{math::*, prelude::*};
+use bevy::prelude::*;
 use std::f32::consts::PI;
 
 //================================================================================
@@ -30,7 +30,7 @@ pub enum AttackBehaviour {
 #[derive(Component, PartialEq, Copy, Clone, Debug)]
 pub enum Action {
     Stop(AttackOverride),            //Unit remains stationary
-    Move(Position, AttackOverride),  //Unit moves to the location
+    Move(Pos, AttackOverride),       //Unit moves to the location
     Attack(Entity, AttackBehaviour), //Unit moves within attack range of enemy
 }
 impl Default for Action {
@@ -74,51 +74,18 @@ pub enum Team {
 #[derive(Component, Default)]
 pub struct FixedTimer(pub Timer);
 
-//TODO: remove this and simply merge it directly into spatial index
-#[derive(Component, Default, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct PositionIndex(pub IVec2);
-impl PositionIndex {
-    pub fn from_position(Position(position): Position) -> Self {
-        PositionIndex((position / CELL_HALF_SIZE).as_ivec2())
-    }
-}
-
 //=======================================
 // Space-logical newtypes
 
-//TODO: remove these and replace with some helper methods for accessing/modifying/updating the associated parts of transforms directly
 #[derive(Component, Default, Copy, Clone, PartialEq, Debug)]
-pub struct Position(pub Vec2);
-impl Position {
+pub struct Pos(pub Vec2);
+impl Pos {
     pub fn from_transform(trans: &Transform) -> Self {
-        Position(trans.translation.truncate())
+        Pos(trans.translation.truncate())
     }
     pub fn set_transform(&self, trans: &mut Transform) {
         trans.translation.x = self.0.x;
         trans.translation.y = self.0.y;
-    }
-}
-
-#[derive(Component, Default, Copy, Clone, PartialEq)]
-pub struct Orientation(pub f32);
-impl Orientation {
-    pub fn from_transform(trans: &Transform) -> Self {
-        Orientation(trans.rotation.to_euler(EulerRot::XYZ).2)
-    }
-    pub fn set_transform(&self, trans: &mut Transform) {
-        trans.rotation = Quat::from_rotation_z(self.0)
-    }
-}
-
-#[derive(Component, Default, Copy, Clone, PartialEq)]
-pub struct Radius(pub f32);
-impl Radius {
-    pub fn from_transform(trans: &Transform) -> Self {
-        Radius((trans.scale.x + trans.scale.y) / 2.)
-    }
-    pub fn set_transform(&self, trans: &mut Transform) {
-        trans.scale.x = self.0;
-        trans.scale.y = self.0;
     }
 }
 
@@ -152,68 +119,9 @@ impl WaveManager {
     }
 }
 
-#[derive(Resource, Default)]
-pub struct SpatialIndex(HashMap<PositionIndex, HashSet<Entity>>);
-impl SpatialIndex {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    pub fn get_nearby_units(&self, position: PositionIndex, radius: Radius) -> Vec<Entity> {
-        let radius_index = (radius.0 / (2. * CELL_HALF_SIZE)).ceil() as i32;
-        let mut nearby = Vec::new();
-        for x in -radius_index..=radius_index {
-            for y in -radius_index..=radius_index {
-                if let Some(units) = self.0.get(&(PositionIndex(position.0 + IVec2::new(x, y)))) {
-                    nearby.extend(units.iter());
-                }
-            }
-        }
-        nearby
-    }
-    pub fn add_unit(&mut self, entity: Entity, pos: PositionIndex) {
-        if let Some(set) = self.0.get_mut(&pos) {
-            set.insert(entity);
-        } else {
-            self.0.insert(pos, HashSet::from([entity]));
-        }
-    }
-    pub fn remove_unit(&mut self, entity: Entity, pos: PositionIndex) {
-        self.0.get_mut(&pos).unwrap().remove(&entity);
-    }
-    pub fn move_unit(&mut self, entity: Entity, old_pos: PositionIndex, new_pos: PositionIndex) {
-        if old_pos.0 != new_pos.0 {
-            self.0.get_mut(&old_pos).unwrap().remove(&entity);
-            if let Some(set) = self.0.get_mut(&new_pos) {
-                set.insert(entity);
-            } else {
-                self.0.insert(new_pos, HashSet::from([entity]));
-            }
-        }
-    }
-}
-
 //================================================================================
 // Bundles =======================================================================
 //================================================================================
-
-//root
-#[derive(Component, Default)]
-pub struct Root;
-#[derive(Bundle, Default)]
-pub struct RootBundle {
-    //rendering
-    pub spatial: SpatialBundle,
-    //tag
-    pub root: Root,
-}
-impl RootBundle {
-    pub fn new() -> Self {
-        Self { ..default() }
-    }
-    pub fn spawn(self, commands: &mut Commands) -> Entity {
-        commands.spawn(self).id()
-    }
-}
 
 //map
 #[derive(Component, Default)]
@@ -234,9 +142,8 @@ impl MapBundle {
             ..default()
         }
     }
-    pub fn spawn(self, root: &mut EntityCommands) -> Entity {
-        let map = root
-            .commands()
+    pub fn spawn(self, commands: &mut Commands) -> Entity {
+        commands
             .spawn(self)
             .with_children(|builder| {
                 builder.spawn(MeshBundle::new(
@@ -285,9 +192,7 @@ impl MapBundle {
                     vec4_to_trans(Vec4::new(1000., 1000., 6., 3. * PI / 4.)),
                 ));
             })
-            .id();
-        root.add_child(map);
-        map
+            .id()
     }
 }
 
@@ -305,17 +210,16 @@ pub struct SpawnerBundle {
     pub spawner: Spawner,
 }
 impl SpawnerBundle {
-    pub fn new(position: Position, team: Team, lane: Lane) -> Self {
+    pub fn new(pos: Pos, team: Team, lane: Lane) -> Self {
         Self {
-            spatial: SpatialBundle::from_transform(vec4_to_trans(position.0.extend(0.).extend(0.))),
+            spatial: SpatialBundle::from_transform(vec4_to_trans(pos.0.extend(0.).extend(0.))),
             team,
             lane,
             ..default()
         }
     }
-    pub fn spawn(self, root: &mut EntityCommands) -> Entity {
-        let spawner = root
-            .commands()
+    pub fn spawn(self, commands: &mut Commands) -> Entity {
+        commands
             .spawn(self)
             .with_children(|builder| {
                 builder.spawn(MeshBundle::new(
@@ -324,9 +228,7 @@ impl SpawnerBundle {
                     vec4_to_trans(Vec4::new(0., 0., SPAWNER_RADIUS, 0.)),
                 ));
             })
-            .id();
-        root.add_child(spawner);
-        spawner
+            .id()
     }
 }
 
@@ -344,43 +246,43 @@ pub struct UnitBundle {
     pub action: Action,
     pub mid_crossed: MidCrossed,
     pub attack_timer: FixedTimer,
-    //space
-    pub old_position: Position,
+    //physics
+    pub rigidbody: RigidBody,
+    pub collider: Collider,
+    pub locked_axes: LockedAxes,
+    pub friction: Friction,
     //tag
     pub unit: Unit,
 }
 impl UnitBundle {
-    pub fn new(position: Position, team: Team, discipline: Discipline, action: Action) -> Self {
+    pub fn new(pos: Pos, team: Team, discipline: Discipline, action: Action) -> Self {
         let mut trans = Transform::IDENTITY;
-        position.set_transform(&mut trans);
+        pos.set_transform(&mut trans);
         Self {
             spatial: SpatialBundle::from_transform(trans),
             team,
             discipline,
             action,
-            old_position: position,
+            rigidbody: RigidBody::Dynamic,
+            collider: Collider::circle(UNIT_RADIUS as Scalar),
+            locked_axes: LockedAxes::ROTATION_LOCKED,
+            friction: Friction::ZERO,
             ..default()
         }
     }
-    pub fn spawn(
-        self,
-        root: &mut EntityCommands,
-        spatial_index: &mut ResMut<SpatialIndex>,
-    ) -> Entity {
+    pub fn spawn(self, commands: &mut Commands) -> Entity {
         let team = match self.team {
             Team::Red => "red",
             Team::Blue => "blue",
         };
-        let position = self.old_position;
-        let unit = root
-            .commands()
+        commands
             .spawn(self)
             .with_children(|builder| {
-                // builder.spawn(MeshBundle::new(
-                //     "unit",
-                //     "green_trans",
-                //     vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
-                // ));
+                builder.spawn(MeshBundle::new(
+                    "unit",
+                    "green_trans",
+                    vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
+                ));
                 builder.spawn(MeshBundle::new(
                     "direction",
                     team,
@@ -392,9 +294,6 @@ impl UnitBundle {
                     )),
                 ));
             })
-            .id();
-        root.add_child(unit);
-        spatial_index.add_unit(unit, PositionIndex::from_position(position));
-        unit
+            .id()
     }
 }

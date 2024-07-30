@@ -23,9 +23,9 @@ fn main() -> AppExit {
                 }),
                 ..default()
             }),
-            //GamePlugins,
+            GamePlugins,
             //examples::animation::ExampleAnimationPlugin,
-            examples::physics::ExamplePhysicsPlugin,
+            //examples::physics::ExamplePhysicsPlugin,
         ))
         .run()
 }
