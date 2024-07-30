@@ -59,8 +59,8 @@ pub enum Discipline {
     Ranged,
 }
 
-//team
-#[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
+//team (physicslayer allows team to be set as a collision layer)
+#[derive(Component, PartialEq, Default, Copy, Clone, Debug, PhysicsLayer)]
 pub enum Team {
     #[default]
     Red,
@@ -221,13 +221,13 @@ impl SpawnerBundle {
     pub fn spawn(self, commands: &mut Commands) -> Entity {
         commands
             .spawn(self)
-            .with_children(|builder| {
-                builder.spawn(MeshBundle::new(
-                    "spawner",
-                    "purple",
-                    vec4_to_trans(Vec4::new(0., 0., SPAWNER_RADIUS, 0.)),
-                ));
-            })
+            // .with_children(|builder| {
+            //     builder.spawn(MeshBundle::new(
+            //         "spawner",
+            //         "purple",
+            //         vec4_to_trans(Vec4::new(0., 0., SPAWNER_RADIUS, 0.)),
+            //     ));
+            // })
             .id()
     }
 }
@@ -249,6 +249,7 @@ pub struct UnitBundle {
     //physics
     pub rigidbody: RigidBody,
     pub collider: Collider,
+    pub collision_layers: CollisionLayers,
     pub locked_axes: LockedAxes,
     pub friction: Friction,
     //tag
@@ -265,27 +266,45 @@ impl UnitBundle {
             action,
             rigidbody: RigidBody::Dynamic,
             collider: Collider::circle(UNIT_RADIUS as Scalar),
+            collision_layers: CollisionLayers::new(team, LayerMask::ALL),
             locked_axes: LockedAxes::ROTATION_LOCKED,
             friction: Friction::ZERO,
             ..default()
         }
     }
     pub fn spawn(self, commands: &mut Commands) -> Entity {
-        let team = match self.team {
+        let team = self.team;
+        let opposite_team = match team {
+            Team::Red => Team::Blue,
+            Team::Blue => Team::Red,
+        };
+        let team_string = match team {
             Team::Red => "red",
             Team::Blue => "blue",
         };
         commands
             .spawn(self)
             .with_children(|builder| {
-                builder.spawn(MeshBundle::new(
-                    "unit",
-                    "green_trans",
-                    vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
+                builder.spawn((
+                    Collider::circle(UNIT_SIGHT_RADIUS),
+                    Sensor,
+                    CollisionLayers::new(SensorLayer::default(), opposite_team),
+                    SightCollider,
                 ));
+                builder.spawn((
+                    Collider::circle(UNIT_ATTACK_RADIUS),
+                    Sensor,
+                    CollisionLayers::new(SensorLayer::default(), opposite_team),
+                    AttackCollider,
+                ));
+                // builder.spawn(MeshBundle::new(
+                //     "unit",
+                //     "green_trans",
+                //     vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
+                // ));
                 builder.spawn(MeshBundle::new(
                     "direction",
-                    team,
+                    team_string,
                     vec4_to_trans(Vec4::new(
                         UNIT_RADIUS * (1. - UNIT_TRIANGLE_ANGLE.cos().powf(2.)),
                         0.,
@@ -296,4 +315,17 @@ impl UnitBundle {
             })
             .id()
     }
+}
+
+//collider tags so they can be discerned from each other in queries
+#[derive(Component, Default)]
+pub struct SightCollider;
+#[derive(Component, Default)]
+pub struct AttackCollider;
+
+//just to ensure sight and attack sensors are included in detection
+#[derive(Component, Default, PhysicsLayer)]
+pub enum SensorLayer {
+    #[default]
+    SensorLayer,
 }

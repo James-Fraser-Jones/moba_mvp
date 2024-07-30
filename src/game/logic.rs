@@ -91,46 +91,48 @@ fn spawn_units(
 
 fn units_decide_action(mut query: Query<(&mut Action, &Transform, &Team, &mut MidCrossed)>) {
     for (mut action, trans, team, mut mid_crossed) in &mut query {
-        match *action {
-            Action::Stop(_attack) => {} //(selective) vision radius collision check with enemies
-            Action::Move(dest, attack) => {
-                if Pos::from_transform(trans).0.distance(dest.0) < UNIT_RADIUS {
-                    if mid_crossed.0 {
-                        *action = Action::Stop(attack);
-                    } else {
-                        mid_crossed.0 = true;
-                        *action = Action::Move(
-                            Pos(match *team {
-                                Team::Red => BLUE,
-                                Team::Blue => RED,
-                            }),
-                            attack,
-                        )
-                    }
+        if let Action::Move(dest, attack) = *action {
+            if Pos::from_transform(trans).0.distance(dest.0) < UNIT_RADIUS {
+                if mid_crossed.0 {
+                    *action = Action::Stop(attack);
+                } else {
+                    *action = Action::Move(
+                        Pos(match *team {
+                            Team::Red => BLUE,
+                            Team::Blue => RED,
+                        }),
+                        attack,
+                    );
+                    mid_crossed.0 = true;
                 }
-            } //(selective) vision radius collision check with enemies, unit radius (collision?) check with midpoint of lane
+            }
+        }
+        match *action {
+            Action::Stop(attack) | Action::Move(_, attack) => {
+                if attack == AttackOverride::Attack {
+                    //TODO: collision check on sight radius
+                }
+            }
+            _ => (),
+        }
+        match *action {
             Action::Attack(_target, behaviour) => match behaviour {
-                AttackBehaviour::Pursue => {} //possibly go into attack mode
-                AttackBehaviour::Attack => {} //possible go into pursuit, canceling the attack timer
-            }, //attack range collision check with target
+                //TODO: collision check on attack radius
+                AttackBehaviour::Pursue => {}
+                AttackBehaviour::Attack => {} //aa timer can be cancelled here
+            },
+            _ => (),
         }
     }
 }
 
-//technically we want to borrow:
-//unit translation (immutably)
-//unit rotation (mutably)
-//target translation (immutably)
-//which shouldn't be an issue except we can't query for something smaller than a component
 fn units_execute_action(
     mut query: Query<(&Action, &Transform, &mut LinearVelocity), With<Unit>>,
     target_query: Query<&Transform, With<Unit>>,
 ) {
     for (action, trans, mut linear_velocity) in &mut query {
-        //do not move, by default
-        *linear_velocity = LinearVelocity(Vec2::ZERO);
+        *linear_velocity = LinearVelocity(Vec2::ZERO); //do not move, by default
         match *action {
-            Action::Stop(_) => {} //do nothing
             Action::Move(dest, _) => {
                 move_unit(dest, trans, &mut linear_velocity);
             }
@@ -139,8 +141,9 @@ fn units_execute_action(
                     let dest = Pos::from_transform(target_query.get(target).unwrap());
                     move_unit(dest, trans, &mut linear_velocity);
                 }
-                AttackBehaviour::Attack => {} //implement attack timer logic
+                AttackBehaviour::Attack => {} //TODO: implement attack timer logic
             },
+            _ => (),
         }
     }
 }
@@ -150,8 +153,12 @@ fn move_unit(dest: Pos, trans: &Transform, linear_velocity: &mut LinearVelocity)
     *linear_velocity = LinearVelocity(to.normalize_or_zero() * UNIT_SPEED);
 }
 
-fn update_orientations(mut query: Query<(&mut Transform, &LinearVelocity), With<Unit>>) {
-    for (mut trans, linear_velocity) in &mut query {
-        trans.rotation = Quat::from_rotation_z(linear_velocity.0.to_angle());
+fn update_orientations(mut query: Query<(&Action, &mut Transform, &LinearVelocity), With<Unit>>) {
+    for (action, mut trans, linear_velocity) in &mut query {
+        if let Action::Move(_, _) = *action {
+            trans.rotation = Quat::from_rotation_z(linear_velocity.0.to_angle());
+        } else if let Action::Attack(_, AttackBehaviour::Pursue) = *action {
+            trans.rotation = Quat::from_rotation_z(linear_velocity.0.to_angle());
+        }
     }
 }
