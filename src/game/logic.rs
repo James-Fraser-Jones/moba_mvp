@@ -14,6 +14,7 @@ impl Plugin for LogicPlugin {
                 spawn_units,
                 units_decide_action,
                 units_execute_action,
+                update_orientations,
             )
                 .chain()
                 .before(PhysicsSet::Prepare),
@@ -146,6 +147,11 @@ fn units_execute_action(
 
 fn move_unit(dest: Pos, trans: &Transform, linear_velocity: &mut LinearVelocity) {
     let to = dest.0 - Pos::from_transform(&trans).0;
-    *linear_velocity = LinearVelocity(to.normalize_or_zero() * UNIT_SPEED); //set velocity
-                                                                            //trans.rotation = Quat::from_rotation_z(to.to_angle()); //set orientation
+    *linear_velocity = LinearVelocity(to.normalize_or_zero() * UNIT_SPEED);
+}
+
+fn update_orientations(mut query: Query<(&mut Transform, &LinearVelocity), With<Unit>>) {
+    for (mut trans, linear_velocity) in &mut query {
+        trans.rotation = Quat::from_rotation_z(linear_velocity.0.to_angle());
+    }
 }
