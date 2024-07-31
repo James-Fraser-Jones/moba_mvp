@@ -1,8 +1,9 @@
-use crate::game::{consts::*, types::*};
-use avian2d::prelude::*;
-use bevy::prelude::*;
-pub struct LogicPlugin;
+mod types;
 
+use avian2d::prelude::*;
+use bevy::{math::VectorSpace, prelude::*};
+
+pub struct LogicPlugin;
 impl Plugin for LogicPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PhysicsPlugins::new(FixedUpdate));
@@ -14,11 +15,65 @@ impl Plugin for LogicPlugin {
                 spawn_units,
                 units_decide_action,
                 units_execute_action,
-                update_orientations,
+                //update_orientations,
+                print_started_collisions,
             )
                 .chain()
                 .before(PhysicsSet::Prepare),
         );
+    }
+}
+
+#[derive(Resource)]
+pub struct LogicMapSettings {
+    lane_width: f32,
+    wave_delay: f32,
+    wave_units: i32,
+    spawn_delay: f32,
+}
+impl Default for LogicMapSettings {
+    fn default() -> Self {
+        Self {
+            lane_width: 240.,
+            wave_delay: 20.,
+            wave_units: 6,
+            spawn_delay: 1.,
+        }
+    }
+}
+impl LogicMapSettings {
+    fn non_lane_radius(&self) -> f32 {
+        1000. - self.lane_width
+    }
+    fn mid_lane_radius(&self) -> f32 {
+        1000. - self.lane_width / 2.
+    }
+    fn location(&self, lane: Lane, team: Team) -> Vec2 {
+        Vec2::ZERO
+    }
+}
+
+#[derive(Resource)]
+pub struct LogicUnitSettings {
+    radius: f32,
+    speed: f32,
+    sight_radius: f32,
+    attack_radius: f32,
+    attack_speed: f32,
+    health: f32,
+    attack_damage: f32,
+}
+impl Default for LogicUnitSettings {
+    fn default() -> Self {
+        Self {
+            radius: 18.5,
+            speed: 185.,
+            sight_radius: 55.6,
+            attack_radius: 37.,
+            attack_speed: 1.,
+            health: 100.,
+            attack_damage: 10.,
+        }
     }
 }
 
@@ -89,8 +144,10 @@ fn spawn_units(
     }
 }
 
-fn units_decide_action(mut query: Query<(&mut Action, &Transform, &Team, &mut MidCrossed)>) {
-    for (mut action, trans, team, mut mid_crossed) in &mut query {
+fn units_decide_action(
+    mut query: Query<(&mut Action, &Transform, &Team, &mut MidCrossed, &Children), With<Unit>>,
+) {
+    for (mut action, trans, team, mut mid_crossed, children) in &mut query {
         if let Action::Move(dest, attack) = *action {
             if Pos::from_transform(trans).0.distance(dest.0) < UNIT_RADIUS {
                 if mid_crossed.0 {
@@ -126,6 +183,12 @@ fn units_decide_action(mut query: Query<(&mut Action, &Transform, &Team, &mut Mi
     }
 }
 
+fn print_started_collisions(mut collision_event_reader: EventReader<CollisionStarted>) {
+    for CollisionStarted(entity1, entity2) in collision_event_reader.read() {
+        //println!("Entities {:?} and {:?} started colliding", entity1, entity2,);
+    }
+}
+
 fn units_execute_action(
     mut query: Query<(&Action, &Transform, &mut LinearVelocity), With<Unit>>,
     target_query: Query<&Transform, With<Unit>>,
@@ -153,12 +216,22 @@ fn move_unit(dest: Pos, trans: &Transform, linear_velocity: &mut LinearVelocity)
     *linear_velocity = LinearVelocity(to.normalize_or_zero() * UNIT_SPEED);
 }
 
-fn update_orientations(mut query: Query<(&Action, &mut Transform, &LinearVelocity), With<Unit>>) {
-    for (action, mut trans, linear_velocity) in &mut query {
-        if let Action::Move(_, _) = *action {
-            trans.rotation = Quat::from_rotation_z(linear_velocity.0.to_angle());
-        } else if let Action::Attack(_, AttackBehaviour::Pursue) = *action {
-            trans.rotation = Quat::from_rotation_z(linear_velocity.0.to_angle());
+fn update_orientations(
+    unit_query: Query<(&Action, &LinearVelocity), With<Unit>>,
+    mut orientation_query: Query<(&mut Transform, &Parent), With<Orientation>>,
+) {
+    for (mut trans, unit) in &mut orientation_query {
+        match unit_query.get(unit.get()) {
+            Ok((action, linear_velocity)) => {
+                if let Action::Move(_, _) = *action {
+                    trans.rotation = Quat::from_rotation_z(linear_velocity.0.to_angle());
+                } else if let Action::Attack(_, AttackBehaviour::Pursue) = *action {
+                    trans.rotation = Quat::from_rotation_z(linear_velocity.0.to_angle());
+                }
+            }
+            Err(e) => {
+                println!("{:?}", e);
+            }
         }
     }
 }

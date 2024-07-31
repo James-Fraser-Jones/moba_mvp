@@ -1,12 +1,8 @@
-mod app;
-mod gameloop;
-
 use bevy::prelude::*;
 
-pub struct GamePlugin;
-impl Plugin for GamePlugin {
+pub struct ExitPlugin;
+impl Plugin for ExitPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((DefaultPlugins, app::AppPlugin, gameloop::GameLoopPlugin));
         app.add_systems(Startup, init);
         app.add_systems(Update, update);
     }
@@ -15,3 +11,7 @@ impl Plugin for GamePlugin {
 fn init() {}
 
 fn update() {}
+
+fn exit(mut writer: EventWriter<AppExit>) {
+    writer.send(AppExit::Success);
+}

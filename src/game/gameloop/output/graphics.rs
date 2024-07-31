@@ -1,14 +1,55 @@
-use crate::game::consts::*;
 use bevy::{pbr::CascadeShadowConfigBuilder, prelude::*};
 use std::collections::HashMap;
 use std::f32::consts::PI;
 
 pub struct GraphicsPlugin;
-
 impl Plugin for GraphicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (init_assets));
+        app.add_systems(Startup, init);
         app.add_systems(Update, (handle_mesh_requests, handle_material_requests));
+    }
+}
+
+#[derive(Resource)]
+pub struct GraphicsMaterialSettings {
+    saturation: f32,
+    luminance: f32,
+    unlit: bool,
+    hues: HashMap<&'static str, f32>,
+}
+impl Default for GraphicsMaterialSettings {
+    fn default() -> Self {
+        Self {
+            saturation: 0.75,
+            luminance: 0.5,
+            unlit: true,
+            hues: HashMap::from([
+                ("red", 0.),
+                ("green", 120.),
+                ("blue", 240.),
+                ("teal", 190.),
+                ("yellow", 60.),
+                ("purple", 275.),
+            ]),
+        }
+    }
+}
+
+#[derive(Resource)]
+pub struct GraphicsMapSettings {
+    spawner_radius: f32,
+    river_width: f32,
+    base_radius: f32,
+    unit_angle: f32,
+}
+impl Default for GraphicsMapSettings {
+    fn default() -> Self {
+        Self {
+            spawner_radius: 27.8,
+            river_width: 200.,
+            base_radius: 360.,
+            unit_angle: PI / 8.,
+        }
     }
 }
 
@@ -65,15 +106,13 @@ fn add_lights(mut commands: Commands) {
     });
 }
 
-fn init_assets(
+fn init(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.insert_resource(AmbientLight {
-        color: Color::WHITE,
-        brightness: 2000.,
-    });
+    commands.init_resource::<GraphicsMaterialSettings>();
+    commands.init_resource::<GraphicsMapSettings>();
 
     commands.insert_resource(Meshes(HashMap::from([
         (

@@ -17,8 +17,27 @@ impl Plugin for CameraOrbitPlugin {
     }
 }
 
-#[derive(Component, Default, Copy, Clone, Debug)]
-struct Fov(f32);
+// pub const CAMERA_SPEED: f32 = 800.;
+// pub const CAMERA_TURN_SPEED: f32 = PI / 20.;
+// pub const CAMERA_FOV_SCALE: f32 = 2. / 3.; //how much to multiplicatively increase/decrease on-zoom
+#[derive(Component, Default, Debug)]
+pub struct CameraSettings {
+    translation_speed: f32,
+    orientation_speed: f32,
+    fov_scaler: f32,
+}
+
+// pub const CAMERA_FOV: f32 = PI / 4.;
+// pub const CAMERA_ORTHOGRAPHIC: bool = true;
+// pub const CAMERA_NEAR: f32 = 0.;
+// pub const CAMERA_FAR: f32 = 10000.;
+#[derive(Component, Default, Debug)]
+pub struct ProjectionSettings {
+    fov: f32,
+    orthographic: bool,
+    near: f32,
+    far: f32,
+};
 
 #[derive(Component, Default, Copy, Clone, Debug)]
 struct Orthographic(bool);

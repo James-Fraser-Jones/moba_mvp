@@ -340,6 +340,9 @@ pub struct SightCollider;
 #[derive(Component, Default)]
 pub struct AttackCollider;
 
+#[derive(Component, Default)]
+pub struct Orientation;
+
 //just to ensure sight and attack sensors are included in detection
 #[derive(Component, Default, PhysicsLayer)]
 pub enum SensorLayer {
