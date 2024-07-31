@@ -1,6 +1,6 @@
 use crate::game::{consts::*, graphics::MeshBundle, utils::*};
 use avian2d::{math::*, prelude::*};
-use bevy::prelude::*;
+use bevy::{prelude::*, render::view::RenderLayers};
 use std::f32::consts::PI;
 
 //================================================================================
@@ -282,27 +282,28 @@ impl UnitBundle {
             Team::Red => "red",
             Team::Blue => "blue",
         };
-        commands
-            .spawn(self)
-            .with_children(|builder| {
-                builder.spawn((
-                    Collider::circle(UNIT_SIGHT_RADIUS),
-                    Sensor,
-                    CollisionLayers::new(SensorLayer::default(), opposite_team),
-                    SightCollider,
-                ));
-                builder.spawn((
-                    Collider::circle(UNIT_ATTACK_RADIUS),
-                    Sensor,
-                    CollisionLayers::new(SensorLayer::default(), opposite_team),
-                    AttackCollider,
-                ));
-                // builder.spawn(MeshBundle::new(
-                //     "unit",
-                //     "green_trans",
-                //     vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
-                // ));
-                builder.spawn(MeshBundle::new(
+        let mut unit = commands.spawn(self);
+        let id = unit.id().index().to_string();
+        unit.with_children(|builder| {
+            builder.spawn((
+                Collider::circle(UNIT_SIGHT_RADIUS),
+                Sensor,
+                CollisionLayers::new(SensorLayer::default(), opposite_team),
+                SightCollider,
+            ));
+            builder.spawn((
+                Collider::circle(UNIT_ATTACK_RADIUS),
+                Sensor,
+                CollisionLayers::new(SensorLayer::default(), opposite_team),
+                AttackCollider,
+            ));
+            // builder.spawn(MeshBundle::new(
+            //     "unit",
+            //     "green_trans",
+            //     vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
+            // ));
+            builder.spawn((
+                MeshBundle::new(
                     "direction",
                     team_string,
                     vec4_to_trans(Vec4::new(
@@ -311,9 +312,25 @@ impl UnitBundle {
                         UNIT_RADIUS,
                         -PI / 2.,
                     )),
-                ));
-            })
-            .id()
+                ),
+                Orientation,
+            ));
+            builder.spawn((
+                Text2dBundle {
+                    text: Text::from_section(
+                        id,
+                        TextStyle {
+                            font_size: 50.,
+                            color: Color::WHITE,
+                            ..default()
+                        },
+                    ),
+                    ..default()
+                },
+                RenderLayers::layer(1),
+            ));
+        });
+        unit.id()
     }
 }
 

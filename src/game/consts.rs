@@ -9,7 +9,7 @@ pub const CAMERA_SPEED: f32 = 800.;
 pub const CAMERA_TURN_SPEED: f32 = PI / 20.;
 pub const CAMERA_FOV: f32 = PI / 4.; //this is the default
 pub const CAMERA_FOV_SCALE: f32 = 2. / 3.; //how much to multiplicatively increase/decrease on-zoom
-pub const CAMERA_ORTHOGRAPHIC: bool = false;
+pub const CAMERA_ORTHOGRAPHIC: bool = true;
 pub const CAMERA_FAR: f32 = 10000.;
 
 //unit

@@ -55,38 +55,42 @@ fn init_camera(mut commands: Commands) {
                 RenderLayers::layer(0),
                 MainCamera,
             ));
-            // builder.spawn((
-            //     Camera2dBundle {
-            //         camera: Camera {
-            //             clear_color: ClearColorConfig::None,
-            //             order: 1,
-            //             ..default()
-            //         },
-            //         projection: OrthographicProjection {
-            //             scaling_mode: ScalingMode::FixedVertical(2000.),
-            //             far: 1000. / (FOV / 2.).tan() + 10.,
-            //             ..default()
-            //         },
-            //         transform: inital_transform(),
-            //         ..default()
-            //     },
-            //     RenderLayers::layer(1),
-            //     OverlayCamera,
-            // ));
+            builder.spawn((
+                Camera2dBundle {
+                    camera: Camera {
+                        clear_color: ClearColorConfig::None,
+                        order: 1,
+                        ..default()
+                    },
+                    transform: Transform::from_xyz(0., 0., projective_plane_distance()),
+                    ..default()
+                },
+                RenderLayers::layer(1),
+                OverlayCamera,
+            ));
         });
 }
 
 fn init_camera_reset(
-    mut camera_query: Query<&mut Projection, With<MainCamera>>,
+    mut main_camera_query: Query<&mut Projection, With<MainCamera>>,
+    mut overlay_camera_query: Query<&mut OrthographicProjection, With<OverlayCamera>>,
     mut orbit_query: Query<(&mut Transform, &mut Fov, &mut Orthographic), With<Orbit>>,
 ) {
-    let mut projection = camera_query.single_mut();
+    let mut main_projection = main_camera_query.single_mut();
+    let mut overlay_projection = overlay_camera_query.single_mut();
     let (mut transform, mut fov, mut orthographic) = orbit_query.single_mut();
-    reset_camera(&mut transform, &mut fov, &mut orthographic, &mut projection);
+    reset_camera(
+        &mut transform,
+        &mut fov,
+        &mut orthographic,
+        &mut main_projection,
+        &mut overlay_projection,
+    );
 }
 
 fn update_camera(
-    mut camera_query: Query<&mut Projection, With<MainCamera>>,
+    mut main_camera_query: Query<&mut Projection, With<MainCamera>>,
+    mut overlay_camera_query: Query<&mut OrthographicProjection, With<OverlayCamera>>,
     mut orbit_query: Query<(&mut Transform, &mut Fov, &mut Orthographic), With<Orbit>>,
     mut mouse_motion: EventReader<MouseMotion>,
     mut mouse_wheel: EventReader<MouseWheel>,
@@ -94,18 +98,25 @@ fn update_camera(
     keyboard_buttons: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
 ) {
-    let mut projection = camera_query.single_mut();
+    let mut main_projection = main_camera_query.single_mut();
+    let mut overlay_projection = overlay_camera_query.single_mut();
     let (mut transform, mut fov, mut orthographic) = orbit_query.single_mut();
 
     //reset position, orientation, zoom, projection mode
     if keyboard_buttons.just_pressed(KeyCode::KeyR) {
-        reset_camera(&mut transform, &mut fov, &mut orthographic, &mut projection);
+        reset_camera(
+            &mut transform,
+            &mut fov,
+            &mut orthographic,
+            &mut main_projection,
+            &mut overlay_projection,
+        );
     }
 
     //toggle projection mode
     if keyboard_buttons.just_pressed(KeyCode::KeyQ) {
         orthographic.0 = !orthographic.0;
-        *projection = make_projection(*fov, CAMERA_FAR, *orthographic);
+        *main_projection = make_projection(*fov, CAMERA_FAR, *orthographic);
     }
 
     //pan
@@ -147,7 +158,7 @@ fn update_camera(
             } else if scroll_event.y < 0. {
                 fov.0 /= CAMERA_FOV_SCALE;
             }
-            match *projection {
+            match *main_projection {
                 Projection::Perspective(ref mut projection) => {
                     projection.fov = fov.0;
                 }
@@ -156,6 +167,8 @@ fn update_camera(
                         ScalingMode::WindowSize(orthographic_window_scale(*fov))
                 }
             }
+            overlay_projection.scaling_mode =
+                ScalingMode::WindowSize(orthographic_window_scale(*fov));
         }
         //pinch zoom unsupported because mobas use mice
     }
@@ -187,11 +200,15 @@ fn reset_camera(
     fov: &mut Fov,
     orthographic: &mut Orthographic,
     projection: &mut Projection,
+    overlay_projection: &mut OrthographicProjection,
 ) {
     *trans = Transform::IDENTITY;
     *fov = Fov(CAMERA_FOV);
     *orthographic = Orthographic(CAMERA_ORTHOGRAPHIC);
     *projection = make_projection(*fov, CAMERA_FAR, *orthographic);
+    if let Projection::Orthographic(proj) = make_projection(*fov, CAMERA_FAR, Orthographic(true)) {
+        *overlay_projection = proj;
+    }
 }
 
 fn make_projection(fov: Fov, far: f32, orthographic: Orthographic) -> Projection {
