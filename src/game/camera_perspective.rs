@@ -19,7 +19,7 @@ impl Plugin for CameraPerspectivePlugin {
 struct MainCamera;
 
 fn inital_transform() -> Transform {
-    let initial = Transform::from_xyz(0., 0., 1000. / (FOV / 2.).tan());
+    let initial = Transform::from_xyz(0., 0., 1000. / (CAMERA_ZOOM / 2.).tan());
     initial.looking_at(Vec3::ZERO, Vec3::Y)
 }
 
@@ -31,8 +31,8 @@ fn init_camera(mut commands: Commands) {
                 ..default()
             },
             projection: Projection::from(PerspectiveProjection {
-                fov: FOV,
-                far: 1000. / (FOV / 2.).tan() + 10.,
+                fov: CAMERA_ZOOM,
+                far: 1000. / (CAMERA_ZOOM / 2.).tan() + 10.,
                 ..default()
             }),
             transform: inital_transform(),
@@ -55,7 +55,7 @@ fn update_camera_fly(
     if keyboard.pressed(KeyCode::KeyR) {
         match projection.deref_mut() {
             Projection::Perspective(ref mut projection) => {
-                projection.fov = FOV;
+                projection.fov = CAMERA_ZOOM;
             }
             Projection::Orthographic(_) => {}
         };
@@ -118,7 +118,7 @@ fn update_camera_fly(
         if scroll_event.unit == MouseScrollUnit::Line {
             match projection.deref_mut() {
                 Projection::Perspective(ref mut projection) => {
-                    projection.fov -= scroll_event.y * PERSPECTIVE_ZOOM_SPEED
+                    projection.fov -= scroll_event.y * CAMERA_ZOOM_SPEED
                 }
                 Projection::Orthographic(_) => {}
             }

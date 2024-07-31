@@ -2,7 +2,7 @@ mod examples;
 mod game;
 use bevy::{
     prelude::*,
-    window::{Cursor, CursorGrabMode, MonitorSelection, WindowMode},
+    window::{Cursor, WindowResolution},
 };
 use game::{consts::*, GamePlugins};
 
@@ -11,12 +11,14 @@ fn main() -> AppExit {
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
-                    title: APP_NAME.into(),
-                    name: Some(APP_NAME.into()),
-                    mode: WindowMode::BorderlessFullscreen,
+                    title: WINDOW_NAME.into(),
+                    name: Some(WINDOW_NAME.into()),
+                    position: WindowPosition::new(WINDOW_POSITION),
+                    resolution: WindowResolution::new(WINDOW_SIZE.x, WINDOW_SIZE.y),
+                    mode: WINDOW_MODE,
                     cursor: Cursor {
-                        grab_mode: CursorGrabMode::Confined,
-                        visible: false,
+                        grab_mode: WINDOW_CURSOR_GRAB_MODE,
+                        visible: true,
                         ..default()
                     },
                     ..default()

@@ -1,33 +1,36 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    window::{CursorGrabMode, WindowMode},
+};
 use std::f32::consts::PI;
 
 //camera
 pub const CAMERA_SPEED: f32 = 800.;
 pub const CAMERA_TURN_SPEED: f32 = PI / 20.;
-pub const PERSPECTIVE_ZOOM_SPEED: f32 = 0.01;
-pub const ORTHOGRAPHIC_ZOOM_SPEED: f32 = 0.3;
-pub const FOV: f32 = PI / 4.;
+pub const CAMERA_FOV: f32 = PI / 4.; //this is the default
+pub const CAMERA_FOV_SCALE: f32 = 2. / 3.; //how much to multiplicatively increase/decrease on-zoom
+pub const CAMERA_ORTHOGRAPHIC: bool = false;
+pub const CAMERA_FAR: f32 = 10000.;
 
 //unit
 pub const UNIT_SPEED: f32 = 185.;
-pub const UNIT_RADIUS: f32 = 18.5; //if set to factor of GCD of SCREEN_WIDTH and SCREEN_HEIGHT, can have a grid with square cells that fits the screen perfectly (currently: 120)
-pub const MAX_UNIT_RADIUS: f32 = UNIT_RADIUS;
+pub const UNIT_RADIUS: f32 = 18.5;
 pub const UNIT_SIGHT_RADIUS: f32 = 55.6;
-#[allow(dead_code)]
 pub const UNIT_ATTACK_RADIUS: f32 = 37.;
-#[allow(dead_code)]
 pub const UNIT_ATTACK_SPEED: f32 = 1.;
-#[allow(dead_code)]
 pub const UNIT_HEALTH: f32 = 100.;
-#[allow(dead_code)]
 pub const UNIT_ATTACK_DAMAGE: f32 = 10.;
-pub const UNIT_WRIGGLE: f32 = 18.5;
 pub const UNIT_TRIANGLE_ANGLE: f32 = PI / 8.;
 
 //window
-pub const APP_NAME: &str = "Moba MVP";
-pub const SCREEN_WIDTH: f32 = 1920.;
-pub const SCREEN_HEIGHT: f32 = 1080.;
+pub const WINDOW_NAME: &str = "Moba MVP";
+pub const WINDOW_POSITION: IVec2 = IVec2::new(0, 0);
+pub const WINDOW_SIZE: Vec2 = Vec2::new(960., 540.);
+pub const WINDOW_ASPECT_RATIO: f32 = WINDOW_SIZE.x / WINDOW_SIZE.y;
+//pub const WINDOW_MODE: WindowMode = WindowMode::BorderlessFullscreen;
+pub const WINDOW_MODE: WindowMode = WindowMode::Windowed;
+//pub const WINDOW_CURSOR_GRAB_MODE: CursorGrabMode = CursorGrabMode::Confined;
+pub const WINDOW_CURSOR_GRAB_MODE: CursorGrabMode = CursorGrabMode::None;
 
 //materials
 pub const SATURATION: f32 = 0.75;
