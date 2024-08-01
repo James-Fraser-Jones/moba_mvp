@@ -12,7 +12,8 @@ impl Plugin for LogicPlugin {
             (
                 update_timers,
                 spawn_units,
-                units_decide_action,
+                units_check_ranges,
+                units_update_path,
                 units_execute_action,
                 update_orientations,
             )
@@ -89,7 +90,40 @@ fn spawn_units(
     }
 }
 
-fn units_decide_action(mut query: Query<(&mut Action, &Transform, &Team, &mut MidCrossed)>) {
+fn units_check_ranges(
+    sight_query: Query<(&CollidingEntities, &Parent), With<SightCollider>>,
+    attack_query: Query<(&CollidingEntities, &Parent), With<AttackCollider>>,
+    mut unit_query: Query<&mut Action, With<Unit>>,
+) {
+    for (in_vision, unit) in &sight_query {
+        let mut action = unit_query.get_mut(unit.get()).unwrap();
+        match *action {
+            Action::Stop(attack) | Action::Move(_, attack) => {
+                if attack == AttackOverride::Attack {
+                    if let Some(target) = in_vision.0.iter().next() {
+                        *action = Action::Attack(*target, AttackBehaviour::Pursue);
+                    }
+                }
+            }
+            _ => (),
+        }
+    }
+    for (in_attack_range, unit) in &sight_query {
+        let mut action = unit_query.get_mut(unit.get()).unwrap();
+        match *action {
+            Action::Attack(_target, behaviour) => match behaviour {
+                //TODO: collision check on attack radius
+                AttackBehaviour::Pursue => {}
+                AttackBehaviour::Attack => {} //aa timer can be cancelled here
+            },
+            _ => (),
+        }
+    }
+}
+
+fn units_update_path(
+    mut query: Query<(&mut Action, &Transform, &Team, &mut MidCrossed), With<Unit>>,
+) {
     for (mut action, trans, team, mut mid_crossed) in &mut query {
         if let Action::Move(dest, attack) = *action {
             if Pos::from_transform(trans).0.distance(dest.0) < UNIT_RADIUS {
@@ -106,22 +140,6 @@ fn units_decide_action(mut query: Query<(&mut Action, &Transform, &Team, &mut Mi
                     mid_crossed.0 = true;
                 }
             }
-        }
-        match *action {
-            Action::Stop(attack) | Action::Move(_, attack) => {
-                if attack == AttackOverride::Attack {
-                    //TODO: collision check on sight radius
-                }
-            }
-            _ => (),
-        }
-        match *action {
-            Action::Attack(_target, behaviour) => match behaviour {
-                //TODO: collision check on attack radius
-                AttackBehaviour::Pursue => {}
-                AttackBehaviour::Attack => {} //aa timer can be cancelled here
-            },
-            _ => (),
         }
     }
 }

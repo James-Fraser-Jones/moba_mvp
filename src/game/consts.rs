@@ -15,7 +15,7 @@ pub const CAMERA_FAR: f32 = 10000.;
 //unit
 pub const UNIT_SPEED: f32 = 185.;
 pub const UNIT_RADIUS: f32 = 18.5;
-pub const UNIT_SIGHT_RADIUS: f32 = 55.6;
+pub const UNIT_SIGHT_RADIUS: f32 = 200.;
 pub const UNIT_ATTACK_RADIUS: f32 = 37.;
 pub const UNIT_ATTACK_SPEED: f32 = 1.;
 pub const UNIT_HEALTH: f32 = 100.;

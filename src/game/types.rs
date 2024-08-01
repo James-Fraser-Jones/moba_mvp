@@ -60,11 +60,21 @@ pub enum Discipline {
 }
 
 //team (physicslayer allows team to be set as a collision layer)
-#[derive(Component, PartialEq, Default, Copy, Clone, Debug, PhysicsLayer)]
+#[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
 pub enum Team {
     #[default]
     Red,
     Blue,
+}
+
+#[derive(PartialEq, Copy, Clone, Debug, PhysicsLayer)]
+pub enum CollisionLayer {
+    RedUnit,
+    BlueUnit,
+    RedAttack,
+    BlueAttack,
+    RedSight,
+    BlueSight,
 }
 
 //=======================================
@@ -221,13 +231,13 @@ impl SpawnerBundle {
     pub fn spawn(self, commands: &mut Commands) -> Entity {
         commands
             .spawn(self)
-            // .with_children(|builder| {
-            //     builder.spawn(MeshBundle::new(
-            //         "spawner",
-            //         "purple",
-            //         vec4_to_trans(Vec4::new(0., 0., SPAWNER_RADIUS, 0.)),
-            //     ));
-            // })
+            .with_children(|builder| {
+                builder.spawn(MeshBundle::new(
+                    "spawner",
+                    "purple",
+                    vec4_to_trans(Vec4::new(0., 0., SPAWNER_RADIUS, 0.)),
+                ));
+            })
             .id()
     }
 }
@@ -257,6 +267,18 @@ pub struct UnitBundle {
 }
 impl UnitBundle {
     pub fn new(pos: Pos, team: Team, discipline: Discipline, action: Action) -> Self {
+        let unit_layer = match team {
+            Team::Red => CollisionLayer::RedUnit,
+            Team::Blue => CollisionLayer::BlueUnit,
+        };
+        let opposite_sight = match team {
+            Team::Red => CollisionLayer::BlueSight,
+            Team::Blue => CollisionLayer::RedSight,
+        };
+        let opposite_attack = match team {
+            Team::Red => CollisionLayer::BlueAttack,
+            Team::Blue => CollisionLayer::RedAttack,
+        };
         let mut trans = Transform::IDENTITY;
         pos.set_transform(&mut trans);
         Self {
@@ -266,7 +288,15 @@ impl UnitBundle {
             action,
             rigidbody: RigidBody::Dynamic,
             collider: Collider::circle(UNIT_RADIUS as Scalar),
-            collision_layers: CollisionLayers::new(team, LayerMask::ALL),
+            collision_layers: CollisionLayers::new(
+                unit_layer,
+                [
+                    CollisionLayer::RedUnit,
+                    CollisionLayer::BlueUnit,
+                    opposite_sight,
+                    opposite_attack,
+                ],
+            ),
             locked_axes: LockedAxes::ROTATION_LOCKED,
             friction: Friction::ZERO,
             ..default()
@@ -274,13 +304,21 @@ impl UnitBundle {
     }
     pub fn spawn(self, commands: &mut Commands) -> Entity {
         let team = self.team;
-        let opposite_team = match team {
-            Team::Red => Team::Blue,
-            Team::Blue => Team::Red,
-        };
         let team_string = match team {
             Team::Red => "red",
             Team::Blue => "blue",
+        };
+        let sight_layer = match team {
+            Team::Red => CollisionLayer::RedSight,
+            Team::Blue => CollisionLayer::BlueSight,
+        };
+        let attack_layer = match team {
+            Team::Red => CollisionLayer::RedAttack,
+            Team::Blue => CollisionLayer::BlueAttack,
+        };
+        let opposite_layer = match team {
+            Team::Red => CollisionLayer::BlueUnit,
+            Team::Blue => CollisionLayer::RedUnit,
         };
         let mut unit = commands.spawn(self);
         let id = unit.id().index().to_string();
@@ -288,33 +326,30 @@ impl UnitBundle {
             builder.spawn((
                 Collider::circle(UNIT_SIGHT_RADIUS),
                 Sensor,
-                CollisionLayers::new(SensorLayer::default(), opposite_team),
+                CollisionLayers::new(sight_layer, opposite_layer),
                 SightCollider,
             ));
             builder.spawn((
                 Collider::circle(UNIT_ATTACK_RADIUS),
                 Sensor,
-                CollisionLayers::new(SensorLayer::default(), opposite_team),
+                CollisionLayers::new(attack_layer, opposite_layer),
                 AttackCollider,
             ));
-            // builder.spawn(MeshBundle::new(
-            //     "unit",
-            //     "green_trans",
-            //     vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
-            // ));
-            builder.spawn((
-                MeshBundle::new(
-                    "direction",
-                    team_string,
-                    vec4_to_trans(Vec4::new(
-                        UNIT_RADIUS * (1. - UNIT_TRIANGLE_ANGLE.cos().powf(2.)),
-                        0.,
-                        UNIT_RADIUS,
-                        -PI / 2.,
-                    )),
-                ),
-                Orientation,
+            builder.spawn(MeshBundle::new(
+                "unit",
+                "green_trans",
+                vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
             ));
+            builder.spawn((MeshBundle::new(
+                "direction",
+                team_string,
+                vec4_to_trans(Vec4::new(
+                    UNIT_RADIUS * (1. - UNIT_TRIANGLE_ANGLE.cos().powf(2.)),
+                    0.,
+                    UNIT_RADIUS,
+                    -PI / 2.,
+                )),
+            ),));
             builder.spawn((
                 Text2dBundle {
                     text: Text::from_section(
@@ -339,10 +374,3 @@ impl UnitBundle {
 pub struct SightCollider;
 #[derive(Component, Default)]
 pub struct AttackCollider;
-
-//just to ensure sight and attack sensors are included in detection
-#[derive(Component, Default, PhysicsLayer)]
-pub enum SensorLayer {
-    #[default]
-    SensorLayer,
-}
