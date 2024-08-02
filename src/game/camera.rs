@@ -1,4 +1,4 @@
-use crate::game::consts::*;
+use crate::game::{consts::*, os::WindowSettings};
 use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
@@ -9,8 +9,8 @@ use bevy::{
 };
 use std::f32::consts::PI;
 
-pub struct CameraOrbitPlugin;
-impl Plugin for CameraOrbitPlugin {
+pub struct CameraPlugin;
+impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (init_camera, init_camera_reset).chain());
         app.add_systems(Update, update_camera);
@@ -75,6 +75,7 @@ fn init_camera_reset(
     mut main_camera_query: Query<&mut Projection, With<MainCamera>>,
     mut overlay_camera_query: Query<&mut OrthographicProjection, With<OverlayCamera>>,
     mut orbit_query: Query<(&mut Transform, &mut Fov, &mut Orthographic), With<Orbit>>,
+    window_settings: Res<WindowSettings>,
 ) {
     let mut main_projection = main_camera_query.single_mut();
     let mut overlay_projection = overlay_camera_query.single_mut();
@@ -85,6 +86,7 @@ fn init_camera_reset(
         &mut orthographic,
         &mut main_projection,
         &mut overlay_projection,
+        window_settings.size.y,
     );
 }
 
@@ -97,6 +99,7 @@ fn update_camera(
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     keyboard_buttons: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
+    window_settings: Res<WindowSettings>,
 ) {
     let mut main_projection = main_camera_query.single_mut();
     let mut overlay_projection = overlay_camera_query.single_mut();
@@ -110,13 +113,14 @@ fn update_camera(
             &mut orthographic,
             &mut main_projection,
             &mut overlay_projection,
+            window_settings.size.y,
         );
     }
 
     //toggle projection mode
     if keyboard_buttons.just_pressed(KeyCode::KeyQ) {
         orthographic.0 = !orthographic.0;
-        *main_projection = make_projection(*fov, CAMERA_FAR, *orthographic);
+        *main_projection = make_projection(*fov, CAMERA_FAR, *orthographic, window_settings.size.y);
     }
 
     //pan
@@ -163,12 +167,14 @@ fn update_camera(
                     projection.fov = fov.0;
                 }
                 Projection::Orthographic(ref mut projection) => {
-                    projection.scaling_mode =
-                        ScalingMode::WindowSize(orthographic_window_scale(*fov))
+                    projection.scaling_mode = ScalingMode::WindowSize(orthographic_window_scale(
+                        *fov,
+                        window_settings.size.y,
+                    ))
                 }
             }
             overlay_projection.scaling_mode =
-                ScalingMode::WindowSize(orthographic_window_scale(*fov));
+                ScalingMode::WindowSize(orthographic_window_scale(*fov, window_settings.size.y));
         }
         //pinch zoom unsupported because mobas use mice
     }
@@ -201,20 +207,28 @@ fn reset_camera(
     orthographic: &mut Orthographic,
     projection: &mut Projection,
     overlay_projection: &mut OrthographicProjection,
+    window_height: f32,
 ) {
     *trans = Transform::IDENTITY;
     *fov = Fov(CAMERA_FOV);
     *orthographic = Orthographic(CAMERA_ORTHOGRAPHIC);
-    *projection = make_projection(*fov, CAMERA_FAR, *orthographic);
-    if let Projection::Orthographic(proj) = make_projection(*fov, CAMERA_FAR, Orthographic(true)) {
+    *projection = make_projection(*fov, CAMERA_FAR, *orthographic, window_height);
+    if let Projection::Orthographic(proj) =
+        make_projection(*fov, CAMERA_FAR, Orthographic(true), window_height)
+    {
         *overlay_projection = proj;
     }
 }
 
-fn make_projection(fov: Fov, far: f32, orthographic: Orthographic) -> Projection {
+fn make_projection(
+    fov: Fov,
+    far: f32,
+    orthographic: Orthographic,
+    window_height: f32,
+) -> Projection {
     if orthographic.0 {
         Projection::from(OrthographicProjection {
-            scaling_mode: ScalingMode::WindowSize(orthographic_window_scale(fov)),
+            scaling_mode: ScalingMode::WindowSize(orthographic_window_scale(fov, window_height)),
             far,
             ..default()
         })
@@ -231,6 +245,6 @@ fn projective_plane_distance() -> f32 {
     1000. / (CAMERA_FOV / 2.).tan()
 }
 
-fn orthographic_window_scale(fov: Fov) -> f32 {
-    WINDOW_SIZE.y / (2000. * (fov.0 / 2.).tan() / (CAMERA_FOV / 2.).tan())
+fn orthographic_window_scale(fov: Fov, window_height: f32) -> f32 {
+    window_height / (2000. * (fov.0 / 2.).tan() / (CAMERA_FOV / 2.).tan())
 }

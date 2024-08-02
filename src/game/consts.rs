@@ -1,7 +1,4 @@
-use bevy::{
-    prelude::*,
-    window::{CursorGrabMode, WindowMode},
-};
+use bevy::prelude::*;
 use std::f32::consts::PI;
 
 //camera
@@ -21,16 +18,6 @@ pub const UNIT_ATTACK_SPEED: f32 = 1.;
 pub const UNIT_HEALTH: f32 = 100.;
 pub const UNIT_ATTACK_DAMAGE: f32 = 10.;
 pub const UNIT_TRIANGLE_ANGLE: f32 = PI / 8.;
-
-//window
-pub const WINDOW_NAME: &str = "Moba MVP";
-pub const WINDOW_POSITION: IVec2 = IVec2::new(0, 0);
-pub const WINDOW_SIZE: Vec2 = Vec2::new(960., 540.);
-pub const WINDOW_ASPECT_RATIO: f32 = WINDOW_SIZE.x / WINDOW_SIZE.y;
-//pub const WINDOW_MODE: WindowMode = WindowMode::BorderlessFullscreen;
-pub const WINDOW_MODE: WindowMode = WindowMode::Windowed;
-//pub const WINDOW_CURSOR_GRAB_MODE: CursorGrabMode = CursorGrabMode::Confined;
-pub const WINDOW_CURSOR_GRAB_MODE: CursorGrabMode = CursorGrabMode::None;
 
 //materials
 pub const SATURATION: f32 = 0.75;
@@ -68,6 +55,3 @@ pub const WAVE_NUM_UNITS: i32 = 6;
 //spawners
 pub const SPAWNER_RADIUS: f32 = 27.8;
 pub const SPAWNER_DELAY: f32 = 1.;
-
-//spacial index
-pub const CELL_HALF_SIZE: f32 = 25.;
