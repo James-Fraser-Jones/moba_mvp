@@ -1,7 +1,6 @@
-use crate::game::{consts::*, graphics::MeshBundle};
+use crate::game::consts::*;
 use avian2d::{math::*, prelude::*};
-use bevy::{prelude::*, render::view::RenderLayers};
-use std::f32::consts::PI;
+use bevy::prelude::*;
 
 //================================================================================
 // Generic Components ============================================================
@@ -11,17 +10,15 @@ use std::f32::consts::PI;
 // Behaviour enums
 
 //attack override
-#[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
+#[derive(Component, PartialEq, Copy, Clone, Debug)]
 pub enum AttackOverride {
     Ignore, //Unit will not be distracted from current action
-    #[default]
     Attack, //Unit will be distracted from current action to attack enemies within attack range
 }
 
 //attack behaviour
-#[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
+#[derive(Component, PartialEq, Copy, Clone, Debug)]
 pub enum AttackBehaviour {
-    #[default]
     Pursue, //Unit pursues target to within attack range
     Attack, //Unit attacks on cooldown
 }
@@ -40,33 +37,42 @@ impl Default for Action {
 }
 
 //lane
-#[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
+#[derive(Component, PartialEq, Copy, Clone, Debug)]
 pub enum Lane {
-    #[default]
-    Mid,
     Top,
+    Mid,
     Bot,
+}
+
+//range
+#[derive(Component, PartialEq, Copy, Clone, Debug)]
+pub enum Range {
+    Collide,
+    Attack,
+    Sight,
 }
 
 //=======================================
 // Type enums
 
 //discipline
-#[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
+#[derive(Component, PartialEq, Copy, Clone, Debug)]
 pub enum Discipline {
-    #[default]
     Melee,
     Ranged,
 }
 
-//team (physicslayer allows team to be set as a collision layer)
-#[derive(Component, PartialEq, Default, Copy, Clone, Debug)]
+//team
+#[derive(Component, PartialEq, Copy, Clone, Debug)]
 pub enum Team {
-    #[default]
     Red,
     Blue,
 }
 
+//=======================================
+// Physics enums
+
+//collision layer
 #[derive(PartialEq, Copy, Clone, Debug, PhysicsLayer)]
 pub enum CollisionLayer {
     RedUnit,
@@ -100,15 +106,6 @@ impl Pos {
 }
 
 //================================================================================
-// Specific Components ===========================================================
-//================================================================================
-
-//tracks whether minion has crossed mid-point of its assigned lane
-//eventually will be replaced with some kind of Path2D equivalent
-#[derive(Component, Default)]
-pub struct MidCrossed(pub bool);
-
-//================================================================================
 // Resources =====================================================================
 //================================================================================
 
@@ -138,132 +135,60 @@ impl WaveManager {
 pub struct Map;
 #[derive(Bundle, Default)]
 pub struct MapBundle {
-    //rendering
     pub spatial: SpatialBundle,
-    //tag
     pub map: Map,
 }
 impl MapBundle {
     pub fn new() -> Self {
         Self {
-            spatial: SpatialBundle::from_transform(vec4_to_trans(
-                Vec2::ZERO.extend(-6.).extend(0.),
+            spatial: SpatialBundle::from_transform(Transform::from_translation(
+                Vec3::ZERO.with_z(-6.),
             )),
             ..default()
         }
     }
-    pub fn spawn(self, commands: &mut Commands) -> Entity {
-        commands
-            .spawn(self)
-            .with_children(|builder| {
-                builder.spawn(MeshBundle::new(
-                    "plain",
-                    "dark_green",
-                    vec4_to_trans(MID.extend(0.).extend(0.)),
-                ));
-                builder.spawn(MeshBundle::new(
-                    "river",
-                    "teal",
-                    vec4_to_trans(MID.extend(2.5).extend(PI / 4.)),
-                ));
-                builder.spawn(MeshBundle::new(
-                    "mid",
-                    "yellow",
-                    vec4_to_trans(MID.extend(5.).extend(-PI / 4.)),
-                ));
-                builder.spawn(MeshBundle::new(
-                    "lane",
-                    "yellow",
-                    vec4_to_trans(RED_TOP.extend(5.).extend(0.)),
-                ));
-                builder.spawn(MeshBundle::new(
-                    "lane",
-                    "yellow",
-                    vec4_to_trans(BLUE_TOP.extend(5.).extend(PI / 2.)),
-                ));
-                builder.spawn(MeshBundle::new(
-                    "lane",
-                    "yellow",
-                    vec4_to_trans(RED_BOT.extend(5.).extend(PI / 2.)),
-                ));
-                builder.spawn(MeshBundle::new(
-                    "lane",
-                    "yellow",
-                    vec4_to_trans(BLUE_BOT.extend(5.).extend(0.)),
-                ));
-                builder.spawn(MeshBundle::new(
-                    "base",
-                    "dark_red",
-                    vec4_to_trans(Vec4::new(-1000., -1000., 6., -PI / 4.)),
-                ));
-                builder.spawn(MeshBundle::new(
-                    "base",
-                    "dark_blue",
-                    vec4_to_trans(Vec4::new(1000., 1000., 6., 3. * PI / 4.)),
-                ));
-            })
-            .id()
-    }
 }
 
 //spawner
-#[derive(Component, Default)]
-pub struct Spawner;
-#[derive(Bundle, Default)]
-pub struct SpawnerBundle {
-    //rendering
-    pub spatial: SpatialBundle,
-    //type
-    pub team: Team,
+#[derive(Component)]
+pub struct Spawner {
     pub lane: Lane,
-    //tag
+}
+#[derive(Bundle)]
+pub struct SpawnerBundle {
     pub spawner: Spawner,
+    pub spatial: SpatialBundle,
+    pub team: Team,
 }
 impl SpawnerBundle {
     pub fn new(pos: Pos, team: Team, lane: Lane) -> Self {
         Self {
-            spatial: SpatialBundle::from_transform(vec4_to_trans(pos.0.extend(0.).extend(0.))),
+            spawner: Spawner { lane },
+            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.0.extend(0.))),
             team,
-            lane,
-            ..default()
         }
-    }
-    pub fn spawn(self, commands: &mut Commands) -> Entity {
-        commands
-            .spawn(self)
-            .with_children(|builder| {
-                builder.spawn(MeshBundle::new(
-                    "spawner",
-                    "purple",
-                    vec4_to_trans(Vec4::new(0., 0., SPAWNER_RADIUS, 0.)),
-                ));
-            })
-            .id()
     }
 }
 
 //unit
-#[derive(Component, Default)]
-pub struct Unit;
-#[derive(Bundle, Default)]
-pub struct UnitBundle {
-    //rendering
-    pub spatial: SpatialBundle,
-    //type
-    pub team: Team,
+#[derive(Component)]
+pub struct Unit {
     pub discipline: Discipline,
-    //behaviour
     pub action: Action,
-    pub mid_crossed: MidCrossed,
-    pub attack_timer: FixedTimer,
+    pub mid_crossed: bool,
+}
+#[derive(Bundle)]
+pub struct UnitBundle {
+    pub unit: Unit, //unit-specific component
+    pub spatial: SpatialBundle,
+    pub team: Team,
     //physics
+    pub attack_timer: FixedTimer,
     pub rigidbody: RigidBody,
     pub collider: Collider,
     pub collision_layers: CollisionLayers,
     pub locked_axes: LockedAxes,
     pub friction: Friction,
-    //tag
-    pub unit: Unit,
 }
 impl UnitBundle {
     pub fn new(pos: Pos, team: Team, discipline: Discipline, action: Action) -> Self {
@@ -282,10 +207,13 @@ impl UnitBundle {
         let mut trans = Transform::IDENTITY;
         pos.set_transform(&mut trans);
         Self {
+            unit: Unit {
+                discipline,
+                action,
+                mid_crossed: false,
+            },
             spatial: SpatialBundle::from_transform(trans),
             team,
-            discipline,
-            action,
             rigidbody: RigidBody::Dynamic,
             collider: Collider::circle(UNIT_RADIUS as Scalar),
             collision_layers: CollisionLayers::new(
@@ -299,73 +227,8 @@ impl UnitBundle {
             ),
             locked_axes: LockedAxes::ROTATION_LOCKED,
             friction: Friction::ZERO,
-            ..default()
+            attack_timer: FixedTimer::default(),
         }
-    }
-    pub fn spawn(self, commands: &mut Commands) -> Entity {
-        let team = self.team;
-        let team_string = match team {
-            Team::Red => "red",
-            Team::Blue => "blue",
-        };
-        let sight_layer = match team {
-            Team::Red => CollisionLayer::RedSight,
-            Team::Blue => CollisionLayer::BlueSight,
-        };
-        let attack_layer = match team {
-            Team::Red => CollisionLayer::RedAttack,
-            Team::Blue => CollisionLayer::BlueAttack,
-        };
-        let opposite_layer = match team {
-            Team::Red => CollisionLayer::BlueUnit,
-            Team::Blue => CollisionLayer::RedUnit,
-        };
-        let mut unit = commands.spawn(self);
-        let id = unit.id().index().to_string();
-        unit.with_children(|builder| {
-            builder.spawn((
-                Collider::circle(UNIT_SIGHT_RADIUS),
-                Sensor,
-                CollisionLayers::new(sight_layer, opposite_layer),
-                SightCollider,
-            ));
-            builder.spawn((
-                Collider::circle(UNIT_ATTACK_RADIUS),
-                Sensor,
-                CollisionLayers::new(attack_layer, opposite_layer),
-                AttackCollider,
-            ));
-            builder.spawn(MeshBundle::new(
-                "unit",
-                "green_trans",
-                vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
-            ));
-            builder.spawn((MeshBundle::new(
-                "direction",
-                team_string,
-                vec4_to_trans(Vec4::new(
-                    UNIT_RADIUS * (1. - UNIT_TRIANGLE_ANGLE.cos().powf(2.)),
-                    0.,
-                    UNIT_RADIUS,
-                    -PI / 2.,
-                )),
-            ),));
-            builder.spawn((
-                Text2dBundle {
-                    text: Text::from_section(
-                        id,
-                        TextStyle {
-                            font_size: 50.,
-                            color: Color::WHITE,
-                            ..default()
-                        },
-                    ),
-                    ..default()
-                },
-                RenderLayers::layer(1),
-            ));
-        });
-        unit.id()
     }
 }
 
@@ -374,8 +237,3 @@ impl UnitBundle {
 pub struct SightCollider;
 #[derive(Component, Default)]
 pub struct AttackCollider;
-
-//these should only be used for orienting non-logical child entities such as meshes
-pub fn vec4_to_trans(vec4: Vec4) -> Transform {
-    Transform::from_translation(vec4.truncate()).with_rotation(Quat::from_rotation_z(vec4.w))
-}

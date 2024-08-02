@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use std::f32::consts::PI;
 
 //unit
 pub const UNIT_SPEED: f32 = 185.;
@@ -9,23 +8,9 @@ pub const UNIT_ATTACK_RADIUS: f32 = 37.;
 pub const UNIT_ATTACK_SPEED: f32 = 1.;
 pub const UNIT_HEALTH: f32 = 100.;
 pub const UNIT_ATTACK_DAMAGE: f32 = 10.;
-pub const UNIT_TRIANGLE_ANGLE: f32 = PI / 8.;
-
-//materials
-pub const SATURATION: f32 = 0.75;
-pub const BRIGHTNESS: f32 = 0.5;
-pub const RED_HUE: f32 = 0.;
-pub const GREEN_HUE: f32 = 120.;
-pub const BLUE_HUE: f32 = 240.;
-pub const TEAL_HUE: f32 = 190.;
-pub const YELLOW_HUE: f32 = 60.;
-pub const PURPLE_HUE: f32 = 275.;
-pub const UNLIT: bool = true;
 
 //map
 pub const LANE_WIDTH: f32 = 240.;
-pub const RIVER_WIDTH: f32 = 200.;
-pub const BASE_RADIUS: f32 = 360.;
 
 //locations
 pub const NON_LANE_RADIUS: f32 = 1000. - LANE_WIDTH;
@@ -45,5 +30,4 @@ pub const WAVE_DELAY: f32 = 20.;
 pub const WAVE_NUM_UNITS: i32 = 6;
 
 //spawners
-pub const SPAWNER_RADIUS: f32 = 27.8;
 pub const SPAWNER_DELAY: f32 = 1.;

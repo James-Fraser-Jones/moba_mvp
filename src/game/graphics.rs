@@ -1,231 +1,280 @@
 use crate::game::consts::*;
-use bevy::{pbr::CascadeShadowConfigBuilder, prelude::*};
+use bevy::prelude::*;
 use std::collections::HashMap;
 use std::f32::consts::PI;
 
 pub struct GraphicsPlugin;
-
 impl Plugin for GraphicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (init_assets));
-        app.add_systems(Update, (handle_mesh_requests, handle_material_requests));
+        app.add_systems(Startup, init);
+        app.add_systems(Update, update);
     }
 }
 
-#[derive(Resource)]
-struct Meshes(HashMap<&'static str, Handle<Mesh>>);
-
-#[derive(Resource)]
-struct Materials(HashMap<&'static str, Handle<StandardMaterial>>);
-
-#[derive(Component, Default)]
-struct RequestMesh(&'static str);
-
-#[derive(Component, Default)]
-struct RequestMaterial(&'static str);
-
-#[derive(Bundle, Default)]
-pub struct MeshBundle {
-    pbr_bundle: PbrBundle,
-    request_mesh: RequestMesh,
-    request_material: RequestMaterial,
+pub struct MaterialSettings {
+    saturation: f32,
+    unlit: bool,
+    hues: [(&'static str, f32); 6],
+    luminances: [(&'static str, f32); 2],
+    alphas: [(&'static str, f32); 2],
 }
-impl MeshBundle {
-    pub fn new(mesh: &'static str, material: &'static str, transform: Transform) -> Self {
+impl Default for MaterialSettings {
+    fn default() -> Self {
         Self {
-            request_mesh: RequestMesh(mesh),
-            request_material: RequestMaterial(material),
-            pbr_bundle: PbrBundle {
-                transform,
-                ..default()
-            },
-            ..default()
+            saturation: 0.75,
+            unlit: true,
+            hues: [
+                ("red", 0.),
+                ("green", 120.),
+                ("blue", 240.),
+                ("teal", 190.),
+                ("yellow", 60.),
+                ("purple", 275.),
+            ],
+            luminances: [("", 0.5), ("dark", 0.25)],
+            alphas: [("", 1.), ("trans", 0.3)],
         }
     }
 }
 
-fn add_lights(mut commands: Commands) {
-    commands.insert_resource(AmbientLight {
-        color: Color::WHITE,
-        brightness: 2000.,
-    });
-    commands.spawn(DirectionalLightBundle {
-        transform: Transform::from_rotation(Quat::from_euler(EulerRot::ZYX, 0.0, 1.0, -PI / 4.)),
-        directional_light: DirectionalLight {
-            shadows_enabled: true,
-            ..default()
-        },
-        cascade_shadow_config: CascadeShadowConfigBuilder {
-            first_cascade_far_bound: 200.0,
-            maximum_distance: 400.0,
-            ..default()
+pub struct MapSettings {
+    spawner_radius: f32,
+    river_width: f32,
+    base_radius: f32,
+    unit_angle: f32,
+}
+impl Default for MapSettings {
+    fn default() -> Self {
+        Self {
+            spawner_radius: 27.8,
+            river_width: 200.,
+            base_radius: 360.,
+            unit_angle: PI / 8.,
         }
-        .into(),
-        ..default()
-    });
+    }
 }
 
-fn init_assets(
+#[derive(Resource)]
+struct MeshHandles(HashMap<String, Handle<Mesh>>);
+
+#[derive(Resource)]
+struct MaterialHandles(HashMap<String, Handle<StandardMaterial>>);
+
+fn init(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.insert_resource(AmbientLight {
-        color: Color::WHITE,
-        brightness: 2000.,
-    });
+    //these could be consts somehow?
+    let material_settings = MaterialSettings::default();
+    let map_settings = MapSettings::default();
 
-    commands.insert_resource(Meshes(HashMap::from([
+    commands.insert_resource(MeshHandles(HashMap::from([
         (
-            "plain",
+            "plain".to_string(),
             meshes.add(Plane3d::new(Vec3::Z, Vec2::splat(1000.))),
         ),
         (
-            "river",
+            "river".to_string(),
             meshes.add(Cuboid::new(
-                RIVER_WIDTH,
+                map_settings.river_width,
                 f32::sqrt(2.) * NON_LANE_RADIUS * 2.,
                 5.0,
             )),
         ),
         (
-            "mid",
+            "mid".to_string(),
             meshes.add(Cuboid::new(
                 LANE_WIDTH,
                 f32::sqrt(2.) * NON_LANE_RADIUS * 2.,
                 10.0,
             )),
         ),
-        ("lane", meshes.add(Cuboid::new(LANE_WIDTH, 2000., 10.0))),
         (
-            "base",
+            "lane".to_string(),
+            meshes.add(Cuboid::new(LANE_WIDTH, 2000., 10.0)),
+        ),
+        (
+            "base".to_string(),
             meshes.add(Extrusion::new(
-                CircularSector::from_radians(BASE_RADIUS, 2. * PI / 4.),
+                CircularSector::from_radians(map_settings.base_radius, 2. * PI / 4.),
                 12.,
             )),
         ),
-        ("spawner", meshes.add(Sphere::new(SPAWNER_RADIUS))),
-        ("unit", meshes.add(Sphere::new(UNIT_RADIUS))),
         (
-            "direction",
+            "spawner".to_string(),
+            meshes.add(Sphere::new(map_settings.spawner_radius)),
+        ),
+        ("unit".to_string(), meshes.add(Sphere::new(UNIT_RADIUS))),
+        (
+            "direction".to_string(),
             meshes.add(Cone {
-                radius: 2. * UNIT_RADIUS * UNIT_TRIANGLE_ANGLE.cos() * UNIT_TRIANGLE_ANGLE.sin(),
-                height: 2. * UNIT_RADIUS * UNIT_TRIANGLE_ANGLE.cos() * UNIT_TRIANGLE_ANGLE.cos(),
+                radius: 2.
+                    * UNIT_RADIUS
+                    * map_settings.unit_angle.cos()
+                    * map_settings.unit_angle.sin(),
+                height: 2.
+                    * UNIT_RADIUS
+                    * map_settings.unit_angle.cos()
+                    * map_settings.unit_angle.cos(),
             }),
         ),
     ])));
 
-    commands.insert_resource(Materials(HashMap::from([
-        (
-            "red",
-            materials.add(StandardMaterial {
-                base_color: Color::hsl(RED_HUE, SATURATION, BRIGHTNESS),
-                unlit: UNLIT,
-                ..default()
-            }),
-        ),
-        (
-            "dark_red",
-            materials.add(StandardMaterial {
-                base_color: Color::hsl(RED_HUE, SATURATION, BRIGHTNESS / 2.),
-                unlit: UNLIT,
-                ..default()
-            }),
-        ),
-        (
-            "green",
-            materials.add(StandardMaterial {
-                base_color: Color::hsl(GREEN_HUE, SATURATION, BRIGHTNESS),
-                unlit: UNLIT,
-                ..default()
-            }),
-        ),
-        (
-            "green_trans",
-            materials.add(StandardMaterial {
-                base_color: Color::hsla(GREEN_HUE, SATURATION, BRIGHTNESS, 0.3),
-                unlit: UNLIT,
-                alpha_mode: AlphaMode::Blend,
-                ..default()
-            }),
-        ),
-        (
-            "dark_green",
-            materials.add(StandardMaterial {
-                base_color: Color::hsl(GREEN_HUE, SATURATION, BRIGHTNESS / 2.),
-                unlit: UNLIT,
-                ..default()
-            }),
-        ),
-        (
-            "blue",
-            materials.add(StandardMaterial {
-                base_color: Color::hsl(BLUE_HUE, SATURATION, BRIGHTNESS),
-                unlit: UNLIT,
-                ..default()
-            }),
-        ),
-        (
-            "dark_blue",
-            materials.add(StandardMaterial {
-                base_color: Color::hsl(BLUE_HUE, SATURATION, BRIGHTNESS / 2.),
-                unlit: UNLIT,
-                ..default()
-            }),
-        ),
-        (
-            "yellow",
-            materials.add(StandardMaterial {
-                base_color: Color::hsl(YELLOW_HUE, SATURATION, BRIGHTNESS),
-                unlit: UNLIT,
-                ..default()
-            }),
-        ),
-        (
-            "teal",
-            materials.add(StandardMaterial {
-                base_color: Color::hsl(TEAL_HUE, SATURATION, BRIGHTNESS),
-                unlit: UNLIT,
-                ..default()
-            }),
-        ),
-        (
-            "purple",
-            materials.add(StandardMaterial {
-                base_color: Color::hsl(PURPLE_HUE, SATURATION, BRIGHTNESS),
-                unlit: UNLIT,
-                ..default()
-            }),
-        ),
-    ])));
-}
-
-fn handle_mesh_requests(
-    mut commands: Commands,
-    meshes: Res<Meshes>,
-    mut query: Query<(Entity, &mut Handle<Mesh>, &mut RequestMesh)>,
-) {
-    for (entity, mut mesh_2d_handle, request_mesh) in &mut query {
-        if let Some(handle) = meshes.0.get(request_mesh.0) {
-            *mesh_2d_handle = handle.clone();
-        }
-        if let Some(mut entity) = commands.get_entity(entity) {
-            entity.remove::<RequestMesh>();
+    let mut material_handles = MaterialHandles(HashMap::new());
+    for (hue_name, hue) in material_settings.hues {
+        for (luminance_name, luminance) in material_settings.luminances {
+            for (alpha_name, alpha) in material_settings.alphas {
+                let material = StandardMaterial {
+                    base_color: Color::hsla(hue, material_settings.saturation, luminance, alpha),
+                    unlit: material_settings.unlit,
+                    alpha_mode: if alpha < 1. {
+                        AlphaMode::Blend
+                    } else {
+                        AlphaMode::Opaque
+                    },
+                    ..default()
+                };
+                let mut name = alpha_name.to_string();
+                name.push_str(&luminance_name);
+                name.push_str(&hue_name);
+                material_handles.0.insert(name, materials.add(material));
+            }
         }
     }
+    commands.insert_resource(material_handles);
 }
 
-fn handle_material_requests(
-    mut commands: Commands,
-    materials: Res<Materials>,
-    mut query: Query<(Entity, &mut Handle<StandardMaterial>, &mut RequestMaterial)>,
-) {
-    for (entity, mut handle_color_material, request_material) in &mut query {
-        if let Some(handle) = materials.0.get(request_material.0) {
-            *handle_color_material = handle.clone();
-        }
-        if let Some(mut entity) = commands.get_entity(entity) {
-            entity.remove::<RequestMaterial>();
-        }
-    }
-}
+fn update() {}
+
+// pub fn spawn(self, commands: &mut Commands) -> Entity {
+//     commands
+//         .spawn(self)
+//         .with_children(|builder| {
+//             builder.spawn(MeshBundle::new(
+//                 "plain",
+//                 "dark_green",
+//                 vec4_to_trans(MID.extend(0.).extend(0.)),
+//             ));
+//             builder.spawn(MeshBundle::new(
+//                 "river",
+//                 "teal",
+//                 vec4_to_trans(MID.extend(2.5).extend(PI / 4.)),
+//             ));
+//             builder.spawn(MeshBundle::new(
+//                 "mid",
+//                 "yellow",
+//                 vec4_to_trans(MID.extend(5.).extend(-PI / 4.)),
+//             ));
+//             builder.spawn(MeshBundle::new(
+//                 "lane",
+//                 "yellow",
+//                 vec4_to_trans(RED_TOP.extend(5.).extend(0.)),
+//             ));
+//             builder.spawn(MeshBundle::new(
+//                 "lane",
+//                 "yellow",
+//                 vec4_to_trans(BLUE_TOP.extend(5.).extend(PI / 2.)),
+//             ));
+//             builder.spawn(MeshBundle::new(
+//                 "lane",
+//                 "yellow",
+//                 vec4_to_trans(RED_BOT.extend(5.).extend(PI / 2.)),
+//             ));
+//             builder.spawn(MeshBundle::new(
+//                 "lane",
+//                 "yellow",
+//                 vec4_to_trans(BLUE_BOT.extend(5.).extend(0.)),
+//             ));
+//             builder.spawn(MeshBundle::new(
+//                 "base",
+//                 "dark_red",
+//                 vec4_to_trans(Vec4::new(-1000., -1000., 6., -PI / 4.)),
+//             ));
+//             builder.spawn(MeshBundle::new(
+//                 "base",
+//                 "dark_blue",
+//                 vec4_to_trans(Vec4::new(1000., 1000., 6., 3. * PI / 4.)),
+//             ));
+//         })
+//         .id()
+// }
+
+// pub fn spawn(self, commands: &mut Commands) -> Entity {
+//     commands
+//         .spawn(self)
+//         .with_children(|builder| {
+//             builder.spawn(MeshBundle::new(
+//                 "spawner",
+//                 "purple",
+//                 vec4_to_trans(Vec4::new(0., 0., SPAWNER_RADIUS, 0.)),
+//             ));
+//         })
+//         .id()
+// }
+
+// pub fn spawn(self, commands: &mut Commands) -> Entity {
+//     let team = self.team;
+//     let team_string = match team {
+//         Team::Red => "red",
+//         Team::Blue => "blue",
+//     };
+//     let sight_layer = match team {
+//         Team::Red => CollisionLayer::RedSight,
+//         Team::Blue => CollisionLayer::BlueSight,
+//     };
+//     let attack_layer = match team {
+//         Team::Red => CollisionLayer::RedAttack,
+//         Team::Blue => CollisionLayer::BlueAttack,
+//     };
+//     let opposite_layer = match team {
+//         Team::Red => CollisionLayer::BlueUnit,
+//         Team::Blue => CollisionLayer::RedUnit,
+//     };
+//     let mut unit = commands.spawn(self);
+//     let id = unit.id().index().to_string();
+//     unit.with_children(|builder| {
+//         builder.spawn((
+//             Collider::circle(UNIT_SIGHT_RADIUS),
+//             Sensor,
+//             CollisionLayers::new(sight_layer, opposite_layer),
+//             SightCollider,
+//         ));
+//         builder.spawn((
+//             Collider::circle(UNIT_ATTACK_RADIUS),
+//             Sensor,
+//             CollisionLayers::new(attack_layer, opposite_layer),
+//             AttackCollider,
+//         ));
+//         builder.spawn(MeshBundle::new(
+//             "unit",
+//             "trans_green",
+//             vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
+//         ));
+//         builder.spawn((MeshBundle::new(
+//             "direction",
+//             team_string,
+//             vec4_to_trans(Vec4::new(
+//                 UNIT_RADIUS * (1. - UNIT_TRIANGLE_ANGLE.cos().powf(2.)),
+//                 0.,
+//                 UNIT_RADIUS,
+//                 -PI / 2.,
+//             )),
+//         ),));
+//         builder.spawn((
+//             Text2dBundle {
+//                 text: Text::from_section(
+//                     id,
+//                     TextStyle {
+//                         font_size: 50.,
+//                         color: Color::WHITE,
+//                         ..default()
+//                     },
+//                 ),
+//                 ..default()
+//             },
+//             RenderLayers::layer(1),
+//         ));
+//     });
+//     unit.id()
+// }

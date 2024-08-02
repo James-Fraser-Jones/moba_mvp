@@ -1,8 +1,8 @@
 use crate::game::{consts::*, types::*};
 use avian2d::prelude::*;
 use bevy::prelude::*;
-pub struct LogicPlugin;
 
+pub struct LogicPlugin;
 impl Plugin for LogicPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PhysicsPlugins::new(FixedUpdate));
@@ -22,6 +22,62 @@ impl Plugin for LogicPlugin {
         );
     }
 }
+
+#[derive(Resource)]
+pub struct LogicMapSettings {
+    lane_width: f32,
+    wave_delay: f32,
+    wave_units: i32,
+    spawn_delay: f32,
+}
+impl Default for LogicMapSettings {
+    fn default() -> Self {
+        Self {
+            lane_width: 240.,
+            wave_delay: 20.,
+            wave_units: 6,
+            spawn_delay: 1.,
+        }
+    }
+}
+impl LogicMapSettings {
+    fn non_lane_radius(&self) -> f32 {
+        1000. - self.lane_width
+    }
+    fn mid_lane_radius(&self) -> f32 {
+        1000. - self.lane_width / 2.
+    }
+    fn location(&self, lane: Lane, team: Team) -> Vec2 {
+        Vec2::ZERO
+    }
+}
+
+#[derive(Resource)]
+pub struct LogicUnitSettings {
+    radius: f32,
+    speed: f32,
+    sight_radius: f32,
+    attack_radius: f32,
+    attack_speed: f32,
+    health: f32,
+    attack_damage: f32,
+}
+impl Default for LogicUnitSettings {
+    fn default() -> Self {
+        Self {
+            radius: 18.5,
+            speed: 185.,
+            sight_radius: 55.6,
+            attack_radius: 37.,
+            attack_speed: 1.,
+            health: 100.,
+            attack_damage: 10.,
+        }
+    }
+}
+
+#[derive(Resource)]
+pub struct LogicSpawnerSettings;
 
 fn init_map(mut commands: Commands) {
     //add resources
