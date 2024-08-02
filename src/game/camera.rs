@@ -1,112 +1,75 @@
-use crate::game::{
-    input::{KeyboardAxis, MouseAxis, WheelAxis},
-    os::WindowSettings,
-};
-use bevy::{
-    prelude::*,
-    render::{
-        camera::{OrthographicProjection, ScalingMode},
-        view::RenderLayers,
-    },
-};
+use crate::game::*;
+use bevy::{prelude::*, render::view::RenderLayers};
 use std::f32::consts::PI;
+
+//========PLUGIN=========
 
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init);
-        app.add_systems(
-            Update,
-            (
-                update_camera,
-                update_projection,
-                sync_camera,
-                sync_projection,
-            ),
-        );
+        app.add_systems(Startup, init.after(os::init));
+        app.add_systems(Update, (update_camera, sync_camera, sync_window));
+    }
+}
+
+//========TYPES=========
+
+#[derive(Resource)]
+struct CameraSettings {
+    //spatial
+    translation: Vec3,
+    rotation: Vec2,
+    depth: f32,
+
+    //projection
+    fov: f32,
+    near: f32,
+    far: f32,
+
+    //scaling for (continuously) changable values
+    translation_speed: f32,
+    rotation_speed: f32,
+    depth_speed: f32,
+    fov_speed: f32,
+}
+impl Default for CameraSettings {
+    fn default() -> Self {
+        let fov = PI / 4.;
+        Self {
+            //spatial
+            translation: Vec3::ZERO,
+            rotation: Vec2::ZERO,
+            depth: 1000. / (fov / 2.).tan(),
+
+            //projection
+            fov,
+            near: 0.,
+            far: 2000.,
+
+            //scaling for (continuously) changable values
+            translation_speed: 800.,
+            rotation_speed: 0.15,
+            depth_speed: 300.,
+            fov_speed: 0.1,
+        }
     }
 }
 
 #[derive(Component)]
-struct GameCameraSingleton;
+struct GameCameraMarker;
 
-#[derive(Resource)]
-struct GameCamera {
-    translation: Vec3,
-    rotation: Vec2,
-    zoom: f32,
-}
-impl Default for GameCamera {
-    fn default() -> Self {
-        Self {
-            translation: Vec3::new(0., 0., 0.),
-            rotation: Vec2::new(0., 0.),
-            zoom: 1.0,
-        }
-    }
-}
+//========INIT=========
 
-#[derive(Resource)]
-struct ProjectionSettings {
-    orthographic: bool,
-    fov: f32,
-    near: f32,
-    far: f32,
-}
-impl Default for ProjectionSettings {
-    fn default() -> Self {
-        Self {
-            orthographic: true,
-            fov: PI / 4.,
-            near: 0.,
-            far: 10000.,
-        }
-    }
-}
-
-#[derive(Resource)]
-struct CameraSettings {
-    move_speed: f32,
-    turn_speed: f32,
-    zoom_speed: f32,
-}
-impl Default for CameraSettings {
-    fn default() -> Self {
-        Self {
-            move_speed: 800.,
-            turn_speed: 0.15,
-            zoom_speed: 1.5,
-        }
-    }
-}
-
-fn init(mut commands: Commands) {
-    //, window_settings: Res<WindowSettings>
-    let game_camera = GameCamera::default();
-    let projection_settings = ProjectionSettings::default();
-    let fov = ((projection_settings.fov / 2.).tan() * game_camera.zoom).atan() * 2.;
+fn init(mut commands: Commands, window_settings: Res<os::WindowSettings>) {
+    let camera_settings = CameraSettings::default();
     commands
-        .spawn((
-            TransformBundle::from_transform(
-                Transform::from_translation(game_camera.translation)
-                    .with_rotation(Quat::from_rotation_z(game_camera.rotation.x)),
-            ),
-            GameCameraSingleton,
-        ))
+        .spawn((TransformBundle::default(), GameCameraMarker))
         .with_children(|builder| {
             builder
-                .spawn(TransformBundle::from_transform(Transform::from_rotation(
-                    Quat::from_rotation_x(game_camera.rotation.y),
-                )))
+                .spawn(TransformBundle::default())
                 .with_children(|builder| {
                     builder
-                        .spawn(TransformBundle::from_transform(
-                            Transform::from_translation(Vec3::new(
-                                0.,
-                                0.,
-                                1000. / (fov / 2.).tan(),
-                            )),
-                        ))
+                        .spawn(TransformBundle::default())
                         .with_children(|builder| {
                             builder.spawn((
                                 Camera3dBundle {
@@ -115,24 +78,12 @@ fn init(mut commands: Commands) {
                                         order: 0,
                                         ..default()
                                     },
-                                    projection: if projection_settings.orthographic {
-                                        Projection::Orthographic(OrthographicProjection {
-                                            near: projection_settings.near,
-                                            far: projection_settings.far,
-                                            scaling_mode: ScalingMode::AutoMin {
-                                                min_width: 2000.,
-                                                min_height: 2000.,
-                                            },
-                                            ..default()
-                                        })
-                                    } else {
-                                        Projection::Perspective(PerspectiveProjection {
-                                            near: projection_settings.near,
-                                            far: projection_settings.far,
-                                            fov,
-                                            aspect_ratio: 1920. / 1080., //TODO: window_settings.aspect_ratio(),
-                                        })
-                                    },
+                                    projection: Projection::Perspective(PerspectiveProjection {
+                                        aspect_ratio: window_settings.aspect_ratio(),
+                                        near: camera_settings.near,
+                                        far: camera_settings.far,
+                                        ..default()
+                                    }),
                                     ..default()
                                 },
                                 RenderLayers::layer(0),
@@ -140,257 +91,81 @@ fn init(mut commands: Commands) {
                         });
                 });
         });
-
-    commands.insert_resource(game_camera);
-    commands.insert_resource(projection_settings);
-    commands.init_resource::<CameraSettings>();
+    commands.insert_resource(camera_settings);
 }
 
+//========UPDATE=========
+
 fn update_camera(
-    keyboard_axis: Res<KeyboardAxis>,
-    mouse_axis: Res<MouseAxis>,
-    wheel_axis: Res<WheelAxis>,
-    camera_settings: Res<CameraSettings>,
-    mut game_camera: ResMut<GameCamera>,
+    keyboard_axis: Res<input::KeyboardAxis>,
+    keyboard_buttons: Res<ButtonInput<KeyCode>>,
+    mouse_axis: Res<input::MouseAxis>,
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
+    wheel_axis: Res<input::WheelAxis>,
+    mut camera_settings: ResMut<CameraSettings>,
 ) {
-    game_camera.translation += keyboard_axis.0 * camera_settings.move_speed;
-    game_camera.rotation =
-        (game_camera.rotation + mouse_axis.0 * camera_settings.turn_speed) % (2. * PI);
-    game_camera.zoom += wheel_axis.0.y * camera_settings.zoom_speed;
+    if mouse_buttons.pressed(MouseButton::Right) {
+        //rotation
+        camera_settings.rotation =
+            (camera_settings.rotation - mouse_axis.0 * camera_settings.rotation_speed) % (2. * PI);
+    } else if mouse_buttons.pressed(MouseButton::Middle) {
+        //depth
+        camera_settings.depth += mouse_axis.0.y * camera_settings.depth_speed;
+        camera_settings.depth = camera_settings.depth.max(0.);
+    }
+
+    //translation
+    let yaw = camera_settings.rotation.x;
+    let speed = camera_settings.translation_speed;
+    camera_settings.translation += Quat::from_rotation_z(yaw).mul_vec3(keyboard_axis.0 * speed);
+
+    //fov
+    camera_settings.fov -= wheel_axis.0.y * camera_settings.fov_speed;
+
+    //reset
+    if keyboard_buttons.pressed(KeyCode::KeyR) {
+        *camera_settings = CameraSettings::default();
+    }
 }
 
 fn sync_camera(
-    game_camera: Res<GameCamera>,
-    mut query: Query<&mut Children, With<GameCameraSingleton>>,
+    camera_settings: Res<CameraSettings>,
+    base_query: Query<Entity, With<GameCameraMarker>>,
+    children_query: Query<&Children>,
+    mut transform_query: Query<&mut Transform>,
+    mut projection_query: Query<&mut Projection>,
 ) {
-    let child = query.get_single_mut().unwrap().iter().next().unwrap();
+    let base_entity = base_query.single();
+    let mut descendents = children_query.iter_descendants(base_entity);
+
+    let pivot_entity = descendents.next().unwrap();
+    let stick_entity = descendents.next().unwrap();
+    let camera_entity = descendents.next().unwrap();
+
+    let mut base_transform = transform_query.get_mut(base_entity).unwrap();
+    base_transform.translation = camera_settings.translation;
+    base_transform.rotation = Quat::from_rotation_z(camera_settings.rotation.x);
+
+    let mut stick_transform = transform_query.get_mut(stick_entity).unwrap();
+    stick_transform.translation = Vec3::ZERO.with_z(camera_settings.depth);
+
+    let mut pivot_transform = transform_query.get_mut(pivot_entity).unwrap();
+    pivot_transform.rotation = Quat::from_rotation_x(camera_settings.rotation.y);
+
+    let mut camera_projection = projection_query.get_mut(camera_entity).unwrap();
+    if let Projection::Perspective(ref mut projection) = *camera_projection {
+        projection.fov = camera_settings.fov;
+    };
 }
 
-fn update_projection(
-    keyboard_buttons: Res<ButtonInput<KeyCode>>,
-    mut game_camera: ResMut<GameCamera>,
-    mut projection_settings: ResMut<ProjectionSettings>,
+fn sync_window(
+    window_settings: Res<os::WindowSettings>,
+    mut projection_query: Query<&mut Projection>,
 ) {
-    if keyboard_buttons.just_pressed(KeyCode::KeyQ) {
-        projection_settings.orthographic = !projection_settings.orthographic;
-    }
-    if keyboard_buttons.just_pressed(KeyCode::KeyR) {
-        *game_camera = GameCamera::default();
-        *projection_settings = ProjectionSettings::default();
+    if window_settings.is_changed() {
+        let mut camera_projection = projection_query.single_mut();
+        if let Projection::Perspective(ref mut projection) = *camera_projection {
+            projection.aspect_ratio = window_settings.aspect_ratio();
+        };
     }
 }
-
-fn sync_projection() {}
-
-// fn init(mut commands: Commands) {
-//     commands
-//         .spawn(GameCameraBundle::default())
-//         .with_children(|builder| {
-//             builder.spawn((
-//                 Camera3dBundle {
-//                     camera: Camera {
-//                         clear_color: ClearColorConfig::Custom(Color::BLACK),
-//                         order: 0,
-//                         ..default()
-//                     },
-//                     transform: Transform::from_xyz(0., 0., projective_plane_distance()),
-//                     ..default()
-//                 },
-//                 RenderLayers::layer(0),
-//             ));
-//             builder.spawn((
-//                 Camera2dBundle {
-//                     camera: Camera {
-//                         clear_color: ClearColorConfig::None,
-//                         order: 1,
-//                         ..default()
-//                     },
-//                     transform: Transform::from_xyz(0., 0., projective_plane_distance()),
-//                     ..default()
-//                 },
-//                 RenderLayers::layer(1),
-//             ));
-//         });
-// }
-
-// fn init_camera_reset(
-//     mut main_camera_query: Query<&mut Projection, With<MainCamera>>,
-//     mut overlay_camera_query: Query<&mut OrthographicProjection, With<OverlayCamera>>,
-//     mut orbit_query: Query<(&mut Transform, &mut Fov, &mut Orthographic), With<Orbit>>,
-//     window_settings: Res<WindowSettings>,
-// ) {
-//     let mut main_projection = main_camera_query.single_mut();
-//     let mut overlay_projection = overlay_camera_query.single_mut();
-//     let (mut transform, mut fov, mut orthographic) = orbit_query.single_mut();
-//     reset_camera(
-//         &mut transform,
-//         &mut fov,
-//         &mut orthographic,
-//         &mut main_projection,
-//         &mut overlay_projection,
-//         window_settings.size.y,
-//     );
-// }
-
-// fn update(
-//     mut main_camera_query: Query<&mut Projection, With<MainCamera>>,
-//     mut overlay_camera_query: Query<&mut OrthographicProjection, With<OverlayCamera>>,
-//     mut orbit_query: Query<(&mut Transform, &mut Fov, &mut Orthographic), With<Orbit>>,
-//     window_settings: Res<WindowSettings>,
-//     mut keyboard_axis: ResMut<KeyboardAxis>,
-//     mut mouse_axis: ResMut<MouseAxis>,
-//     mut wheel_axis: ResMut<WheelAxis>,
-// ) {
-//     let mut main_projection = main_camera_query.single_mut();
-//     let mut overlay_projection = overlay_camera_query.single_mut();
-//     let (mut transform, mut fov, mut orthographic) = orbit_query.single_mut();
-
-//     //reset position, orientation, zoom, projection mode
-//     if keyboard_buttons.just_pressed(KeyCode::KeyR) {
-//         reset_camera(
-//             &mut transform,
-//             &mut fov,
-//             &mut orthographic,
-//             &mut main_projection,
-//             &mut overlay_projection,
-//             window_settings.size.y,
-//         );
-//     }
-
-//     //toggle projection mode
-//     if keyboard_buttons.just_pressed(KeyCode::KeyQ) {
-//         orthographic.0 = !orthographic.0;
-//         *main_projection = make_projection(*fov, CAMERA_FAR, *orthographic, window_settings.size.y);
-//     }
-
-//     //pan
-//     let mut direction: Vec3 = Vec3::ZERO;
-//     if keyboard_buttons.pressed(KeyCode::KeyA) {
-//         direction.x -= 1.;
-//     }
-//     if keyboard_buttons.pressed(KeyCode::KeyD) {
-//         direction.x += 1.;
-//     }
-//     if keyboard_buttons.pressed(KeyCode::KeyW) {
-//         direction.y += 1.;
-//     }
-//     if keyboard_buttons.pressed(KeyCode::KeyS) {
-//         direction.y -= 1.;
-//     }
-//     if keyboard_buttons.pressed(KeyCode::Space) {
-//         direction.z += 1.;
-//     }
-//     if keyboard_buttons.pressed(KeyCode::ControlLeft) {
-//         direction.z -= 1.;
-//     }
-//     direction = direction.normalize_or_zero();
-//     direction *= CAMERA_SPEED * time.delta_seconds();
-//     let direction_xy = transform
-//         .local_x()
-//         .as_vec3()
-//         .truncate()
-//         .rotate(direction.truncate())
-//         .extend(0.);
-//     transform.translation += direction_xy;
-//     transform.translation.z += direction.z;
-
-//     //zoom
-//     for scroll_event in mouse_wheel.read() {
-//         if scroll_event.unit == MouseScrollUnit::Line {
-//             if scroll_event.y > 0. {
-//                 fov.0 *= CAMERA_FOV_SCALE;
-//             } else if scroll_event.y < 0. {
-//                 fov.0 /= CAMERA_FOV_SCALE;
-//             }
-//             match *main_projection {
-//                 Projection::Perspective(ref mut projection) => {
-//                     projection.fov = fov.0;
-//                 }
-//                 Projection::Orthographic(ref mut projection) => {
-//                     projection.scaling_mode = ScalingMode::WindowSize(orthographic_window_scale(
-//                         *fov,
-//                         window_settings.size.y,
-//                     ))
-//                 }
-//             }
-//             overlay_projection.scaling_mode =
-//                 ScalingMode::WindowSize(orthographic_window_scale(*fov, window_settings.size.y));
-//         }
-//         //pinch zoom unsupported because mobas use mice
-//     }
-
-//     //rotate
-//     if mouse_buttons.pressed(MouseButton::Middle) {
-//         let mut rot: Vec2 = Vec2::ZERO;
-//         for motion in mouse_motion.read() {
-//             rot -= motion.delta;
-//         }
-//         rot *= CAMERA_TURN_SPEED * time.delta_seconds();
-//         transform.rotate_z(rot.x);
-//         transform.rotate_local_x(rot.y);
-//         //clamp x rotation
-//         let mut angles = transform.rotation.to_euler(EulerRot::ZYX);
-//         angles.2 -= 0.01;
-//         if angles.2 < -PI / 2. {
-//             angles.2 = PI;
-//             transform.rotation = Quat::from_euler(EulerRot::ZYX, angles.0, angles.1, angles.2);
-//         } else if angles.2 < 0. {
-//             angles.2 = 0.;
-//             transform.rotation = Quat::from_euler(EulerRot::ZYX, angles.0, angles.1, angles.2);
-//         }
-//     }
-// }
-
-// fn reset_camera(
-//     trans: &mut Transform,
-//     perspective: &mut PerspectiveProjection,
-//     orthographic: &mut Orthographic,
-//     projection: &mut Projection,
-//     overlay_projection: &mut OrthographicProjection,
-//     window_size: Vec2,
-// ) {
-//     *trans = Transform::IDENTITY;
-//     *fov = CAMERA_FOV;
-//     *orthographic = CAMERA_ORTHOGRAPHIC;
-//     *projection = make_projection(*fov, CAMERA_FAR, *orthographic, window_size);
-//     if let Projection::Orthographic(proj) = make_projection(*fov, CAMERA_FAR, true, window_size) {
-//         *overlay_projection = proj;
-//     }
-// }
-
-// fn make_projection(
-//     perspective: PerspectiveProjection,
-//     orthographic: bool,
-//     window_size: Vec2,
-// ) -> Projection {
-//     if orthographic {
-//         Projection::from(OrthographicProjection {
-//             scaling_mode: ScalingMode::WindowSize(orthographic_window_scale(
-//                 perspective.fov,
-//                 window_size,
-//             )),
-//             near: perspective.near,
-//             far: perspective.far,
-//             // scaling_mode: ScalingMode::AutoMin {
-//             //     min_width: 2000.,
-//             //     min_height: 2000.,
-//             // },
-//             // scaling_mode: ScalingMode::AutoMax {
-//             //     min_width: 2000.,
-//             //     min_height: 2000.,
-//             // },
-//             ..default()
-//         })
-//     } else {
-//         Projection::from(perspective)
-//     }
-// }
-
-// //z distance required to fit the entire 2000 unit width ground plane into the perspective projection
-// fn projective_plane_distance() -> f32 {
-//     1000. / (CAMERA_FOV / 2.).tan()
-// }
-
-// fn orthographic_window_scale(fov: f32, window_size: Vec2) -> f32 {
-//     window_size.min_element() / (2000. * (fov / 2.).tan() / (CAMERA_FOV / 2.).tan())
-// }
