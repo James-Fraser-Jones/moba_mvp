@@ -11,7 +11,7 @@ impl Plugin for OSPlugin {
 fn init(mut commands: Commands, mut query: Query<&mut Window>) {
     let window_settings = WindowSettings::default();
     let mut primary_window = query.get_single_mut().unwrap();
-    set_window(&window_settings, &mut primary_window);
+    sync_window(&window_settings, &mut primary_window);
     commands.insert_resource(window_settings);
 }
 
@@ -23,8 +23,11 @@ fn update(
 ) {
     if window_settings.is_changed() {
         let mut primary_window = query.get_single_mut().unwrap();
-        set_window(&window_settings, &mut primary_window);
+        sync_window(&window_settings, &mut primary_window);
     }
+    //TODO: need to also check whether the primary window is changed and update in the other direction, unless we stop users from interacting with the window in any way by default
+    //actually just do a newtype wrapper over the existing window struct instead, basically making window a resource instead of a component and allowing us to override the "default"
+    //impl with our chosen settings, whilst still allowing them to be mutatible through code
     if keyboard.just_pressed(KeyCode::Escape) {
         writer.send(AppExit::Success);
     }
@@ -43,7 +46,7 @@ impl Default for WindowSettings {
         Self {
             name: "Moba MVP",
             position: IVec2::new(0, 0),
-            size: Vec2::new(960., 540.),
+            size: Vec2::new(1920., 1080.),
             mode: WindowMode::Windowed, //mode: WindowMode::BorderlessFullscreen,
             cursor_grab: CursorGrabMode::None, //cursor_grab: CursorGrabMode::Confined,
         }
@@ -55,7 +58,7 @@ impl WindowSettings {
     }
 }
 
-fn set_window(game_window: &WindowSettings, window: &mut Window) {
+fn sync_window(game_window: &WindowSettings, window: &mut Window) {
     *window = Window {
         title: game_window.name.into(),
         name: Some(game_window.name.into()),

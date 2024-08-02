@@ -1,14 +1,6 @@
 use bevy::prelude::*;
 use std::f32::consts::PI;
 
-//camera
-pub const CAMERA_SPEED: f32 = 800.;
-pub const CAMERA_TURN_SPEED: f32 = PI / 20.;
-pub const CAMERA_FOV: f32 = PI / 4.; //this is the default
-pub const CAMERA_FOV_SCALE: f32 = 2. / 3.; //how much to multiplicatively increase/decrease on-zoom
-pub const CAMERA_ORTHOGRAPHIC: bool = true;
-pub const CAMERA_FAR: f32 = 10000.;
-
 //unit
 pub const UNIT_SPEED: f32 = 185.;
 pub const UNIT_RADIUS: f32 = 18.5;
