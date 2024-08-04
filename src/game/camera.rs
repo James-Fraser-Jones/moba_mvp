@@ -38,7 +38,7 @@ impl Default for CameraSettings {
         Self {
             //spatial
             translation: Vec3::ZERO,
-            rotation: Vec2::ZERO,
+            rotation: Vec2::new(0., PI / 8.),
             depth: 1000. / (fov / 2.).tan(),
 
             //projection
