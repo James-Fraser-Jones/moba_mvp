@@ -40,7 +40,6 @@ impl Default for MaterialSettings {
 pub struct MapSettings {
     spawner_radius: f32,
     river_width: f32,
-    base_radius: f32,
     unit_angle: f32,
 }
 impl Default for MapSettings {
@@ -48,7 +47,6 @@ impl Default for MapSettings {
         Self {
             spawner_radius: 27.8,
             river_width: 200.,
-            base_radius: 360.,
             unit_angle: PI / 8.,
         }
     }
@@ -143,138 +141,148 @@ fn init(
         }
     }
     commands.insert_resource(material_handles);
+
+    // pub fn spawn(self, commands: &mut Commands) -> Entity {
+    //     commands
+    //         .spawn(self)
+    //         .with_children(|builder| {
+    //             builder.spawn(MeshBundle::new(
+    //                 "plain",
+    //                 "dark_green",
+    //                 vec4_to_trans(MID.extend(0.).extend(0.)),
+    //             ));
+    //             builder.spawn(MeshBundle::new(
+    //                 "river",
+    //                 "teal",
+    //                 vec4_to_trans(MID.extend(2.5).extend(PI / 4.)),
+    //             ));
+    //             builder.spawn(MeshBundle::new(
+    //                 "mid",
+    //                 "yellow",
+    //                 vec4_to_trans(MID.extend(5.).extend(-PI / 4.)),
+    //             ));
+    //             builder.spawn(MeshBundle::new(
+    //                 "lane",
+    //                 "yellow",
+    //                 vec4_to_trans(RED_TOP.extend(5.).extend(0.)),
+    //             ));
+    //             builder.spawn(MeshBundle::new(
+    //                 "lane",
+    //                 "yellow",
+    //                 vec4_to_trans(BLUE_TOP.extend(5.).extend(PI / 2.)),
+    //             ));
+    //             builder.spawn(MeshBundle::new(
+    //                 "lane",
+    //                 "yellow",
+    //                 vec4_to_trans(RED_BOT.extend(5.).extend(PI / 2.)),
+    //             ));
+    //             builder.spawn(MeshBundle::new(
+    //                 "lane",
+    //                 "yellow",
+    //                 vec4_to_trans(BLUE_BOT.extend(5.).extend(0.)),
+    //             ));
+    //             builder.spawn(MeshBundle::new(
+    //                 "base",
+    //                 "dark_red",
+    //                 vec4_to_trans(Vec4::new(-1000., -1000., 6., -PI / 4.)),
+    //             ));
+    //             builder.spawn(MeshBundle::new(
+    //                 "base",
+    //                 "dark_blue",
+    //                 vec4_to_trans(Vec4::new(1000., 1000., 6., 3. * PI / 4.)),
+    //             ));
+    //         })
+    //         .id()
+    // }
 }
 
-fn update() {}
+fn update() {
+    // pub fn spawn(self, commands: &mut Commands) -> Entity {
+    //     commands
+    //         .spawn(self)
+    //         .with_children(|builder| {
+    //             builder.spawn(MeshBundle::new(
+    //                 "spawner",
+    //                 "purple",
+    //                 vec4_to_trans(Vec4::new(0., 0., SPAWNER_RADIUS, 0.)),
+    //             ));
+    //         })
+    //         .id()
+    // }
 
-// pub fn spawn(self, commands: &mut Commands) -> Entity {
-//     commands
-//         .spawn(self)
-//         .with_children(|builder| {
-//             builder.spawn(MeshBundle::new(
-//                 "plain",
-//                 "dark_green",
-//                 vec4_to_trans(MID.extend(0.).extend(0.)),
-//             ));
-//             builder.spawn(MeshBundle::new(
-//                 "river",
-//                 "teal",
-//                 vec4_to_trans(MID.extend(2.5).extend(PI / 4.)),
-//             ));
-//             builder.spawn(MeshBundle::new(
-//                 "mid",
-//                 "yellow",
-//                 vec4_to_trans(MID.extend(5.).extend(-PI / 4.)),
-//             ));
-//             builder.spawn(MeshBundle::new(
-//                 "lane",
-//                 "yellow",
-//                 vec4_to_trans(RED_TOP.extend(5.).extend(0.)),
-//             ));
-//             builder.spawn(MeshBundle::new(
-//                 "lane",
-//                 "yellow",
-//                 vec4_to_trans(BLUE_TOP.extend(5.).extend(PI / 2.)),
-//             ));
-//             builder.spawn(MeshBundle::new(
-//                 "lane",
-//                 "yellow",
-//                 vec4_to_trans(RED_BOT.extend(5.).extend(PI / 2.)),
-//             ));
-//             builder.spawn(MeshBundle::new(
-//                 "lane",
-//                 "yellow",
-//                 vec4_to_trans(BLUE_BOT.extend(5.).extend(0.)),
-//             ));
-//             builder.spawn(MeshBundle::new(
-//                 "base",
-//                 "dark_red",
-//                 vec4_to_trans(Vec4::new(-1000., -1000., 6., -PI / 4.)),
-//             ));
-//             builder.spawn(MeshBundle::new(
-//                 "base",
-//                 "dark_blue",
-//                 vec4_to_trans(Vec4::new(1000., 1000., 6., 3. * PI / 4.)),
-//             ));
-//         })
-//         .id()
-// }
+    // pub fn spawn(self, commands: &mut Commands) -> Entity {
+    //     let team = self.team;
+    //     let team_string = match team {
+    //         Team::Red => "red",
+    //         Team::Blue => "blue",
+    //     };
+    //     let sight_layer = match team {
+    //         Team::Red => CollisionLayer::RedSight,
+    //         Team::Blue => CollisionLayer::BlueSight,
+    //     };
+    //     let attack_layer = match team {
+    //         Team::Red => CollisionLayer::RedAttack,
+    //         Team::Blue => CollisionLayer::BlueAttack,
+    //     };
+    //     let opposite_layer = match team {
+    //         Team::Red => CollisionLayer::BlueUnit,
+    //         Team::Blue => CollisionLayer::RedUnit,
+    //     };
+    //     let mut unit = commands.spawn(self);
+    //     let id = unit.id().index().to_string();
+    //     unit.with_children(|builder| {
+    //         builder.spawn((
+    //             Collider::circle(UNIT_SIGHT_RADIUS),
+    //             Sensor,
+    //             CollisionLayers::new(sight_layer, opposite_layer),
+    //             SightCollider,
+    //         ));
+    //         builder.spawn((
+    //             Collider::circle(UNIT_ATTACK_RADIUS),
+    //             Sensor,
+    //             CollisionLayers::new(attack_layer, opposite_layer),
+    //             AttackCollider,
+    //         ));
+    //         builder.spawn(MeshBundle::new(
+    //             "unit",
+    //             "trans_green",
+    //             vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
+    //         ));
+    //         builder.spawn((MeshBundle::new(
+    //             "direction",
+    //             team_string,
+    //             vec4_to_trans(Vec4::new(
+    //                 UNIT_RADIUS * (1. - UNIT_TRIANGLE_ANGLE.cos().powf(2.)),
+    //                 0.,
+    //                 UNIT_RADIUS,
+    //                 -PI / 2.,
+    //             )),
+    //         ),));
+    //         builder.spawn((
+    //             Text2dBundle {
+    //                 text: Text::from_section(
+    //                     id,
+    //                     TextStyle {
+    //                         font_size: 50.,
+    //                         color: Color::WHITE,
+    //                         ..default()
+    //                     },
+    //                 ),
+    //                 ..default()
+    //             },
+    //             RenderLayers::layer(1),
+    //         ));
+    //     });
+    //     unit.id()
+    // }
 
-// pub fn spawn(self, commands: &mut Commands) -> Entity {
-//     commands
-//         .spawn(self)
-//         .with_children(|builder| {
-//             builder.spawn(MeshBundle::new(
-//                 "spawner",
-//                 "purple",
-//                 vec4_to_trans(Vec4::new(0., 0., SPAWNER_RADIUS, 0.)),
-//             ));
-//         })
-//         .id()
-// }
-
-// pub fn spawn(self, commands: &mut Commands) -> Entity {
-//     let team = self.team;
-//     let team_string = match team {
-//         Team::Red => "red",
-//         Team::Blue => "blue",
-//     };
-//     let sight_layer = match team {
-//         Team::Red => CollisionLayer::RedSight,
-//         Team::Blue => CollisionLayer::BlueSight,
-//     };
-//     let attack_layer = match team {
-//         Team::Red => CollisionLayer::RedAttack,
-//         Team::Blue => CollisionLayer::BlueAttack,
-//     };
-//     let opposite_layer = match team {
-//         Team::Red => CollisionLayer::BlueUnit,
-//         Team::Blue => CollisionLayer::RedUnit,
-//     };
-//     let mut unit = commands.spawn(self);
-//     let id = unit.id().index().to_string();
-//     unit.with_children(|builder| {
-//         builder.spawn((
-//             Collider::circle(UNIT_SIGHT_RADIUS),
-//             Sensor,
-//             CollisionLayers::new(sight_layer, opposite_layer),
-//             SightCollider,
-//         ));
-//         builder.spawn((
-//             Collider::circle(UNIT_ATTACK_RADIUS),
-//             Sensor,
-//             CollisionLayers::new(attack_layer, opposite_layer),
-//             AttackCollider,
-//         ));
-//         builder.spawn(MeshBundle::new(
-//             "unit",
-//             "trans_green",
-//             vec4_to_trans(Vec4::new(0., 0., UNIT_RADIUS, 0.)),
-//         ));
-//         builder.spawn((MeshBundle::new(
-//             "direction",
-//             team_string,
-//             vec4_to_trans(Vec4::new(
-//                 UNIT_RADIUS * (1. - UNIT_TRIANGLE_ANGLE.cos().powf(2.)),
-//                 0.,
-//                 UNIT_RADIUS,
-//                 -PI / 2.,
-//             )),
-//         ),));
-//         builder.spawn((
-//             Text2dBundle {
-//                 text: Text::from_section(
-//                     id,
-//                     TextStyle {
-//                         font_size: 50.,
-//                         color: Color::WHITE,
-//                         ..default()
-//                     },
-//                 ),
-//                 ..default()
-//             },
-//             RenderLayers::layer(1),
-//         ));
-//     });
-//     unit.id()
-// }
+    // fn update_orientations(mut query: Query<(&Action, &mut Transform, &LinearVelocity), With<Unit>>) {
+    //     for (action, mut trans, linear_velocity) in &mut query {
+    //         if let Action::Move(_, _) = *action {
+    //             trans.rotation = Quat::from_rotation_z(linear_velocity.0.to_angle());
+    //         } else if let Action::Attack(_, AttackBehaviour::Pursue) = *action {
+    //             trans.rotation = Quat::from_rotation_z(linear_velocity.0.to_angle());
+    //         }
+    //     }
+    // }
+}
