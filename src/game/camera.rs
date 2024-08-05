@@ -37,7 +37,7 @@ impl Default for CameraSettings {
         let fov = PI / 4.;
         Self {
             //spatial
-            translation: Vec3::ZERO,
+            translation: Vec3::new(0., -150., 0.),
             rotation: Vec2::new(0., PI / 8.),
             depth: 1000. / (fov / 2.).tan(),
 
