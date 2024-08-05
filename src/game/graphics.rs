@@ -2,7 +2,7 @@ use bevy::{
     math::{Affine2, VectorSpace},
     prelude::*,
     render::{
-        mesh::{Indices, VertexAttributeValues},
+        mesh::{Indices, MeshVertexAttribute, MeshVertexAttributeId, VertexAttributeValues},
         render_asset::RenderAssetUsages,
         render_resource::PrimitiveTopology,
         *,
@@ -80,13 +80,13 @@ fn init(
     //     ..default()
     // });
 
-    //test manually constructed plane
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(create_plane()),
-        material: color_material.clone(),
-        transform: Transform::from_translation(Vec3::ZERO.with_z(200.)),
-        ..default()
-    });
+    // //test manually constructed plane (no rendering issue unless uvs missing)
+    // commands.spawn(PbrBundle {
+    //     mesh: meshes.add(create_plane()),
+    //     material: color_material.clone(),
+    //     transform: Transform::from_translation(Vec3::ZERO.with_z(200.)),
+    //     ..default()
+    // });
 
     // //test gltf scene (has rendering issue)
     // let scene: Handle<Scene> = server.load("models/rift.glb#Scene0");
@@ -99,22 +99,43 @@ fn init(
     //     });
     // }
 
-    // //seperate gltf primitive meshes (has rendering issue)
-    // for i in 0..26 {
-    //     let mesh: Handle<Mesh> = server.load(format!("models/rift.glb#Mesh{}/Primitive0", i));
-    //     for rot in [0., PI] {
-    //         commands.spawn(PbrBundle {
-    //             mesh: mesh.clone(),
-    //             material: color_material.clone(),
-    //             transform: Transform::from_translation(Vec3::ZERO.with_z(200.))
-    //                 .with_rotation(Quat::from_rotation_z(rot)),
-    //             ..default()
-    //         });
-    //     }
-    // }
+    // //single mesh from the gltf, for testing
+    // commands.spawn(PbrBundle {
+    //     mesh: server.load("models/rift.glb#Mesh0/Primitive0"),
+    //     material: color_material.clone(),
+    //     transform: Transform::from_translation(Vec3::ZERO.with_z(200.)),
+    //     ..default()
+    // });
+
+    //seperate gltf primitive meshes (has rendering issue)
+    for i in 0..26 {
+        let mesh: Handle<Mesh> = server.load(format!("models/rift.glb#Mesh{}/Primitive0", i));
+        for rot in [0., PI] {
+            commands.spawn(PbrBundle {
+                mesh: mesh.clone(),
+                material: color_material.clone(),
+                transform: Transform::from_rotation(Quat::from_rotation_z(rot)),
+                ..default()
+            });
+        }
+    }
 }
 
-fn update() {}
+fn update(mut mesh_events: EventReader<AssetEvent<Mesh>>, mut meshes: ResMut<Assets<Mesh>>) {
+    for mesh_event in mesh_events.read() {
+        match *mesh_event {
+            AssetEvent::Added { id } => {
+                let mesh = meshes.get_mut(id).unwrap();
+                if let None = mesh.attribute(Mesh::ATTRIBUTE_UV_0) {
+                    let vertex_count = mesh.attribute(Mesh::ATTRIBUTE_POSITION).unwrap().len();
+                    let uvs = vec![Vec2::ZERO; vertex_count];
+                    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+                }
+            }
+            _ => {}
+        }
+    }
+}
 
 fn create_plane() -> Mesh {
     Mesh::new(
@@ -130,10 +151,10 @@ fn create_plane() -> Mesh {
             [1000., -1000., 0.],
         ],
     )
-    // .with_inserted_attribute(
-    //     Mesh::ATTRIBUTE_UV_0,
-    //     vec![[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
-    // )
+    .with_inserted_attribute(
+        Mesh::ATTRIBUTE_UV_0,
+        vec![[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]],
+    )
     .with_inserted_attribute(
         Mesh::ATTRIBUTE_NORMAL,
         vec![
@@ -145,3 +166,119 @@ fn create_plane() -> Mesh {
     )
     .with_inserted_indices(Indices::U32(vec![0, 2, 1, 1, 2, 3])) //anti-clockwise cycling of indices required
 }
+
+// this is the custom made plane
+// Mesh {
+//     primitive_topology: TriangleList,
+//     attributes: {
+//         MeshVertexAttributeId(0): MeshAttributeData {
+//             attribute: MeshVertexAttribute {
+//                 name: "Vertex_Position",
+//                 id: MeshVertexAttributeId(0),
+//                 format: Float32x3
+//             },
+//             values: Float32x3([[-1000.0, 1000.0, 0.0], [1000.0, 1000.0, 0.0], [-1000.0, -1000.0, 0.0], [1000.0, -1000.0, 0.0]])
+//         },
+//         MeshVertexAttributeId(1): MeshAttributeData {
+//             attribute: MeshVertexAttribute {
+//                 name: "Vertex_Normal",
+//                 id: MeshVertexAttributeId(1),
+//                 format: Float32x3
+//             },
+//             values: Float32x3([[0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]])
+//         },
+//         MeshVertexAttributeId(2): MeshAttributeData {
+//             attribute: MeshVertexAttribute {
+//                 name: "Vertex_Uv",
+//                 id: MeshVertexAttributeId(2),
+//                 format: Float32x2 },
+//             values: Float32x2([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]])
+//         }
+//     },
+//     indices: Some(U32([0, 2, 1, 1, 2, 3])),
+//     morph_targets: None,
+//     morph_target_names: None,
+//     asset_usage: RenderAssetUsages(MAIN_WORLD | RENDER_WORLD)
+// }
+
+// //this is an example mesh from the gltf, only difference seems to be that it uses u16 indices
+// Mesh {
+//     primitive_topology: TriangleList,
+//     attributes: {
+//         MeshVertexAttributeId(0): MeshAttributeData {
+//             attribute: MeshVertexAttribute {
+//                 name: "Vertex_Position",
+//                 id: MeshVertexAttributeId(0),
+//                 format: Float32x3
+//             },
+//             values: Float32x3([
+//                 [-618.67395, -49.375423, 0.0],
+//                 [-600.02167, -48.780136, 0.0],
+//                 [-598.2358, -86.283165, 0.0],
+//                 [-583.35364, -127.3579, 0.0],
+//                 [-552.2003, -170.21849, 0.0],
+//                 [-508.74442, -205.14195, 0.0],
+//                 [-465.48697, -220.61938, 0.0],
+//                 [-417.86407, -220.22252, 0.0],
+//                 [-388.29822, -211.69008, 0.0],
+//                 [-360.5182, -225.18323, 0.0],
+//                 [-359.9229, -247.60568, 0.0],
+//                 [-451.99384, -330.15204, 0.0],
+//                 [-510.13345, -295.03015, 0.0],
+//                 [-596.05304, -263.6784, 0.0],
+//                 [-587.9175, -225.18323, 0.0],
+//                 [-595.45776, -190.65663, 0.0],
+//                 [-622.4441, -154.5426, 0.0],
+//                 [-627.6032, -114.46001, 0.0]
+//             ])
+//         },
+//         MeshVertexAttributeId(1): MeshAttributeData {
+//             attribute: MeshVertexAttribute {
+//                 name: "Vertex_Normal",
+//                 id: MeshVertexAttributeId(1),
+//                 format: Float32x3
+//             },
+//             values: Float32x3([
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0],
+//                 [0.0, 0.0, 1.0]
+//             ])
+//         }
+//     },
+//     indices: Some(U16([
+//         1, 0, 17,
+//         17, 16, 15,
+//         14, 13, 12,
+//         1, 17, 15,
+//         15, 14, 12,
+//         12, 11, 10,
+//         10, 9, 8,
+//         10, 8, 7,
+//         15, 12, 10,
+//         2, 1, 15,
+//         3, 2, 15,
+//         10, 7, 6,
+//         15, 10, 6,
+//         4, 3, 15,
+//         15, 6, 5,
+//         15, 5, 4
+//     ])),
+//     morph_targets: None,
+//     morph_target_names: None,
+//     asset_usage: RenderAssetUsages(MAIN_WORLD | RENDER_WORLD)
+// }
