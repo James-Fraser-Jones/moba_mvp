@@ -43,7 +43,7 @@ fn init(
     });
 
     let wall_texture: Handle<Image> = server.load_with_settings(
-        "textures/kenney_dev_textures/Orange/texture_07.png",
+        "textures/kenney_dev_textures/Orange/texture_08.png",
         |settings: &mut texture::ImageLoaderSettings| {
             settings.sampler = texture::ImageSampler::Descriptor(texture::ImageSamplerDescriptor {
                 address_mode_u: texture::ImageAddressMode::Repeat,
@@ -59,11 +59,11 @@ fn init(
         ..default()
     });
 
-    let color_material = standard_materials.add(StandardMaterial {
-        base_color: Color::WHITE,
-        unlit: true,
-        ..default()
-    });
+    // let color_material = standard_materials.add(StandardMaterial {
+    //     base_color: Color::WHITE,
+    //     unlit: true,
+    //     ..default()
+    // });
 
     //ground plane
     commands.spawn(PbrBundle {
@@ -109,11 +109,11 @@ fn init(
 
     //seperate gltf primitive meshes (has rendering issue)
     for i in 0..26 {
-        let mesh: Handle<Mesh> = server.load(format!("models/rift.glb#Mesh{}/Primitive0", i));
+        let mesh: Handle<Mesh> = server.load(format!("models/map.glb#Mesh{}/Primitive0", i));
         for rot in [0., PI] {
             commands.spawn(PbrBundle {
                 mesh: mesh.clone(),
-                material: color_material.clone(),
+                material: wall_material.clone(),
                 transform: Transform::from_rotation(Quat::from_rotation_z(rot)),
                 ..default()
             });
@@ -121,16 +121,32 @@ fn init(
     }
 }
 
-fn update(mut mesh_events: EventReader<AssetEvent<Mesh>>, mut meshes: ResMut<Assets<Mesh>>) {
+fn update(
+    mut mesh_events: EventReader<AssetEvent<Mesh>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    server: Res<AssetServer>,
+) {
     for mesh_event in mesh_events.read() {
         match *mesh_event {
             AssetEvent::Added { id } => {
                 let mesh = meshes.get_mut(id).unwrap();
                 if let None = mesh.attribute(Mesh::ATTRIBUTE_UV_0) {
-                    let vertex_count = mesh.attribute(Mesh::ATTRIBUTE_POSITION).unwrap().len();
-                    let uvs = vec![Vec2::ZERO; vertex_count];
+                    let vertices = mesh
+                        .attribute(Mesh::ATTRIBUTE_POSITION)
+                        .unwrap()
+                        .as_float3()
+                        .unwrap();
+                    let mut uvs = vec![Vec2::ZERO; vertices.len()];
+                    for (i, vertex) in vertices.iter().enumerate() {
+                        uvs[i] = (Vec2::new(vertex[0], vertex[1]) + 1000.) / 2000.
+                        //convert [-1000, 1000] to [0, 1]
+                    }
                     mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
                 }
+                if let Some(path) = server.get_path(id) {
+                    println!("Loaded external mesh: {}", path);
+                }
+                //println!("{:?}", mesh);
             }
             _ => {}
         }
