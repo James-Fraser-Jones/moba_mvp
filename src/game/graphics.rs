@@ -1,8 +1,14 @@
 use bevy::{
     math::{Affine2, VectorSpace},
     prelude::*,
-    render::*,
+    render::{
+        mesh::{Indices, VertexAttributeValues},
+        render_asset::RenderAssetUsages,
+        render_resource::PrimitiveTopology,
+        *,
+    },
 };
+
 use std::f32::consts::PI;
 
 pub struct GraphicsPlugin;
@@ -59,12 +65,14 @@ fn init(
         ..default()
     });
 
+    //ground plane
     commands.spawn(PbrBundle {
         mesh: meshes.add(Plane3d::new(Vec3::Z, Vec2::splat(1000.))),
         material: ground_material.clone(),
         ..default()
     });
 
+    // //test plane (no rendering issue)
     // commands.spawn(PbrBundle {
     //     mesh: meshes.add(Plane3d::new(Vec3::Z, Vec2::splat(1000.))),
     //     material: color_material.clone(),
@@ -72,6 +80,15 @@ fn init(
     //     ..default()
     // });
 
+    //test manually constructed plane
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(create_plane()),
+        material: color_material.clone(),
+        transform: Transform::from_translation(Vec3::ZERO.with_z(200.)),
+        ..default()
+    });
+
+    // //test gltf scene (has rendering issue)
     // let scene: Handle<Scene> = server.load("models/rift.glb#Scene0");
     // for rot in [0., PI] {
     //     commands.spawn(SceneBundle {
@@ -82,18 +99,49 @@ fn init(
     //     });
     // }
 
-    for i in 0..26 {
-        let mesh: Handle<Mesh> = server.load(format!("models/rift.glb#Mesh{}/Primitive0", i));
-        for rot in [0., PI] {
-            commands.spawn(PbrBundle {
-                mesh: mesh.clone(),
-                material: color_material.clone(),
-                transform: Transform::from_translation(Vec3::ZERO.with_z(200.))
-                    .with_rotation(Quat::from_euler(EulerRot::ZYX, rot, 0., PI / 2.)),
-                ..default()
-            });
-        }
-    }
+    // //seperate gltf primitive meshes (has rendering issue)
+    // for i in 0..26 {
+    //     let mesh: Handle<Mesh> = server.load(format!("models/rift.glb#Mesh{}/Primitive0", i));
+    //     for rot in [0., PI] {
+    //         commands.spawn(PbrBundle {
+    //             mesh: mesh.clone(),
+    //             material: color_material.clone(),
+    //             transform: Transform::from_translation(Vec3::ZERO.with_z(200.))
+    //                 .with_rotation(Quat::from_rotation_z(rot)),
+    //             ..default()
+    //         });
+    //     }
+    // }
 }
 
 fn update() {}
+
+fn create_plane() -> Mesh {
+    Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::MAIN_WORLD | RenderAssetUsages::RENDER_WORLD,
+    )
+    .with_inserted_attribute(
+        Mesh::ATTRIBUTE_POSITION,
+        vec![
+            [-1000., 1000., 0.],
+            [1000., 1000., 0.],
+            [-1000., -1000., 0.],
+            [1000., -1000., 0.],
+        ],
+    )
+    // .with_inserted_attribute(
+    //     Mesh::ATTRIBUTE_UV_0,
+    //     vec![[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+    // )
+    .with_inserted_attribute(
+        Mesh::ATTRIBUTE_NORMAL,
+        vec![
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+        ],
+    )
+    .with_inserted_indices(Indices::U32(vec![0, 2, 1, 1, 2, 3])) //anti-clockwise cycling of indices required
+}
