@@ -1,4 +1,5 @@
 use bevy::gltf::{GltfMesh, GltfNode};
+use bevy::pbr::wireframe::WireframeConfig;
 use bevy::{math::Affine2, prelude::*, render::*};
 use std::f32::consts::PI;
 
@@ -6,7 +7,7 @@ pub struct GraphicsPlugin;
 impl Plugin for GraphicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init);
-        app.add_systems(Update, (update, handle_gltf_events));
+        app.add_systems(Update, (update, handle_gltf_events, toggle_wireframe));
     }
 }
 
@@ -19,14 +20,27 @@ struct DevMaterials {
     area: Handle<StandardMaterial>,
 }
 
+fn toggle_wireframe(
+    mut wireframe_config: ResMut<WireframeConfig>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+) {
+    if keyboard.just_pressed(KeyCode::KeyV) {
+        wireframe_config.global = !wireframe_config.global;
+    }
+}
+
 fn init(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut standard_materials: ResMut<Assets<StandardMaterial>>,
     server: Res<AssetServer>,
+    mut wireframe_config: ResMut<WireframeConfig>,
 ) {
     //load gltf file(s)
     commands.insert_resource(Gltfs(vec![server.load::<Gltf>("models/map.glb")]));
+
+    //enable wireframe by default (this currently breaks wireframes entirely)
+    //wireframe_config.global = true;
 
     //add dev materials
     let ground_texture: Handle<Image> = server.load_with_settings(
