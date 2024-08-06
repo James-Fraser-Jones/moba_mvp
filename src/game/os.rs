@@ -1,77 +1,112 @@
-use bevy::{prelude::*, window::*};
+//responsibilities:
+//window settings and utils
+//quitting the game
+//saving/loading assets to/from the filesystem
+
+use bevy::{prelude::*, render::*, utils::hashbrown::HashMap, window::*};
 
 pub struct OSPlugin;
 impl Plugin for OSPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init);
-        app.add_systems(Update, update);
+        app.add_systems(Startup, (init_resources, init).chain());
+        app.add_systems(Update, (sync_window, exit_game));
     }
 }
 
-pub fn init(mut commands: Commands, mut query: Query<&mut Window>) {
-    let window_settings = WindowSettings::default();
-    let mut primary_window = query.get_single_mut().unwrap();
-    settings_to_window(&window_settings, &mut primary_window);
-    commands.insert_resource(window_settings);
+#[derive(Resource, Default)]
+pub struct Handles<A: Asset>(pub HashMap<String, Handle<A>>);
+impl<A: Asset> Handles<A> {
+    pub fn get(&self, name: &str) -> Handle<A> {
+        self.0.get(name).unwrap().clone()
+    }
+    pub fn add(&mut self, name: &str, value: impl Into<A>, assets: &mut Assets<A>) {
+        self.0.insert(name.to_string(), assets.add(value));
+    }
+    pub fn load(&mut self, path: &str, server: &AssetServer) {
+        let path_string = path.to_string();
+        self.0.insert(path.to_string(), server.load(path_string));
+    }
 }
 
-fn update(
-    mut window_settings: ResMut<WindowSettings>,
+fn init_resources(mut commands: Commands) {
+    commands.init_resource::<MainWindow>();
+    commands.insert_resource(Handles::<Gltf>(HashMap::default()));
+    commands.init_resource::<Handles<Image>>();
+    commands.init_resource::<Handles<StandardMaterial>>();
+    commands.insert_resource(Handles::<Mesh>(HashMap::default()));
+}
+
+pub fn init(
+    main_window: Res<MainWindow>,
+    server: Res<AssetServer>,
     mut window_query: Query<&mut Window>,
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut writer: EventWriter<AppExit>,
+    mut gltf_handles: ResMut<Handles<Gltf>>,
+    mut image_handles: ResMut<Handles<Image>>,
 ) {
+    //sync resource with entity
+    let mut window = window_query.single_mut();
+    *window = main_window.0.clone();
+
+    //load assets from file system
+    for gltf_path in ["models/map.glb"] {
+        gltf_handles.load(&gltf_path, &server);
+    }
+    for image_path in [
+        "textures/kenney_dev_textures/Dark/texture_07.png",
+        "textures/kenney_dev_textures/Orange/texture_08.png",
+        "textures/kenney_dev_textures/Green/texture_08.png",
+    ] {
+        image_handles.0.insert(
+            image_path.to_string(),
+            server.load_with_settings(image_path, |settings: &mut texture::ImageLoaderSettings| {
+                settings.sampler =
+                    texture::ImageSampler::Descriptor(texture::ImageSamplerDescriptor {
+                        address_mode_u: texture::ImageAddressMode::Repeat,
+                        address_mode_v: texture::ImageAddressMode::Repeat,
+                        ..default()
+                    })
+            }),
+        );
+    }
+}
+
+fn sync_window(mut main_window: ResMut<MainWindow>, mut window_query: Query<&mut Window>) {
     let mut window = window_query.single_mut();
     if window.is_changed() {
-        window_to_settings(&window, &mut window_settings);
-    } else if window_settings.is_changed() {
-        settings_to_window(&window_settings, &mut window);
+        main_window.0 = window.clone();
+    } else if main_window.is_changed() {
+        *window = main_window.0.clone();
     }
+}
+
+fn exit_game(keyboard: Res<ButtonInput<KeyCode>>, mut writer: EventWriter<AppExit>) {
     if keyboard.just_pressed(KeyCode::Escape) {
         writer.send(AppExit::Success);
     }
 }
 
 #[derive(Resource)]
-pub struct WindowSettings {
-    pub name: String,
-    pub position: IVec2,
-    pub size: Vec2,
-    pub mode: WindowMode,
-    pub cursor_grab: CursorGrabMode,
-}
-impl Default for WindowSettings {
+pub struct MainWindow(Window);
+impl Default for MainWindow {
     fn default() -> Self {
-        Self {
-            name: "Moba MVP".to_string(),
-            position: IVec2::new(0, 0),
-            size: Vec2::new(1920., 1080.),
-            mode: WindowMode::Windowed, //mode: WindowMode::BorderlessFullscreen,
-            cursor_grab: CursorGrabMode::None, //cursor_grab: CursorGrabMode::Confined,
-        }
+        let game_name = "Moba MVP";
+        Self(Window {
+            title: game_name.to_string(),
+            name: Some(game_name.to_string()),
+            position: WindowPosition::At(IVec2::new(0, 0)),
+            resolution: WindowResolution::new(1920., 1080.),
+            mode: WindowMode::Windowed,
+            cursor: Cursor {
+                grab_mode: CursorGrabMode::None,
+                ..default()
+            },
+            ..default()
+        })
     }
 }
-impl WindowSettings {
+impl MainWindow {
     pub fn aspect_ratio(&self) -> f32 {
-        self.size.x / self.size.y
+        let size = self.0.resolution.size();
+        size.x / size.y
     }
-}
-
-fn settings_to_window(window_settings: &WindowSettings, window: &mut Window) {
-    window.title = window_settings.name.clone();
-    window.name = Some(window_settings.name.clone());
-    window.position = WindowPosition::new(window_settings.position);
-    window.resolution = WindowResolution::new(window_settings.size.x, window_settings.size.y);
-    window.mode = window_settings.mode;
-    window.cursor.grab_mode = window_settings.cursor_grab;
-}
-
-fn window_to_settings(window: &Window, window_settings: &mut WindowSettings) {
-    window_settings.name = window.title.clone();
-    if let WindowPosition::At(pos) = window.position {
-        window_settings.position = pos;
-    };
-    window_settings.size = window.resolution.size();
-    window_settings.mode = window.mode;
-    window_settings.cursor_grab = window.cursor.grab_mode;
 }

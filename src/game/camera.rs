@@ -1,3 +1,9 @@
+//responsibilities:
+//initializing useful camera abstraction, and associated camera settings
+//exposing camera, and settings, as a resource
+//allowing easy reset
+//utilizing input plugin to enable movement, rotation, zoom, etc..
+
 use crate::game::*;
 use bevy::{prelude::*, render::view::RenderLayers};
 use std::f32::consts::PI;
@@ -7,7 +13,7 @@ use std::f32::consts::PI;
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init.after(os::init));
+        app.add_systems(Startup, (init_resources, init).chain().after(os::init));
         app.add_systems(Update, (update_camera, sync_camera, sync_window));
     }
 }
@@ -60,8 +66,15 @@ struct GameCameraMarker;
 
 //========INIT=========
 
-fn init(mut commands: Commands, window_settings: Res<os::WindowSettings>) {
-    let camera_settings = CameraSettings::default();
+fn init_resources(mut commands: Commands) {
+    commands.init_resource::<CameraSettings>()
+}
+
+fn init(
+    mut commands: Commands,
+    camera_settings: Res<CameraSettings>,
+    main_window: Res<os::MainWindow>,
+) {
     commands
         .spawn((TransformBundle::default(), GameCameraMarker))
         .with_children(|builder| {
@@ -79,7 +92,7 @@ fn init(mut commands: Commands, window_settings: Res<os::WindowSettings>) {
                                         ..default()
                                     },
                                     projection: Projection::Perspective(PerspectiveProjection {
-                                        aspect_ratio: window_settings.aspect_ratio(),
+                                        aspect_ratio: main_window.aspect_ratio(),
                                         near: camera_settings.near,
                                         far: camera_settings.far,
                                         ..default()
@@ -91,7 +104,6 @@ fn init(mut commands: Commands, window_settings: Res<os::WindowSettings>) {
                         });
                 });
         });
-    commands.insert_resource(camera_settings);
 }
 
 //========UPDATE=========
@@ -158,14 +170,11 @@ fn sync_camera(
     };
 }
 
-fn sync_window(
-    window_settings: Res<os::WindowSettings>,
-    mut projection_query: Query<&mut Projection>,
-) {
-    if window_settings.is_changed() {
+fn sync_window(main_window: Res<os::MainWindow>, mut projection_query: Query<&mut Projection>) {
+    if main_window.is_changed() {
         let mut camera_projection = projection_query.single_mut();
         if let Projection::Perspective(ref mut projection) = *camera_projection {
-            projection.aspect_ratio = window_settings.aspect_ratio();
+            projection.aspect_ratio = main_window.aspect_ratio();
         };
     }
 }
