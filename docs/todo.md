@@ -16,7 +16,6 @@
 
 - Depth issue with walls
 - Wireframe can't be enabled in init, breaks the toggle entirely
-- Need to clean up plugin structure, too many plugins going beyond their responsibility
 - Arrow gizmos not working for some reason
 
 ## Issues:

@@ -3,16 +3,36 @@
 //adding/removing meshes/materials to/from the world, mostly in accordance with entities added/removed by the logic plugin
 
 use crate::game::{os::Handles, *};
-use bevy::gltf::{GltfMesh, GltfNode};
+use bevy::gltf::GltfMesh;
 use bevy::{math::Affine2, prelude::*, render::*};
 use std::f32::consts::PI;
 
 pub struct GraphicsPlugin;
 impl Plugin for GraphicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init.after(os::init));
-        app.add_systems(Update, (update, add_map_uvs));
+        app.add_systems(Startup, (init_resources, init).chain().after(os::init));
+        app.add_systems(Update, (update, add_map));
     }
+}
+
+// #[derive(Resource)]
+// struct GraphicsSettings {
+//     wall_height: f32,
+// }
+// impl Default for GraphicsSettings {
+//     fn default() -> Self {
+//         Self { wall_height: 30. }
+//     }
+// }
+
+const BLENDER_WALL_HEIGHT: f32 = 20.;
+const WALL_HEIGHT: f32 = 30.;
+
+#[derive(Component, Default)]
+struct Wall;
+
+fn init_resources(mut commands: Commands) {
+    //commands.init_resource::<GraphicsSettings>()
 }
 
 fn init(
@@ -58,9 +78,20 @@ fn init(
     });
 }
 
-fn update() {}
+fn update(mut wall_query: Query<&mut Transform, With<Wall>>, keyboard: Res<ButtonInput<KeyCode>>) {
+    if keyboard.just_pressed(KeyCode::KeyI) {
+        for mut transform in &mut wall_query {
+            transform.scale.z = transform.scale.z + (10. / BLENDER_WALL_HEIGHT);
+        }
+    }
+    if keyboard.just_pressed(KeyCode::KeyK) {
+        for mut transform in &mut wall_query {
+            transform.scale.z = transform.scale.z - (10. / BLENDER_WALL_HEIGHT);
+        }
+    }
+}
 
-fn add_map_uvs(
+fn add_map(
     mut commands: Commands,
     mut gltf_events: EventReader<AssetEvent<Gltf>>,
     server: Res<AssetServer>,
@@ -93,15 +124,23 @@ fn add_map_uvs(
                             }
                             mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
                             //spawn mesh bundles
-                            let extrude = 50.;
                             for rot in [0., PI] {
-                                commands.spawn(PbrBundle {
-                                    mesh: mesh_handle.clone(),
-                                    material: material_handles.get_handle("wall").clone(),
-                                    transform: Transform::from_rotation(Quat::from_rotation_z(rot))
-                                        .with_scale(Vec3::new(1., 1., (1. / 20.) * extrude)),
-                                    ..default()
-                                });
+                                commands.spawn((
+                                    PbrBundle {
+                                        mesh: mesh_handle.clone(),
+                                        material: material_handles.get_handle("wall").clone(),
+                                        transform: Transform::from_rotation(Quat::from_rotation_z(
+                                            rot,
+                                        ))
+                                        .with_scale(Vec3::new(
+                                            1.,
+                                            1.,
+                                            (1. / BLENDER_WALL_HEIGHT) * WALL_HEIGHT,
+                                        )),
+                                        ..default()
+                                    },
+                                    Wall,
+                                ));
                             }
                         }
                     }
