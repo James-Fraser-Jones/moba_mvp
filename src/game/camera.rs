@@ -49,7 +49,7 @@ impl Default for CameraSettings {
 
             //projection
             fov,
-            near: 0.,
+            near: 0.1,
             far: 2000.,
 
             //scaling for (continuously) changable values
