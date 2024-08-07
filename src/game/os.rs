@@ -16,15 +16,24 @@ impl Plugin for OSPlugin {
 #[derive(Resource, Default)]
 pub struct Handles<A: Asset>(pub HashMap<String, Handle<A>>);
 impl<A: Asset> Handles<A> {
-    pub fn get(&self, name: &str) -> Handle<A> {
-        self.0.get(name).unwrap().clone()
-    }
-    pub fn add(&mut self, name: &str, value: impl Into<A>, assets: &mut Assets<A>) {
+    pub fn add_value(&mut self, assets: &mut Assets<A>, name: &str, value: impl Into<A>) {
         self.0.insert(name.to_string(), assets.add(value));
     }
-    pub fn load(&mut self, path: &str, server: &AssetServer) {
-        let path_string = path.to_string();
-        self.0.insert(path.to_string(), server.load(path_string));
+    pub fn add_path(&mut self, server: &AssetServer, path: &str) {
+        self.0
+            .insert(path.to_string(), server.load(path.to_string()));
+    }
+    // pub fn add_handle(&mut self, assets: &mut Assets<A>, name: &str) {
+    //     self.0.insert(name.to_string(), assets.reserve_handle());
+    // }
+    pub fn get_handle(&self, name: &str) -> &Handle<A> {
+        self.0.get(name).unwrap()
+    }
+    pub fn get_value<'a>(&self, assets: &'a mut Assets<A>, name: &str) -> &'a A {
+        assets.get(self.get_handle(name)).unwrap()
+    }
+    pub fn get_value_mut<'a>(&self, assets: &'a mut Assets<A>, name: &str) -> &'a mut A {
+        assets.get_mut(self.get_handle(name)).unwrap()
     }
 }
 
@@ -49,7 +58,7 @@ pub fn init(
 
     //load assets from file system
     for gltf_path in ["models/map.glb"] {
-        gltf_handles.load(&gltf_path, &server);
+        gltf_handles.add_path(&server, &gltf_path);
     }
     for image_path in [
         "textures/kenney_dev_textures/Dark/texture_07.png",
