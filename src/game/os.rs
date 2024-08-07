@@ -16,23 +16,25 @@ impl Plugin for OSPlugin {
 #[derive(Resource, Default)]
 pub struct Handles<A: Asset>(pub HashMap<String, Handle<A>>);
 impl<A: Asset> Handles<A> {
-    pub fn add_value(&mut self, assets: &mut Assets<A>, name: &str, value: impl Into<A>) {
-        self.0.insert(name.to_string(), assets.add(value));
+    pub fn add_handle(&mut self, name: &str, handle: Handle<A>) {
+        self.0.insert(name.to_string(), handle);
     }
-    pub fn add_path(&mut self, server: &AssetServer, path: &str) {
-        self.0
-            .insert(path.to_string(), server.load(path.to_string()));
+    pub fn add_asset(&mut self, assets: &mut Assets<A>, name: &str, value: impl Into<A>) {
+        self.add_handle(name, assets.add(value));
     }
-    // pub fn add_handle(&mut self, assets: &mut Assets<A>, name: &str) {
+    pub fn add_path(&mut self, server: &AssetServer, name: &str, path: &str) {
+        self.add_handle(name, server.load(path.to_string()));
+    }
+    // pub fn reserve_handle(&mut self, assets: &mut Assets<A>, name: &str) {
     //     self.0.insert(name.to_string(), assets.reserve_handle());
     // }
     pub fn get_handle(&self, name: &str) -> &Handle<A> {
         self.0.get(name).unwrap()
     }
-    pub fn get_value<'a>(&self, assets: &'a mut Assets<A>, name: &str) -> &'a A {
+    pub fn get_asset<'a>(&self, assets: &'a mut Assets<A>, name: &str) -> &'a A {
         assets.get(self.get_handle(name)).unwrap()
     }
-    pub fn get_value_mut<'a>(&self, assets: &'a mut Assets<A>, name: &str) -> &'a mut A {
+    pub fn get_asset_mut<'a>(&self, assets: &'a mut Assets<A>, name: &str) -> &'a mut A {
         assets.get_mut(self.get_handle(name)).unwrap()
     }
 }
@@ -57,16 +59,25 @@ pub fn init(
     *window = main_window.0.clone();
 
     //load assets from file system
-    for gltf_path in ["models/map.glb"] {
-        gltf_handles.add_path(&server, &gltf_path);
+    for (gltf_name, gltf_path) in [("map", "models/map.glb")] {
+        gltf_handles.add_path(&server, gltf_name, gltf_path);
     }
-    for image_path in [
-        "textures/kenney_dev_textures/Dark/texture_07.png",
-        "textures/kenney_dev_textures/Orange/texture_08.png",
-        "textures/kenney_dev_textures/Green/texture_08.png",
+    for (image_name, image_path) in [
+        (
+            "dev_dark",
+            "textures/kenney_dev_textures/Dark/texture_07.png",
+        ),
+        (
+            "dev_orange",
+            "textures/kenney_dev_textures/Orange/texture_08.png",
+        ),
+        (
+            "dev_green",
+            "textures/kenney_dev_textures/Green/texture_08.png",
+        ),
     ] {
         image_handles.0.insert(
-            image_path.to_string(),
+            image_name.to_string(),
             server.load_with_settings(image_path, |settings: &mut texture::ImageLoaderSettings| {
                 settings.sampler =
                     texture::ImageSampler::Descriptor(texture::ImageSamplerDescriptor {

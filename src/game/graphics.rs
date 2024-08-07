@@ -4,7 +4,6 @@
 
 use crate::game::{os::Handles, *};
 use bevy::gltf::{GltfMesh, GltfNode};
-use bevy::log::tracing_subscriber::fmt;
 use bevy::{math::Affine2, prelude::*, render::*};
 use std::f32::consts::PI;
 
@@ -18,7 +17,6 @@ impl Plugin for GraphicsPlugin {
 
 fn init(
     mut commands: Commands,
-    server: Res<AssetServer>,
     image_handles: Res<Handles<Image>>,
 
     mut material_handles: ResMut<Handles<StandardMaterial>>,
@@ -28,23 +26,23 @@ fn init(
     mut mesh_assets: ResMut<Assets<Mesh>>,
 ) {
     //add meshes
-    mesh_handles.add_value(
+    mesh_handles.add_asset(
         &mut mesh_assets,
         "ground_plane",
         Plane3d::new(Vec3::Z, Vec2::splat(1000.)),
     );
 
     //add materials
-    for (material_name, image_path) in [
-        ("ground", "textures/kenney_dev_textures/Dark/texture_07.png"),
-        ("wall", "textures/kenney_dev_textures/Orange/texture_08.png"),
-        ("area", "textures/kenney_dev_textures/Green/texture_08.png"),
+    for (material_name, image_name) in [
+        ("ground", "dev_dark"),
+        ("wall", "dev_orange"),
+        ("area", "dev_green"),
     ] {
-        material_handles.add_value(
+        material_handles.add_asset(
             &mut material_assets,
             &material_name,
             StandardMaterial {
-                base_color_texture: Some(image_handles.get_handle(image_path).clone()),
+                base_color_texture: Some(image_handles.get_handle(image_name).clone()),
                 unlit: true,
                 uv_transform: Affine2::from_scale(Vec2::splat(10.)),
                 ..default()
