@@ -17,23 +17,20 @@ impl Plugin for GraphicsPlugin {
 
 // #[derive(Resource)]
 // struct GraphicsSettings {
-//     wall_height: f32,
 // }
 // impl Default for GraphicsSettings {
 //     fn default() -> Self {
-//         Self { wall_height: 30. }
+//         Self {}
 //     }
 // }
 
-const BLENDER_WALL_HEIGHT: f32 = 20.;
+pub const BLENDER_WALL_HEIGHT: f32 = 20.;
 const WALL_HEIGHT: f32 = 30.;
 
 #[derive(Component, Default)]
-struct Wall;
+pub struct Wall;
 
-fn init_resources(mut commands: Commands) {
-    //commands.init_resource::<GraphicsSettings>()
-}
+fn init_resources(mut commands: Commands) {}
 
 fn init(
     mut commands: Commands,
@@ -78,18 +75,7 @@ fn init(
     });
 }
 
-fn update(mut wall_query: Query<&mut Transform, With<Wall>>, keyboard: Res<ButtonInput<KeyCode>>) {
-    if keyboard.just_pressed(KeyCode::KeyI) {
-        for mut transform in &mut wall_query {
-            transform.scale.z = transform.scale.z + (10. / BLENDER_WALL_HEIGHT);
-        }
-    }
-    if keyboard.just_pressed(KeyCode::KeyK) {
-        for mut transform in &mut wall_query {
-            transform.scale.z = transform.scale.z - (10. / BLENDER_WALL_HEIGHT);
-        }
-    }
-}
+fn update() {}
 
 fn add_map(
     mut commands: Commands,
