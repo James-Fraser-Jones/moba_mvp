@@ -18,7 +18,7 @@ impl Plugin for DevPlugin {
 fn init() {}
 
 fn update(
-    mut wall_query: Query<&mut Transform, With<graphics::Wall>>,
+    mut map_query: Query<&mut Transform, With<graphics::Map>>,
     mut wireframe_config: ResMut<WireframeConfig>,
     keyboard: Res<ButtonInput<KeyCode>>,
 ) {
@@ -26,13 +26,11 @@ fn update(
         wireframe_config.global = !wireframe_config.global;
     }
     if keyboard.just_pressed(KeyCode::KeyI) {
-        for mut transform in &mut wall_query {
-            transform.scale.z = transform.scale.z + (10. / graphics::BLENDER_WALL_HEIGHT);
-        }
+        let mut transform = map_query.single_mut();
+        transform.scale.z += 10.;
     }
     if keyboard.just_pressed(KeyCode::KeyK) {
-        for mut transform in &mut wall_query {
-            transform.scale.z = transform.scale.z - (10. / graphics::BLENDER_WALL_HEIGHT);
-        }
+        let mut transform = map_query.single_mut();
+        transform.scale.z -= 10.;
     }
 }

@@ -3,7 +3,7 @@
 //quitting the game
 //saving/loading assets to/from the filesystem
 
-use bevy::{prelude::*, render::*, utils::hashbrown::HashMap, window::*};
+use bevy::{prelude::*, utils::hashbrown::HashMap, window::*};
 
 pub struct OSPlugin;
 impl Plugin for OSPlugin {
@@ -41,53 +41,14 @@ impl<A: Asset> Handles<A> {
 
 fn init_resources(mut commands: Commands) {
     commands.init_resource::<MainWindow>();
-    commands.insert_resource(Handles::<Gltf>(HashMap::default()));
-    commands.init_resource::<Handles<Image>>();
     commands.init_resource::<Handles<StandardMaterial>>();
     commands.insert_resource(Handles::<Mesh>(HashMap::default()));
 }
 
-pub fn init(
-    main_window: Res<MainWindow>,
-    server: Res<AssetServer>,
-    mut window_query: Query<&mut Window>,
-    mut gltf_handles: ResMut<Handles<Gltf>>,
-    mut image_handles: ResMut<Handles<Image>>,
-) {
+pub fn init(main_window: Res<MainWindow>, mut window_query: Query<&mut Window>) {
     //sync resource with entity
     let mut window = window_query.single_mut();
     *window = main_window.0.clone();
-
-    //load assets from file system
-    for (gltf_name, gltf_path) in [("map", "models/map.glb")] {
-        gltf_handles.add_path(&server, gltf_name, gltf_path);
-    }
-    for (image_name, image_path) in [
-        (
-            "dev_dark",
-            "textures/kenney_dev_textures/Dark/texture_07.png",
-        ),
-        (
-            "dev_orange",
-            "textures/kenney_dev_textures/Orange/texture_08.png",
-        ),
-        (
-            "dev_green",
-            "textures/kenney_dev_textures/Green/texture_08.png",
-        ),
-    ] {
-        image_handles.0.insert(
-            image_name.to_string(),
-            server.load_with_settings(image_path, |settings: &mut texture::ImageLoaderSettings| {
-                settings.sampler =
-                    texture::ImageSampler::Descriptor(texture::ImageSamplerDescriptor {
-                        address_mode_u: texture::ImageAddressMode::Repeat,
-                        address_mode_v: texture::ImageAddressMode::Repeat,
-                        ..default()
-                    })
-            }),
-        );
-    }
 }
 
 fn sync_window(mut main_window: ResMut<MainWindow>, mut window_query: Query<&mut Window>) {
