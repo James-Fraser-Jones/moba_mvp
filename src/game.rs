@@ -1,8 +1,6 @@
 mod camera;
-mod dev;
 mod graphics;
 mod input;
-mod logic;
 mod os;
 
 use bevy::{app::PluginGroupBuilder, prelude::*};
@@ -13,9 +11,7 @@ impl PluginGroup for GamePlugins {
         PluginGroupBuilder::start::<Self>()
             .add(os::OSPlugin)
             .add(input::InputPlugin)
-            .add(logic::LogicPlugin)
             .add(graphics::GraphicsPlugin)
             .add(camera::CameraPlugin)
-            .add(dev::DevPlugin)
     }
 }

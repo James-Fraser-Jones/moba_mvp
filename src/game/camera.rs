@@ -5,7 +5,7 @@
 //utilizing input plugin to enable movement, rotation, zoom, etc..
 
 use crate::game::*;
-use bevy::{prelude::*, render::view::RenderLayers};
+use bevy::{math::VectorSpace, prelude::*, render::view::RenderLayers};
 use std::f32::consts::PI;
 
 //========PLUGIN=========
@@ -13,8 +13,7 @@ use std::f32::consts::PI;
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (init_resources, init).chain().after(os::init));
-        app.add_systems(Update, (update_camera, sync_camera, sync_window));
+        app.add_systems(Startup, (init_resources, init, sync_camera).chain());
     }
 }
 
@@ -43,14 +42,14 @@ impl Default for CameraSettings {
         let fov = PI / 4.;
         Self {
             //spatial
-            translation: Vec3::new(0., -150., 0.),
-            rotation: Vec2::new(0., PI / 8.),
-            depth: 1000. / (fov / 2.).tan(),
+            translation: Vec3::new(0., 0., 0.),
+            rotation: Vec2::ZERO, //Vec2::new(0., PI / 8.),
+            depth: 3000.,
 
             //projection
             fov,
             near: 0.,
-            far: 2000.,
+            far: 4000.,
 
             //scaling for (continuously) changable values
             translation_speed: 800.,
@@ -84,61 +83,26 @@ fn init(
                     builder
                         .spawn(TransformBundle::default())
                         .with_children(|builder| {
-                            builder.spawn((
-                                Camera3dBundle {
-                                    camera: Camera {
-                                        clear_color: ClearColorConfig::Custom(Color::BLACK),
-                                        order: 0,
-                                        ..default()
-                                    },
-                                    projection: Projection::Perspective(PerspectiveProjection {
-                                        aspect_ratio: main_window.aspect_ratio(),
-                                        near: camera_settings.near,
-                                        far: camera_settings.far,
-                                        ..default()
-                                    }),
+                            builder.spawn((Camera3dBundle {
+                                camera: Camera {
+                                    clear_color: ClearColorConfig::Custom(Color::BLACK),
+                                    order: 0,
                                     ..default()
                                 },
-                                RenderLayers::layer(0),
-                            ));
+                                projection: Projection::Perspective(PerspectiveProjection {
+                                    aspect_ratio: 1920. / 1080.,
+                                    near: camera_settings.near,
+                                    far: camera_settings.far,
+                                    ..default()
+                                }),
+                                ..default()
+                            },));
                         });
                 });
         });
 }
 
 //========UPDATE=========
-
-fn update_camera(
-    keyboard_axis: Res<input::KeyboardAxis>,
-    keyboard_buttons: Res<ButtonInput<KeyCode>>,
-    mouse_axis: Res<input::MouseAxis>,
-    mouse_buttons: Res<ButtonInput<MouseButton>>,
-    wheel_axis: Res<input::WheelAxis>,
-    mut camera_settings: ResMut<CameraSettings>,
-) {
-    if mouse_buttons.pressed(MouseButton::Right) {
-        //rotation
-        camera_settings.rotation =
-            (camera_settings.rotation - mouse_axis.0 * camera_settings.rotation_speed) % (2. * PI);
-    } else if mouse_buttons.pressed(MouseButton::Middle) {
-        //depth
-        camera_settings.depth += mouse_axis.0.y * camera_settings.depth_speed;
-        camera_settings.depth = camera_settings.depth.max(0.);
-    }
-
-    //translation
-    let yaw = camera_settings.rotation.x;
-    let speed = camera_settings.translation_speed;
-    camera_settings.translation += Quat::from_rotation_z(yaw).mul_vec3(keyboard_axis.0 * speed);
-
-    //fov
-    camera_settings.fov -= wheel_axis.0.y * camera_settings.fov_speed;
-
-    //reset
-    if keyboard_buttons.pressed(KeyCode::KeyR) {
-        *camera_settings = CameraSettings::default();
-    }
-}
 
 fn sync_camera(
     camera_settings: Res<CameraSettings>,
@@ -168,13 +132,4 @@ fn sync_camera(
     if let Projection::Perspective(ref mut projection) = *camera_projection {
         projection.fov = camera_settings.fov;
     };
-}
-
-fn sync_window(main_window: Res<os::MainWindow>, mut projection_query: Query<&mut Projection>) {
-    if main_window.is_changed() {
-        let mut camera_projection = projection_query.single_mut();
-        if let Projection::Perspective(ref mut projection) = *camera_projection {
-            projection.aspect_ratio = main_window.aspect_ratio();
-        };
-    }
 }
