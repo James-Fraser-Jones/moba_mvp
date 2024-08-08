@@ -48,14 +48,15 @@ fn update(
 }
 
 fn draw_cursor(
-    camera_query: Query<(&Camera, &GlobalTransform), With<camera::MainCameraMarker>>,
+    camera_query: Query<(&Camera, &GlobalTransform)>,
     last_cursor_position: Res<input::LastCursorPosition>,
     mut gizmos: Gizmos,
 ) {
-    let (camera, camera_transform) = camera_query.single();
+    let (camera, camera_global_transform) = camera_query.single();
 
     // Calculate a ray pointing from the camera into the world based on the cursor's position.
-    let Some(ray) = camera.viewport_to_world(camera_transform, last_cursor_position.0) else {
+    let Some(ray) = camera.viewport_to_world(camera_global_transform, last_cursor_position.0)
+    else {
         return;
     };
 

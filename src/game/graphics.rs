@@ -18,7 +18,8 @@ pub const WALL_HEIGHT: f32 = 30.;
 #[derive(Component, Default)]
 pub struct Map;
 
-fn init(mut commands: Commands, server: Res<AssetServer>) {
+fn init(mut commands: Commands, server: Res<AssetServer>, mut clear_color: ResMut<ClearColor>) {
+    clear_color.0 = Color::BLACK;
     commands.spawn((
         SceneBundle {
             scene: server.load("models/map.glb#Scene0"),

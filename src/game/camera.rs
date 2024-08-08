@@ -1,162 +1,131 @@
 //responsibilities:
 //initializing useful camera abstraction, and associated camera settings
-//exposing camera, and settings, as a resource
 //allowing easy reset
 //utilizing input plugin to enable movement, rotation, zoom, etc..
 
 use crate::game::*;
-use bevy::{prelude::*, render::view::RenderLayers, window::PrimaryWindow};
+use bevy::prelude::*;
 use std::f32::consts::PI;
 
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MainCamera>();
         app.add_systems(Startup, init);
-        app.add_systems(Update, (update_camera, sync_camera));
+        app.add_systems(Update, update);
     }
 }
 
-const NEAR: f32 = 0.1;
-const FAR: f32 = 2000.;
-const TRANSLATION_SPEED: f32 = 400.;
-const ROTATION_SPEED: f32 = 0.15;
-const DEPTH_SPEED: f32 = 100.;
-const FOV_SPEED: f32 = 0.1;
+const CAMERA_DRAW_FAR: f32 = 2000.;
+const PAN_SPEED: f32 = 400.;
+const ZOOM_SPEED: f32 = 100.;
 const DEBUG_CONTROLS: bool = false;
+const ROTATION_SPEED: f32 = 0.15;
 
-#[derive(Resource, Debug)]
-struct MainCamera {
-    translation: Vec3,
-    rotation: Vec2,
-    depth: f32,
-    fov: f32,
+#[derive(Bundle)]
+struct OrbitCamera3dBundle {
+    camera_3d_bundle: Camera3dBundle,
+    orbit_transform: OrbitTransform,
 }
-impl Default for MainCamera {
+impl Default for OrbitCamera3dBundle {
     fn default() -> Self {
-        let fov = PI / 4.;
         Self {
-            translation: Vec3::new(0., 0., 0.),
-            rotation: Vec2::new(0., 0.6),
-            depth: 340.,
-            fov,
+            camera_3d_bundle: Camera3dBundle {
+                projection: Projection::Perspective(PerspectiveProjection {
+                    far: CAMERA_DRAW_FAR,
+                    ..default()
+                }),
+                ..default()
+            },
+            orbit_transform: OrbitTransform::default(),
         }
     }
 }
 
-#[derive(Component)]
-struct MainCameraBaseMarker;
-#[derive(Component)]
-pub struct MainCameraMarker;
-
-fn init(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
-    let window = window_query.single();
-    let aspect_ratio = os::aspect_ratio(window);
-    commands
-        .spawn((TransformBundle::default(), MainCameraBaseMarker))
-        .with_children(|builder| {
-            builder
-                .spawn(TransformBundle::default())
-                .with_children(|builder| {
-                    builder
-                        .spawn(TransformBundle::default())
-                        .with_children(|builder| {
-                            builder.spawn((
-                                Camera3dBundle {
-                                    camera: Camera {
-                                        clear_color: ClearColorConfig::Custom(Color::BLACK),
-                                        order: 0,
-                                        ..default()
-                                    },
-                                    projection: Projection::Perspective(PerspectiveProjection {
-                                        aspect_ratio,
-                                        near: NEAR,
-                                        far: FAR,
-                                        ..default()
-                                    }),
-                                    ..default()
-                                },
-                                RenderLayers::layer(0),
-                                MainCameraMarker,
-                            ));
-                        });
-                });
-        });
+#[derive(Component, Clone, Copy)]
+struct OrbitTransform {
+    position: Vec3,
+    rotation: Vec2,
+    orbit_distance: f32,
+}
+impl Default for OrbitTransform {
+    fn default() -> Self {
+        Self {
+            position: Vec3::ZERO,
+            rotation: Vec2::new(0., 0.6),
+            orbit_distance: 340.,
+        }
+    }
+}
+// impl OrbitTransform {
+//     fn from_transform(&self, transform: Transform) -> OrbitTransform {
+//         OrbitTransform {
+//             position: ,
+//             rotation: ,
+//             orbit_distance: self.orbit_distance,
+//         }
+//     }
+// }
+impl From<OrbitTransform> for Transform {
+    fn from(orbit_transform: OrbitTransform) -> Self {
+        let rotation = Quat::from_euler(
+            EulerRot::ZYX,
+            orbit_transform.rotation.x,
+            0.,
+            orbit_transform.rotation.y,
+        );
+        Transform {
+            translation: orbit_transform.position
+                + rotation.mul_vec3(Vec3::Z * orbit_transform.orbit_distance),
+            rotation,
+            ..default()
+        }
+    }
 }
 
-fn update_camera(
+fn init(mut commands: Commands) {
+    commands.spawn(OrbitCamera3dBundle::default());
+}
+
+fn update(
     keyboard_axis: Res<input::KeyboardAxis>,
     keyboard_buttons: Res<ButtonInput<KeyCode>>,
     mouse_axis: Res<input::MouseAxis>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     wheel_axis: Res<input::WheelAxis>,
     screen_axis: Res<input::ScreenAxis>,
-    mut main_camera: ResMut<MainCamera>,
+    mut camera_query: Query<(&mut Transform, &mut OrbitTransform)>,
 ) {
+    let (mut transform, mut orbit_transform) = camera_query.single_mut();
     if DEBUG_CONTROLS {
-        //rotation
+        //rotate
         if mouse_buttons.pressed(MouseButton::Left) {
-            main_camera.rotation =
-                (main_camera.rotation - mouse_axis.0 * ROTATION_SPEED) % (2. * PI);
-            main_camera.rotation.y = main_camera.rotation.y.clamp(0., PI / 2.); //clamp pitch
+            orbit_transform.rotation =
+                (orbit_transform.rotation - mouse_axis.0 * ROTATION_SPEED) % (2. * PI);
+            orbit_transform.rotation.y = orbit_transform.rotation.y.clamp(0., PI / 2.);
         }
-        //fov
-        else if mouse_buttons.pressed(MouseButton::Middle) {
-            main_camera.fov += mouse_axis.0.y * FOV_SPEED;
-        }
-        //translation
-        let yaw = main_camera.rotation.x;
-        main_camera.translation +=
-            Quat::from_rotation_z(yaw).mul_vec3(keyboard_axis.0 * TRANSLATION_SPEED);
-        //depth
-        main_camera.depth -= wheel_axis.0.y * DEPTH_SPEED;
-        main_camera.depth = main_camera.depth.max(0.);
+        //pan (incl vertically)
+        let yaw = orbit_transform.rotation.x;
+        orbit_transform.position +=
+            Quat::from_rotation_z(yaw).mul_vec3(keyboard_axis.0 * PAN_SPEED);
+        //zoom
+        orbit_transform.orbit_distance -= wheel_axis.0.y * ZOOM_SPEED;
+        orbit_transform.orbit_distance = orbit_transform.orbit_distance.max(0.);
     } else {
-        //translation
-        let yaw = main_camera.rotation.x;
-        main_camera.translation +=
-            Quat::from_rotation_z(yaw).mul_vec3((screen_axis.0 * TRANSLATION_SPEED).extend(0.));
-        //depth
-        main_camera.depth -= wheel_axis.0.y * DEPTH_SPEED;
-        main_camera.depth = main_camera.depth.max(1.);
+        //pan
+        let yaw = orbit_transform.rotation.x;
+        orbit_transform.position +=
+            Quat::from_rotation_z(yaw).mul_vec3((screen_axis.0 * PAN_SPEED).extend(0.));
+        //zoom
+        orbit_transform.orbit_distance -= wheel_axis.0.y * ZOOM_SPEED;
+        orbit_transform.orbit_distance = orbit_transform.orbit_distance.max(1.);
         //center camera
         if keyboard_buttons.pressed(KeyCode::Space) {
-            main_camera.translation = Vec3::ZERO;
+            orbit_transform.position = Vec3::ZERO;
         }
     }
-
     //reset
     if keyboard_buttons.pressed(KeyCode::KeyR) {
-        *main_camera = MainCamera::default();
+        *orbit_transform = OrbitTransform::default();
     }
-}
-
-fn sync_camera(
-    main_camera: Res<MainCamera>,
-    base_query: Query<Entity, With<MainCameraBaseMarker>>,
-    children_query: Query<&Children>,
-    mut transform_query: Query<&mut Transform>,
-    mut projection_query: Query<&mut Projection>,
-) {
-    let base_entity = base_query.single();
-    let mut descendents = children_query.iter_descendants(base_entity);
-
-    let pivot_entity = descendents.next().unwrap();
-    let stick_entity = descendents.next().unwrap();
-    let camera_entity = descendents.next().unwrap();
-
-    let mut base_transform = transform_query.get_mut(base_entity).unwrap();
-    base_transform.translation = main_camera.translation;
-    base_transform.rotation = Quat::from_rotation_z(main_camera.rotation.x);
-
-    let mut stick_transform = transform_query.get_mut(stick_entity).unwrap();
-    stick_transform.translation = Vec3::ZERO.with_z(main_camera.depth);
-
-    let mut pivot_transform = transform_query.get_mut(pivot_entity).unwrap();
-    pivot_transform.rotation = Quat::from_rotation_x(main_camera.rotation.y);
-
-    let mut camera_projection = projection_query.get_mut(camera_entity).unwrap();
-    if let Projection::Perspective(ref mut projection) = *camera_projection {
-        projection.fov = main_camera.fov;
-    };
+    *transform = Transform::from(*orbit_transform);
 }

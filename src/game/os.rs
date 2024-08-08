@@ -56,11 +56,6 @@ static WINDOW: LazyLock<Window> = LazyLock::new(|| Window {
     ..default()
 });
 
-pub fn aspect_ratio(window: &Window) -> f32 {
-    let size = window.resolution.size();
-    size.x / size.y
-}
-
 fn init(mut window_query: Query<&mut Window, With<PrimaryWindow>>) {
     let mut window = window_query.single_mut();
     *window = WINDOW.clone();
