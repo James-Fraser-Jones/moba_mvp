@@ -15,6 +15,7 @@ impl Plugin for InputPlugin {
         app.init_resource::<MouseAxis>();
         app.init_resource::<WheelAxis>();
         app.init_resource::<ScreenAxis>();
+        app.init_resource::<LastCursorPosition>();
         app.add_systems(Startup, init);
         app.add_systems(Update, update);
     }
@@ -33,6 +34,9 @@ pub struct MouseAxis(pub Vec2);
 pub struct WheelAxis(pub Vec2);
 
 #[derive(Resource, Default)]
+pub struct LastCursorPosition(pub Vec2);
+
+#[derive(Resource, Default)]
 pub struct ScreenAxis(pub Vec2);
 
 fn init() {}
@@ -46,6 +50,7 @@ fn update(
     mut mouse_axis: ResMut<MouseAxis>,
     mut wheel_axis: ResMut<WheelAxis>,
     mut screen_axis: ResMut<ScreenAxis>,
+    mut last_cursor_position: ResMut<LastCursorPosition>,
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
     //keyboard
@@ -94,24 +99,27 @@ fn update(
     axis *= time.delta_seconds();
     wheel_axis.0 = axis;
 
-    //screen
-    let mut axis: Vec2 = Vec2::ZERO;
+    //last cursor position
     let window = window_query.single();
     if let Some(cursor_position) = window.cursor_position() {
-        let window_size = window.resolution.size();
-        if cursor_position.x < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
-            axis.x -= 1.;
-        }
-        if cursor_position.y < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
-            axis.y += 1.;
-        }
-        if window_size.x - cursor_position.x < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
-            axis.x += 1.;
-        }
-        if window_size.y - cursor_position.y < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
-            axis.y -= 1.;
-        }
-    };
+        last_cursor_position.0 = cursor_position;
+    }
+
+    //screen
+    let mut axis: Vec2 = Vec2::ZERO;
+    let window_size = window.resolution.size();
+    if last_cursor_position.0.x < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
+        axis.x -= 1.;
+    }
+    if last_cursor_position.0.y < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
+        axis.y += 1.;
+    }
+    if window_size.x - last_cursor_position.0.x < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
+        axis.x += 1.;
+    }
+    if window_size.y - last_cursor_position.0.y < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
+        axis.y -= 1.;
+    }
     axis *= time.delta_seconds();
     screen_axis.0 = axis;
 }
