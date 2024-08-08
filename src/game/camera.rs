@@ -19,12 +19,13 @@ impl Plugin for CameraPlugin {
 
 const NEAR: f32 = 0.1;
 const FAR: f32 = 2000.;
-const TRANSLATION_SPEED: f32 = 800.;
+const TRANSLATION_SPEED: f32 = 400.;
 const ROTATION_SPEED: f32 = 0.15;
-const DEPTH_SPEED: f32 = 300.;
+const DEPTH_SPEED: f32 = 100.;
 const FOV_SPEED: f32 = 0.1;
+const DEBUG_CONTROLS: bool = false;
 
-#[derive(Resource)]
+#[derive(Resource, Debug)]
 struct MainCamera {
     translation: Vec3,
     rotation: Vec2,
@@ -36,8 +37,8 @@ impl Default for MainCamera {
         let fov = PI / 4.;
         Self {
             translation: Vec3::new(0., 0., 0.),
-            rotation: Vec2::new(0., PI / 8.),
-            depth: 1000. / (fov / 2.).tan(),
+            rotation: Vec2::new(0., 0.6),
+            depth: 340.,
             fov,
         }
     }
@@ -89,36 +90,49 @@ fn update_camera(
     mouse_axis: Res<input::MouseAxis>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     wheel_axis: Res<input::WheelAxis>,
-    mut camera_settings: ResMut<MainCamera>,
+    screen_axis: Res<input::ScreenAxis>,
+    mut main_camera: ResMut<MainCamera>,
 ) {
-    if mouse_buttons.pressed(MouseButton::Right) {
+    if DEBUG_CONTROLS {
         //rotation
-        camera_settings.rotation =
-            (camera_settings.rotation - mouse_axis.0 * ROTATION_SPEED) % (2. * PI);
-        //clamp pitch
-        camera_settings.rotation.y = camera_settings.rotation.y.clamp(0., PI / 2.);
-    } else if mouse_buttons.pressed(MouseButton::Middle) {
+        if mouse_buttons.pressed(MouseButton::Left) {
+            main_camera.rotation =
+                (main_camera.rotation - mouse_axis.0 * ROTATION_SPEED) % (2. * PI);
+            main_camera.rotation.y = main_camera.rotation.y.clamp(0., PI / 2.); //clamp pitch
+        }
+        //fov
+        else if mouse_buttons.pressed(MouseButton::Middle) {
+            main_camera.fov += mouse_axis.0.y * FOV_SPEED;
+        }
+        //translation
+        let yaw = main_camera.rotation.x;
+        main_camera.translation +=
+            Quat::from_rotation_z(yaw).mul_vec3(keyboard_axis.0 * TRANSLATION_SPEED);
         //depth
-        camera_settings.depth += mouse_axis.0.y * DEPTH_SPEED;
-        camera_settings.depth = camera_settings.depth.max(0.);
+        main_camera.depth -= wheel_axis.0.y * DEPTH_SPEED;
+        main_camera.depth = main_camera.depth.max(0.);
+    } else {
+        //translation
+        let yaw = main_camera.rotation.x;
+        main_camera.translation +=
+            Quat::from_rotation_z(yaw).mul_vec3((screen_axis.0 * TRANSLATION_SPEED).extend(0.));
+        //depth
+        main_camera.depth -= wheel_axis.0.y * DEPTH_SPEED;
+        main_camera.depth = main_camera.depth.max(1.);
+        //center camera
+        if keyboard_buttons.pressed(KeyCode::Space) {
+            main_camera.translation = Vec3::ZERO;
+        }
     }
-
-    //translation
-    let yaw = camera_settings.rotation.x;
-    let speed = TRANSLATION_SPEED;
-    camera_settings.translation += Quat::from_rotation_z(yaw).mul_vec3(keyboard_axis.0 * speed);
-
-    //fov
-    camera_settings.fov -= wheel_axis.0.y * FOV_SPEED;
 
     //reset
     if keyboard_buttons.pressed(KeyCode::KeyR) {
-        *camera_settings = MainCamera::default();
+        *main_camera = MainCamera::default();
     }
 }
 
 fn sync_camera(
-    camera_settings: Res<MainCamera>,
+    main_camera: Res<MainCamera>,
     base_query: Query<Entity, With<MainCameraBaseMarker>>,
     children_query: Query<&Children>,
     mut transform_query: Query<&mut Transform>,
@@ -132,17 +146,17 @@ fn sync_camera(
     let camera_entity = descendents.next().unwrap();
 
     let mut base_transform = transform_query.get_mut(base_entity).unwrap();
-    base_transform.translation = camera_settings.translation;
-    base_transform.rotation = Quat::from_rotation_z(camera_settings.rotation.x);
+    base_transform.translation = main_camera.translation;
+    base_transform.rotation = Quat::from_rotation_z(main_camera.rotation.x);
 
     let mut stick_transform = transform_query.get_mut(stick_entity).unwrap();
-    stick_transform.translation = Vec3::ZERO.with_z(camera_settings.depth);
+    stick_transform.translation = Vec3::ZERO.with_z(main_camera.depth);
 
     let mut pivot_transform = transform_query.get_mut(pivot_entity).unwrap();
-    pivot_transform.rotation = Quat::from_rotation_x(camera_settings.rotation.y);
+    pivot_transform.rotation = Quat::from_rotation_x(main_camera.rotation.y);
 
     let mut camera_projection = projection_query.get_mut(camera_entity).unwrap();
     if let Projection::Perspective(ref mut projection) = *camera_projection {
-        projection.fov = camera_settings.fov;
+        projection.fov = main_camera.fov;
     };
 }

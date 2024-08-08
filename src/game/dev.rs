@@ -5,6 +5,7 @@
 use crate::game::*;
 use bevy::pbr::wireframe::{WireframeConfig, WireframePlugin};
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 
 pub struct DevPlugin;
 impl Plugin for DevPlugin {
@@ -48,12 +49,12 @@ fn update(
 
 fn draw_cursor(
     camera_query: Query<(&Camera, &GlobalTransform), With<camera::MainCameraMarker>>,
-    windows: Query<&Window>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
     mut gizmos: Gizmos,
 ) {
     let (camera, camera_transform) = camera_query.single();
 
-    let Some(cursor_position) = windows.single().cursor_position() else {
+    let Some(cursor_position) = window_query.single().cursor_position() else {
         return;
     };
 
@@ -70,6 +71,6 @@ fn draw_cursor(
 
     // Draw a circle just above the ground plane at that position.
     let end = point + Vec3::Z * 0.01;
-    gizmos.circle(end, Dir3::new(Vec3::Z).unwrap(), 25., Color::WHITE);
-    gizmos.arrow(point + Vec3::Z * 100., end, Color::WHITE);
+    gizmos.circle(end, Dir3::new(Vec3::Z).unwrap(), 10., Color::WHITE);
+    gizmos.arrow(point + Vec3::Z * 50., end, Color::WHITE);
 }

@@ -14,12 +14,14 @@ impl Plugin for InputPlugin {
         app.init_resource::<KeyboardAxis>();
         app.init_resource::<MouseAxis>();
         app.init_resource::<WheelAxis>();
+        app.init_resource::<ScreenAxis>();
         app.add_systems(Startup, init);
         app.add_systems(Update, update);
     }
 }
 
 const LINE_TO_PIXEL_SCALE: f32 = 50.;
+const SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD: f32 = 200.;
 
 #[derive(Resource, Default)]
 pub struct KeyboardAxis(pub Vec3);
@@ -29,6 +31,9 @@ pub struct MouseAxis(pub Vec2);
 
 #[derive(Resource, Default)]
 pub struct WheelAxis(pub Vec2);
+
+#[derive(Resource, Default)]
+pub struct ScreenAxis(pub Vec2);
 
 fn init() {}
 
@@ -40,6 +45,8 @@ fn update(
     mut keyboard_axis: ResMut<KeyboardAxis>,
     mut mouse_axis: ResMut<MouseAxis>,
     mut wheel_axis: ResMut<WheelAxis>,
+    mut screen_axis: ResMut<ScreenAxis>,
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
     //keyboard
     let mut axis: Vec3 = Vec3::ZERO;
@@ -86,4 +93,25 @@ fn update(
     }
     axis *= time.delta_seconds();
     wheel_axis.0 = axis;
+
+    //screen
+    let mut axis: Vec2 = Vec2::ZERO;
+    let window = window_query.single();
+    if let Some(cursor_position) = window.cursor_position() {
+        let window_size = window.resolution.size();
+        if cursor_position.x < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
+            axis.x -= 1.;
+        }
+        if cursor_position.y < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
+            axis.y += 1.;
+        }
+        if window_size.x - cursor_position.x < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
+            axis.x += 1.;
+        }
+        if window_size.y - cursor_position.y < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
+            axis.y -= 1.;
+        }
+    };
+    axis *= time.delta_seconds();
+    screen_axis.0 = axis;
 }
