@@ -11,7 +11,7 @@ impl Plugin for DevPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(WireframePlugin);
         app.add_systems(Startup, init);
-        app.add_systems(Update, update);
+        app.add_systems(Update, (update, draw_cursor));
     }
 }
 
@@ -44,4 +44,32 @@ fn update(
         transform.scale.z = graphics::WALL_HEIGHT;
         wireframe_config.global = WIREFRAME_ENABLED;
     }
+}
+
+fn draw_cursor(
+    camera_query: Query<(&Camera, &GlobalTransform), With<camera::MainCameraMarker>>,
+    windows: Query<&Window>,
+    mut gizmos: Gizmos,
+) {
+    let (camera, camera_transform) = camera_query.single();
+
+    let Some(cursor_position) = windows.single().cursor_position() else {
+        return;
+    };
+
+    // Calculate a ray pointing from the camera into the world based on the cursor's position.
+    let Some(ray) = camera.viewport_to_world(camera_transform, cursor_position) else {
+        return;
+    };
+
+    // Calculate if and where the ray is hitting the ground plane.
+    let Some(distance) = ray.intersect_plane(Vec3::ZERO, InfinitePlane3d::new(Vec3::Z)) else {
+        return;
+    };
+    let point = ray.get_point(distance);
+
+    // Draw a circle just above the ground plane at that position.
+    let end = point + Vec3::Z * 0.01;
+    gizmos.circle(end, Dir3::new(Vec3::Z).unwrap(), 25., Color::WHITE);
+    gizmos.arrow(point + Vec3::Z * 100., end, Color::WHITE);
 }

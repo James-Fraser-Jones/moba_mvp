@@ -5,15 +5,15 @@
 //utilizing input plugin to enable movement, rotation, zoom, etc..
 
 use crate::game::*;
-use bevy::{prelude::*, render::view::RenderLayers};
+use bevy::{prelude::*, render::view::RenderLayers, window::PrimaryWindow};
 use std::f32::consts::PI;
 
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MainCamera>();
-        app.add_systems(Startup, init.after(os::init));
-        app.add_systems(Update, (update_camera, sync_camera, sync_window));
+        app.add_systems(Startup, init);
+        app.add_systems(Update, (update_camera, sync_camera));
     }
 }
 
@@ -35,7 +35,7 @@ impl Default for MainCamera {
     fn default() -> Self {
         let fov = PI / 4.;
         Self {
-            translation: Vec3::new(0., -150., 0.),
+            translation: Vec3::new(0., 0., 0.),
             rotation: Vec2::new(0., PI / 8.),
             depth: 1000. / (fov / 2.).tan(),
             fov,
@@ -44,15 +44,15 @@ impl Default for MainCamera {
 }
 
 #[derive(Component)]
-struct MainCameraMarker;
+struct MainCameraBaseMarker;
+#[derive(Component)]
+pub struct MainCameraMarker;
 
-fn init(
-    mut commands: Commands,
-    camera_settings: Res<MainCamera>,
-    main_window: Res<os::MainWindow>,
-) {
+fn init(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
+    let window = window_query.single();
+    let aspect_ratio = os::aspect_ratio(window);
     commands
-        .spawn((TransformBundle::default(), MainCameraMarker))
+        .spawn((TransformBundle::default(), MainCameraBaseMarker))
         .with_children(|builder| {
             builder
                 .spawn(TransformBundle::default())
@@ -68,7 +68,7 @@ fn init(
                                         ..default()
                                     },
                                     projection: Projection::Perspective(PerspectiveProjection {
-                                        aspect_ratio: main_window.aspect_ratio(),
+                                        aspect_ratio,
                                         near: NEAR,
                                         far: FAR,
                                         ..default()
@@ -76,6 +76,7 @@ fn init(
                                     ..default()
                                 },
                                 RenderLayers::layer(0),
+                                MainCameraMarker,
                             ));
                         });
                 });
@@ -118,7 +119,7 @@ fn update_camera(
 
 fn sync_camera(
     camera_settings: Res<MainCamera>,
-    base_query: Query<Entity, With<MainCameraMarker>>,
+    base_query: Query<Entity, With<MainCameraBaseMarker>>,
     children_query: Query<&Children>,
     mut transform_query: Query<&mut Transform>,
     mut projection_query: Query<&mut Projection>,
@@ -144,13 +145,4 @@ fn sync_camera(
     if let Projection::Perspective(ref mut projection) = *camera_projection {
         projection.fov = camera_settings.fov;
     };
-}
-
-fn sync_window(main_window: Res<os::MainWindow>, mut projection_query: Query<&mut Projection>) {
-    if main_window.is_changed() {
-        let mut camera_projection = projection_query.single_mut();
-        if let Projection::Perspective(ref mut projection) = *camera_projection {
-            projection.aspect_ratio = main_window.aspect_ratio();
-        };
-    }
 }

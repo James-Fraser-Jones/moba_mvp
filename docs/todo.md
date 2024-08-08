@@ -14,6 +14,4 @@
 
 ## Bugs:
 
-- Arrow gizmos not working for some reason
-
 ## Issues:

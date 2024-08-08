@@ -4,15 +4,15 @@
 //saving/loading assets to/from the filesystem
 
 use bevy::{prelude::*, utils::hashbrown::HashMap, window::*};
+use std::sync::LazyLock;
 
 pub struct OSPlugin;
 impl Plugin for OSPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MainWindow>();
         app.init_resource::<Handles<StandardMaterial>>();
         app.insert_resource(Handles::<Mesh>(HashMap::default()));
         app.add_systems(Startup, init);
-        app.add_systems(Update, (sync_window, exit_game));
+        app.add_systems(Update, update);
     }
 }
 
@@ -42,48 +42,31 @@ impl<A: Asset> Handles<A> {
     }
 }
 
-#[derive(Resource)]
-pub struct MainWindow(Window);
-impl Default for MainWindow {
-    fn default() -> Self {
-        let game_name = "Moba MVP";
-        Self(Window {
-            title: game_name.to_string(),
-            name: Some(game_name.to_string()),
-            position: WindowPosition::At(IVec2::new(0, 0)),
-            resolution: WindowResolution::new(1920., 1080.),
-            mode: WindowMode::Windowed,
-            cursor: Cursor {
-                grab_mode: CursorGrabMode::None,
-                ..default()
-            },
-            ..default()
-        })
-    }
-}
-impl MainWindow {
-    pub fn aspect_ratio(&self) -> f32 {
-        let size = self.0.resolution.size();
-        size.x / size.y
-    }
+const GAME_NAME: &str = "Moba MVP";
+static WINDOW: LazyLock<Window> = LazyLock::new(|| Window {
+    title: GAME_NAME.to_string(),
+    name: Some(GAME_NAME.to_string()),
+    position: WindowPosition::At(IVec2::new(0, 0)),
+    resolution: WindowResolution::new(1920., 1080.),
+    mode: WindowMode::Windowed,
+    cursor: Cursor {
+        grab_mode: CursorGrabMode::None,
+        ..default()
+    },
+    ..default()
+});
+
+pub fn aspect_ratio(window: &Window) -> f32 {
+    let size = window.resolution.size();
+    size.x / size.y
 }
 
-pub fn init(main_window: Res<MainWindow>, mut window_query: Query<&mut Window>) {
-    //sync resource with entity
+fn init(mut window_query: Query<&mut Window, With<PrimaryWindow>>) {
     let mut window = window_query.single_mut();
-    *window = main_window.0.clone();
+    *window = WINDOW.clone();
 }
 
-fn sync_window(mut main_window: ResMut<MainWindow>, mut window_query: Query<&mut Window>) {
-    let mut window = window_query.single_mut();
-    if window.is_changed() {
-        main_window.0 = window.clone();
-    } else if main_window.is_changed() {
-        *window = main_window.0.clone();
-    }
-}
-
-fn exit_game(keyboard: Res<ButtonInput<KeyCode>>, mut writer: EventWriter<AppExit>) {
+fn update(keyboard: Res<ButtonInput<KeyCode>>, mut writer: EventWriter<AppExit>) {
     if keyboard.just_pressed(KeyCode::Escape) {
         writer.send(AppExit::Success);
     }
