@@ -14,8 +14,6 @@
 
 ## Bugs:
 
-- Depth issue with walls
-- Wireframe can't be enabled in init, breaks the toggle entirely
 - Arrow gizmos not working for some reason
 
 ## Issues:

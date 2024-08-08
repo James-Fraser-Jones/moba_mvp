@@ -15,7 +15,11 @@ impl Plugin for DevPlugin {
     }
 }
 
-fn init() {}
+pub const WIREFRAME_ENABLED: bool = true;
+
+fn init(mut wireframe_config: ResMut<WireframeConfig>) {
+    wireframe_config.global = WIREFRAME_ENABLED;
+}
 
 fn update(
     mut map_query: Query<&mut Transform, With<graphics::Map>>,
@@ -25,6 +29,7 @@ fn update(
     if keyboard.just_pressed(KeyCode::KeyV) {
         wireframe_config.global = !wireframe_config.global;
     }
+
     if keyboard.just_pressed(KeyCode::KeyI) {
         let mut transform = map_query.single_mut();
         transform.scale.z += 10.;
@@ -32,5 +37,11 @@ fn update(
     if keyboard.just_pressed(KeyCode::KeyK) {
         let mut transform = map_query.single_mut();
         transform.scale.z -= 10.;
+    }
+
+    if keyboard.just_pressed(KeyCode::KeyR) {
+        let mut transform = map_query.single_mut();
+        transform.scale.z = graphics::WALL_HEIGHT;
+        wireframe_config.global = WIREFRAME_ENABLED;
     }
 }

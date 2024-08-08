@@ -8,13 +8,16 @@ use bevy::{prelude::*, utils::hashbrown::HashMap, window::*};
 pub struct OSPlugin;
 impl Plugin for OSPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (init_resources, init).chain());
+        app.init_resource::<MainWindow>();
+        app.init_resource::<Handles<StandardMaterial>>();
+        app.insert_resource(Handles::<Mesh>(HashMap::default()));
+        app.add_systems(Startup, init);
         app.add_systems(Update, (sync_window, exit_game));
     }
 }
 
 #[derive(Resource, Default)]
-pub struct Handles<A: Asset>(pub HashMap<String, Handle<A>>);
+pub struct Handles<A: Asset>(HashMap<String, Handle<A>>);
 impl<A: Asset> Handles<A> {
     pub fn add_handle(&mut self, name: &str, handle: Handle<A>) {
         self.0.insert(name.to_string(), handle);
@@ -36,33 +39,6 @@ impl<A: Asset> Handles<A> {
     }
     pub fn get_asset_mut<'a>(&self, assets: &'a mut Assets<A>, name: &str) -> &'a mut A {
         assets.get_mut(self.get_handle(name)).unwrap()
-    }
-}
-
-fn init_resources(mut commands: Commands) {
-    commands.init_resource::<MainWindow>();
-    commands.init_resource::<Handles<StandardMaterial>>();
-    commands.insert_resource(Handles::<Mesh>(HashMap::default()));
-}
-
-pub fn init(main_window: Res<MainWindow>, mut window_query: Query<&mut Window>) {
-    //sync resource with entity
-    let mut window = window_query.single_mut();
-    *window = main_window.0.clone();
-}
-
-fn sync_window(mut main_window: ResMut<MainWindow>, mut window_query: Query<&mut Window>) {
-    let mut window = window_query.single_mut();
-    if window.is_changed() {
-        main_window.0 = window.clone();
-    } else if main_window.is_changed() {
-        *window = main_window.0.clone();
-    }
-}
-
-fn exit_game(keyboard: Res<ButtonInput<KeyCode>>, mut writer: EventWriter<AppExit>) {
-    if keyboard.just_pressed(KeyCode::Escape) {
-        writer.send(AppExit::Success);
     }
 }
 
@@ -89,5 +65,26 @@ impl MainWindow {
     pub fn aspect_ratio(&self) -> f32 {
         let size = self.0.resolution.size();
         size.x / size.y
+    }
+}
+
+pub fn init(main_window: Res<MainWindow>, mut window_query: Query<&mut Window>) {
+    //sync resource with entity
+    let mut window = window_query.single_mut();
+    *window = main_window.0.clone();
+}
+
+fn sync_window(mut main_window: ResMut<MainWindow>, mut window_query: Query<&mut Window>) {
+    let mut window = window_query.single_mut();
+    if window.is_changed() {
+        main_window.0 = window.clone();
+    } else if main_window.is_changed() {
+        *window = main_window.0.clone();
+    }
+}
+
+fn exit_game(keyboard: Res<ButtonInput<KeyCode>>, mut writer: EventWriter<AppExit>) {
+    if keyboard.just_pressed(KeyCode::Escape) {
+        writer.send(AppExit::Success);
     }
 }

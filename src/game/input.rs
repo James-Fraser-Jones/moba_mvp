@@ -11,22 +11,15 @@ use bevy::{
 pub struct InputPlugin;
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
+        app.init_resource::<KeyboardAxis>();
+        app.init_resource::<MouseAxis>();
+        app.init_resource::<WheelAxis>();
         app.add_systems(Startup, init);
         app.add_systems(Update, update);
     }
 }
 
-#[derive(Resource)]
-pub struct InputSettings {
-    line_to_pixel_scale: f32,
-}
-impl Default for InputSettings {
-    fn default() -> Self {
-        Self {
-            line_to_pixel_scale: 50.,
-        }
-    }
-}
+const LINE_TO_PIXEL_SCALE: f32 = 50.;
 
 #[derive(Resource, Default)]
 pub struct KeyboardAxis(pub Vec3);
@@ -37,16 +30,10 @@ pub struct MouseAxis(pub Vec2);
 #[derive(Resource, Default)]
 pub struct WheelAxis(pub Vec2);
 
-fn init(mut commands: Commands) {
-    commands.init_resource::<KeyboardAxis>();
-    commands.init_resource::<MouseAxis>();
-    commands.init_resource::<WheelAxis>();
-    commands.init_resource::<InputSettings>();
-}
+fn init() {}
 
 fn update(
     time: Res<Time>,
-    input_settings: Res<InputSettings>,
     keyboard_buttons: Res<ButtonInput<KeyCode>>,
     mut mouse_motion: EventReader<MouseMotion>,
     mut mouse_wheel: EventReader<MouseWheel>,
@@ -93,7 +80,7 @@ fn update(
                 axis += Vec2::new(motion.x, motion.y);
             }
             MouseScrollUnit::Line => {
-                axis += Vec2::new(motion.x, motion.y) * input_settings.line_to_pixel_scale;
+                axis += Vec2::new(motion.x, motion.y) * LINE_TO_PIXEL_SCALE;
             }
         }
     }
