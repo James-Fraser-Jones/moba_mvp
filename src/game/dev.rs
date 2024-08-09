@@ -3,14 +3,14 @@
 //stuff for purely-dev-related functionality
 
 use crate::game::*;
+use bevy::dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin};
 use bevy::pbr::wireframe::{WireframeConfig, WireframePlugin};
 use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
 
 pub struct DevPlugin;
 impl Plugin for DevPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(WireframePlugin);
+        app.add_plugins((WireframePlugin, FpsOverlayPlugin::default()));
         app.add_systems(Startup, init);
         app.add_systems(Update, (update, draw_cursor));
     }
