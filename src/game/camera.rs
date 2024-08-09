@@ -20,6 +20,10 @@ const PAN_SPEED: f32 = 400.;
 const ZOOM_SPEED: f32 = 100.;
 const DEBUG_CONTROLS: bool = false;
 const ROTATION_SPEED: f32 = 0.15;
+const FLIP_ORIENTATION_SPEED: f32 = 5. * PI;
+
+#[derive(Default)]
+struct FlipOrientation(Option<f32>);
 
 #[derive(Bundle)]
 struct OrbitCamera3dBundle {
@@ -52,7 +56,7 @@ impl Default for OrbitTransform {
     fn default() -> Self {
         Self {
             translation: Vec3::ZERO,
-            rotation: Vec2::new(0., 0.6),
+            rotation: Vec2::new(0., 0.5),
         }
     }
 }
@@ -99,6 +103,8 @@ fn update(
     wheel_axis: Res<input::WheelAxis>,
     screen_axis: Res<input::ScreenAxis>,
     mut camera_query: Query<(&mut Transform, &mut OrbitDistance)>,
+    mut flip_orientation: Local<FlipOrientation>,
+    time: Res<Time>,
 ) {
     let (mut transform, mut orbit_distance) = camera_query.single_mut();
     let mut orbit_transform = orbit_distance.transform_to_orbit_transform(&transform);
@@ -135,9 +141,20 @@ fn update(
         if keyboard_buttons.pressed(KeyCode::Space) {
             orbit_transform.translation = Vec3::ZERO;
         }
-        //flip camera
+        //flip orientation
         if keyboard_buttons.just_pressed(KeyCode::KeyQ) {
-            orbit_transform.rotation.x = (orbit_transform.rotation.x + PI) % (2. * PI);
+            if flip_orientation.0 == None {
+                flip_orientation.0 = Some(orbit_transform.rotation.x + PI);
+            }
+        }
+        if let Some(x) = flip_orientation.0 {
+            let flip_delta = FLIP_ORIENTATION_SPEED * time.delta_seconds();
+            if orbit_transform.rotation.x + flip_delta >= x {
+                orbit_transform.rotation.x = x;
+                flip_orientation.0 = None;
+            } else {
+                orbit_transform.rotation.x += flip_delta;
+            }
         }
     }
     //reset
