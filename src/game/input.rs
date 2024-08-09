@@ -22,7 +22,7 @@ impl Plugin for InputPlugin {
 }
 
 const LINE_TO_PIXEL_SCALE: f32 = 50.;
-const SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD: f32 = 200.;
+const SCREEN_AXIS_RADIUS: f32 = 0.8;
 
 #[derive(Resource, Default)]
 pub struct KeyboardAxis(pub Vec3);
@@ -106,20 +106,13 @@ fn update(
     }
 
     //screen
-    let mut axis: Vec2 = Vec2::ZERO;
-    let window_size = window.resolution.size();
-    if last_cursor_position.0.x < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
-        axis.x -= 1.;
-    }
-    if last_cursor_position.0.y < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
-        axis.y += 1.;
-    }
-    if window_size.x - last_cursor_position.0.x < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
-        axis.x += 1.;
-    }
-    if window_size.y - last_cursor_position.0.y < SCREEN_AXIS_LOGICAL_PIXEL_THRESHOLD {
-        axis.y -= 1.;
-    }
+    let window_size = window.resolution.size(); //range ([0, WINDOW_WIDTH], [0, WINDOW_HEIGHT]), +y down
+    let cursor_centered = last_cursor_position.0 - window_size / 2.; //range ([-WINDOW_WIDTH, WINDOW_WIDTH], [-WINDOW_HEIGHT, WINDOW_HEIGHT]), +y down
+    let cursor_scaled = 2. * cursor_centered / window_size; //range ([-1., 1.], [-1., 1.]), +y down
+    let cursor_length = (cursor_scaled.length().clamp(SCREEN_AXIS_RADIUS, 1.) - SCREEN_AXIS_RADIUS)
+        / (1. - SCREEN_AXIS_RADIUS); //range [0, 1] from start of SCREEN_AXIS_RADIUS to edge of screen, in each axis, clamped at the corners
+    let cursor_vector = cursor_centered.normalize() * cursor_length; // +y down
+    let mut axis: Vec2 = Vec2::new(cursor_vector.x, -cursor_vector.y); // +y up
     axis *= time.delta_seconds();
     screen_axis.0 = axis;
 }

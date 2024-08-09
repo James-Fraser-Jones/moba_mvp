@@ -24,49 +24,55 @@ const ROTATION_SPEED: f32 = 0.15;
 #[derive(Bundle)]
 struct OrbitCamera3dBundle {
     camera_3d_bundle: Camera3dBundle,
-    orbit_transform: OrbitTransform,
+    orbit_distance: OrbitDistance,
 }
 impl Default for OrbitCamera3dBundle {
     fn default() -> Self {
+        let orbit_distance = OrbitDistance::default();
         Self {
             camera_3d_bundle: Camera3dBundle {
                 projection: Projection::Perspective(PerspectiveProjection {
                     far: CAMERA_DRAW_FAR,
                     ..default()
                 }),
+                transform: orbit_distance.orbit_transform_to_transform(&OrbitTransform::default()),
                 ..default()
             },
-            orbit_transform: OrbitTransform::default(),
+            orbit_distance,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct OrbitTransform {
+    translation: Vec3,
+    rotation: Vec2,
+}
+impl Default for OrbitTransform {
+    fn default() -> Self {
+        Self {
+            translation: Vec3::ZERO,
+            rotation: Vec2::new(0., 0.6),
         }
     }
 }
 
 #[derive(Component, Clone, Copy)]
-struct OrbitTransform {
-    position: Vec3,
-    rotation: Vec2,
-    orbit_distance: f32,
-}
-impl Default for OrbitTransform {
+struct OrbitDistance(f32);
+impl Default for OrbitDistance {
     fn default() -> Self {
-        Self {
-            position: Vec3::ZERO,
-            rotation: Vec2::new(0., 0.6),
-            orbit_distance: 340.,
-        }
+        Self(340.)
     }
 }
-// impl OrbitTransform {
-//     fn from_transform(&self, transform: Transform) -> OrbitTransform {
-//         OrbitTransform {
-//             position: ,
-//             rotation: ,
-//             orbit_distance: self.orbit_distance,
-//         }
-//     }
-// }
-impl From<OrbitTransform> for Transform {
-    fn from(orbit_transform: OrbitTransform) -> Self {
+impl OrbitDistance {
+    fn transform_to_orbit_transform(&self, transform: &Transform) -> OrbitTransform {
+        let rotation = transform.rotation.to_euler(EulerRot::ZYX);
+        OrbitTransform {
+            rotation: Vec2::new(rotation.0, rotation.2),
+            translation: transform.translation - transform.rotation.mul_vec3(Vec3::Z * self.0),
+        }
+    }
+    fn orbit_transform_to_transform(&self, orbit_transform: &OrbitTransform) -> Transform {
         let rotation = Quat::from_euler(
             EulerRot::ZYX,
             orbit_transform.rotation.x,
@@ -74,8 +80,7 @@ impl From<OrbitTransform> for Transform {
             orbit_transform.rotation.y,
         );
         Transform {
-            translation: orbit_transform.position
-                + rotation.mul_vec3(Vec3::Z * orbit_transform.orbit_distance),
+            translation: orbit_transform.translation + rotation.mul_vec3(Vec3::Z * self.0),
             rotation,
             ..default()
         }
@@ -93,39 +98,52 @@ fn update(
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     wheel_axis: Res<input::WheelAxis>,
     screen_axis: Res<input::ScreenAxis>,
-    mut camera_query: Query<(&mut Transform, &mut OrbitTransform)>,
+    mut camera_query: Query<(&mut Transform, &mut OrbitDistance)>,
 ) {
-    let (mut transform, mut orbit_transform) = camera_query.single_mut();
+    let (mut transform, mut orbit_distance) = camera_query.single_mut();
+    let mut orbit_transform = orbit_distance.transform_to_orbit_transform(&transform);
     if DEBUG_CONTROLS {
-        //rotate
-        if mouse_buttons.pressed(MouseButton::Left) {
+        //rotate (both axes)
+        if mouse_buttons.pressed(MouseButton::Middle) {
             orbit_transform.rotation =
                 (orbit_transform.rotation - mouse_axis.0 * ROTATION_SPEED) % (2. * PI);
             orbit_transform.rotation.y = orbit_transform.rotation.y.clamp(0., PI / 2.);
         }
         //pan (incl vertically)
         let yaw = orbit_transform.rotation.x;
-        orbit_transform.position +=
+        orbit_transform.translation +=
             Quat::from_rotation_z(yaw).mul_vec3(keyboard_axis.0 * PAN_SPEED);
         //zoom
-        orbit_transform.orbit_distance -= wheel_axis.0.y * ZOOM_SPEED;
-        orbit_transform.orbit_distance = orbit_transform.orbit_distance.max(0.);
+        orbit_distance.0 -= wheel_axis.0.y * ZOOM_SPEED;
+        orbit_distance.0 = orbit_distance.0.max(0.);
     } else {
+        //rotate
+        if mouse_buttons.pressed(MouseButton::Middle) {
+            orbit_transform.rotation =
+                (orbit_transform.rotation - mouse_axis.0 * ROTATION_SPEED) % (2. * PI);
+            orbit_transform.rotation.x = 0.;
+            orbit_transform.rotation.y = orbit_transform.rotation.y.clamp(0., PI / 2.);
+        }
         //pan
         let yaw = orbit_transform.rotation.x;
-        orbit_transform.position +=
+        orbit_transform.translation +=
             Quat::from_rotation_z(yaw).mul_vec3((screen_axis.0 * PAN_SPEED).extend(0.));
         //zoom
-        orbit_transform.orbit_distance -= wheel_axis.0.y * ZOOM_SPEED;
-        orbit_transform.orbit_distance = orbit_transform.orbit_distance.max(1.);
+        orbit_distance.0 -= wheel_axis.0.y * ZOOM_SPEED;
+        orbit_distance.0 = orbit_distance.0.max(0.);
         //center camera
         if keyboard_buttons.pressed(KeyCode::Space) {
-            orbit_transform.position = Vec3::ZERO;
+            orbit_transform.translation = Vec3::ZERO;
+        }
+        //flip camera
+        if keyboard_buttons.just_pressed(KeyCode::KeyQ) {
+            orbit_transform.rotation.x = (orbit_transform.rotation.x + PI) % (2. * PI);
         }
     }
     //reset
     if keyboard_buttons.pressed(KeyCode::KeyR) {
-        *orbit_transform = OrbitTransform::default();
+        *orbit_distance = OrbitDistance::default();
+        orbit_transform = OrbitTransform::default();
     }
-    *transform = Transform::from(*orbit_transform);
+    *transform = orbit_distance.orbit_transform_to_transform(&orbit_transform);
 }
