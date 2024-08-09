@@ -42,7 +42,7 @@ fn update(
 
     if keyboard.just_pressed(KeyCode::KeyR) {
         let mut transform = map_query.single_mut();
-        transform.scale.z = graphics::WALL_HEIGHT;
+        transform.scale.z = graphics::WALL_HEIGHT / graphics::BLENDER_WALL_HEIGHT;
         wireframe_config.global = WIREFRAME_ENABLED;
     }
 }
@@ -56,9 +56,9 @@ fn draw_cursor(
     let ray = camera
         .viewport_to_world(camera_global_transform, last_cursor_position.0)
         .unwrap();
-    let distance = ray
-        .intersect_plane(Vec3::ZERO, InfinitePlane3d::new(Vec3::Z))
-        .unwrap();
+    let Some(distance) = ray.intersect_plane(Vec3::ZERO, InfinitePlane3d::new(Vec3::Z)) else {
+        return;
+    };
     let point = ray.get_point(distance);
     gizmos.circle(
         point + Vec3::Z * 0.01,

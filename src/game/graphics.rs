@@ -14,6 +14,7 @@ impl Plugin for GraphicsPlugin {
 }
 
 pub const WALL_HEIGHT: f32 = 30.;
+pub const BLENDER_WALL_HEIGHT: f32 = 50.;
 
 #[derive(Component, Default)]
 pub struct Map;
@@ -23,7 +24,7 @@ fn init(mut commands: Commands, server: Res<AssetServer>, mut clear_color: ResMu
     commands.spawn((
         SceneBundle {
             scene: server.load("models/map.glb#Scene0"),
-            transform: Transform::from_scale(Vec3::new(1., 1., WALL_HEIGHT)),
+            transform: Transform::from_scale(Vec3::new(1., 1., WALL_HEIGHT / BLENDER_WALL_HEIGHT)),
             ..default()
         },
         Map,
