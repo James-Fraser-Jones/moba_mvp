@@ -16,7 +16,7 @@ impl Plugin for CameraPlugin {
 }
 
 const CAMERA_DRAW_FAR: f32 = 2000.;
-const PAN_SPEED: f32 = 400.;
+const PAN_SPEED: f32 = 450.;
 const ZOOM_MIN: f32 = 20.;
 const ZOOM_MAX: f32 = 2000.;
 const ZOOM_SPEED: f32 = 100.;

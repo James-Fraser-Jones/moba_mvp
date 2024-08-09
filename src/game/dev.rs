@@ -53,21 +53,18 @@ fn draw_cursor(
     mut gizmos: Gizmos,
 ) {
     let (camera, camera_global_transform) = camera_query.single();
-
-    // Calculate a ray pointing from the camera into the world based on the cursor's position.
-    let Some(ray) = camera.viewport_to_world(camera_global_transform, last_cursor_position.0)
-    else {
-        return;
-    };
-
-    // Calculate if and where the ray is hitting the ground plane.
-    let Some(distance) = ray.intersect_plane(Vec3::ZERO, InfinitePlane3d::new(Vec3::Z)) else {
-        return;
-    };
+    let ray = camera
+        .viewport_to_world(camera_global_transform, last_cursor_position.0)
+        .unwrap();
+    let distance = ray
+        .intersect_plane(Vec3::ZERO, InfinitePlane3d::new(Vec3::Z))
+        .unwrap();
     let point = ray.get_point(distance);
-
-    // Draw a circle just above the ground plane at that position.
-    let end = point + Vec3::Z * 0.01;
-    gizmos.circle(end, Dir3::new(Vec3::Z).unwrap(), 10., Color::WHITE);
-    gizmos.arrow(point + Vec3::Z * 50., end, Color::WHITE);
+    gizmos.circle(
+        point + Vec3::Z * 0.01,
+        Dir3::new(Vec3::Z).unwrap(),
+        10.,
+        Color::WHITE,
+    );
+    gizmos.arrow(point + Vec3::Z * 30., point + Vec3::Z * 0.01, Color::WHITE);
 }
