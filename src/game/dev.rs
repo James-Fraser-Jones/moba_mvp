@@ -16,7 +16,7 @@ impl Plugin for DevPlugin {
     }
 }
 
-pub const WIREFRAME_ENABLED: bool = true;
+pub const WIREFRAME_ENABLED: bool = false;
 
 fn init(mut wireframe_config: ResMut<WireframeConfig>) {
     wireframe_config.global = WIREFRAME_ENABLED;

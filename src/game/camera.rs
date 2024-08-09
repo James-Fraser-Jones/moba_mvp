@@ -17,8 +17,9 @@ impl Plugin for CameraPlugin {
 
 const CAMERA_DRAW_FAR: f32 = 2000.;
 const PAN_SPEED: f32 = 400.;
+const ZOOM_MIN: f32 = 20.;
+const ZOOM_MAX: f32 = 2000.;
 const ZOOM_SPEED: f32 = 100.;
-const DEBUG_CONTROLS: bool = false;
 const ROTATION_SPEED: f32 = 0.15;
 const FLIP_ORIENTATION_SPEED: f32 = 5. * PI;
 
@@ -96,7 +97,6 @@ fn init(mut commands: Commands) {
 }
 
 fn update(
-    keyboard_axis: Res<input::KeyboardAxis>,
     keyboard_buttons: Res<ButtonInput<KeyCode>>,
     mouse_axis: Res<input::MouseAxis>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
@@ -108,59 +108,41 @@ fn update(
 ) {
     let (mut transform, mut orbit_distance) = camera_query.single_mut();
     let mut orbit_transform = orbit_distance.transform_to_orbit_transform(&transform);
-    if DEBUG_CONTROLS {
-        //rotate (both axes)
-        if mouse_buttons.pressed(MouseButton::Middle) {
-            orbit_transform.rotation =
-                (orbit_transform.rotation - mouse_axis.0 * ROTATION_SPEED) % (2. * PI);
-            orbit_transform.rotation.y = orbit_transform.rotation.y.clamp(0., PI / 2.);
+    //rotate
+    if mouse_buttons.pressed(MouseButton::Middle) {
+        orbit_transform.rotation.y -= mouse_axis.0.y * ROTATION_SPEED;
+        orbit_transform.rotation.y = orbit_transform.rotation.y.clamp(0., PI / 2. - 0.01);
+    }
+    //pan
+    let yaw = orbit_transform.rotation.x;
+    orbit_transform.translation +=
+        Quat::from_rotation_z(yaw).mul_vec3((screen_axis.0 * PAN_SPEED).extend(0.));
+    orbit_transform.translation = orbit_transform
+        .translation
+        .clamp(Vec3::splat(-1000.), Vec3::splat(1000.));
+    //zoom
+    orbit_distance.0 -= wheel_axis.0.y * ZOOM_SPEED;
+    orbit_distance.0 = orbit_distance.0.clamp(ZOOM_MIN, ZOOM_MAX);
+    //flip orientation
+    if keyboard_buttons.just_pressed(KeyCode::KeyQ) {
+        if flip_orientation.0 == None {
+            flip_orientation.0 = Some(orbit_transform.rotation.x + PI);
         }
-        //pan (incl vertically)
-        let yaw = orbit_transform.rotation.x;
-        orbit_transform.translation +=
-            Quat::from_rotation_z(yaw).mul_vec3(keyboard_axis.0 * PAN_SPEED);
-        //zoom
-        orbit_distance.0 -= wheel_axis.0.y * ZOOM_SPEED;
-        orbit_distance.0 = orbit_distance.0.max(0.);
-    } else {
-        //rotate
-        if mouse_buttons.pressed(MouseButton::Middle) {
-            orbit_transform.rotation =
-                (orbit_transform.rotation - mouse_axis.0 * ROTATION_SPEED) % (2. * PI);
-            orbit_transform.rotation.x = 0.;
-            orbit_transform.rotation.y = orbit_transform.rotation.y.clamp(0., PI / 2.);
-        }
-        //pan
-        let yaw = orbit_transform.rotation.x;
-        orbit_transform.translation +=
-            Quat::from_rotation_z(yaw).mul_vec3((screen_axis.0 * PAN_SPEED).extend(0.));
-        //zoom
-        orbit_distance.0 -= wheel_axis.0.y * ZOOM_SPEED;
-        orbit_distance.0 = orbit_distance.0.max(0.);
-        //center camera
-        if keyboard_buttons.pressed(KeyCode::Space) {
-            orbit_transform.translation = Vec3::ZERO;
-        }
-        //flip orientation
-        if keyboard_buttons.just_pressed(KeyCode::KeyQ) {
-            if flip_orientation.0 == None {
-                flip_orientation.0 = Some(orbit_transform.rotation.x + PI);
-            }
-        }
-        if let Some(x) = flip_orientation.0 {
-            let flip_delta = FLIP_ORIENTATION_SPEED * time.delta_seconds();
-            if orbit_transform.rotation.x + flip_delta >= x {
-                orbit_transform.rotation.x = x;
-                flip_orientation.0 = None;
-            } else {
-                orbit_transform.rotation.x += flip_delta;
-            }
+    }
+    if let Some(x) = flip_orientation.0 {
+        let flip_delta = FLIP_ORIENTATION_SPEED * time.delta_seconds();
+        if orbit_transform.rotation.x + flip_delta >= x {
+            orbit_transform.rotation.x = x;
+            flip_orientation.0 = None;
+        } else {
+            orbit_transform.rotation.x += flip_delta;
         }
     }
     //reset
     if keyboard_buttons.pressed(KeyCode::KeyR) {
         *orbit_distance = OrbitDistance::default();
         orbit_transform = OrbitTransform::default();
+        flip_orientation.0 = None;
     }
     *transform = orbit_distance.orbit_transform_to_transform(&orbit_transform);
 }

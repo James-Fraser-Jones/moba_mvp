@@ -3,7 +3,7 @@
 //adding/removing meshes/materials to/from the world, mostly in accordance with entities added/removed by the logic plugin
 
 use crate::game::{os::Handles, *};
-use bevy::{prelude::*, render::*};
+use bevy::{color::palettes::css, prelude::*, render::*};
 
 pub struct GraphicsPlugin;
 impl Plugin for GraphicsPlugin {
@@ -19,7 +19,7 @@ pub const WALL_HEIGHT: f32 = 30.;
 pub struct Map;
 
 fn init(mut commands: Commands, server: Res<AssetServer>, mut clear_color: ResMut<ClearColor>) {
-    clear_color.0 = Color::BLACK;
+    clear_color.0 = Color::Srgba(css::FOREST_GREEN);
     commands.spawn((
         SceneBundle {
             scene: server.load("models/map.glb#Scene0"),
