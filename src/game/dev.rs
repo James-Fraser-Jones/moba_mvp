@@ -3,7 +3,7 @@
 //stuff for purely-dev-related functionality
 
 use crate::game::*;
-use bevy::dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin};
+use bevy::dev_tools::fps_overlay::FpsOverlayPlugin;
 use bevy::pbr::wireframe::{WireframeConfig, WireframePlugin};
 use bevy::prelude::*;
 

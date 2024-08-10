@@ -30,6 +30,7 @@ enum OrderedMeshType {
     Sphere,
     Cylinder,
     Capsule,
+    Cuboid,
 }
 #[derive(PartialEq, Eq, Hash)]
 struct OrderedMesh {
@@ -51,7 +52,7 @@ impl From<AllowedMesh> for OrderedMesh {
                 radius,
                 half_height,
             }) => OrderedMesh {
-                mesh_type: OrderedMeshType::Sphere,
+                mesh_type: OrderedMeshType::Cylinder,
                 half_width: OrderedFloat(radius),
                 half_height: OrderedFloat(half_height),
                 half_depth: OrderedFloat(radius),
@@ -60,13 +61,13 @@ impl From<AllowedMesh> for OrderedMesh {
                 radius,
                 half_length,
             }) => OrderedMesh {
-                mesh_type: OrderedMeshType::Sphere,
+                mesh_type: OrderedMeshType::Capsule,
                 half_width: OrderedFloat(radius),
                 half_height: OrderedFloat(half_length),
                 half_depth: OrderedFloat(radius),
             },
             AllowedMesh::Cuboid(Cuboid { half_size }) => OrderedMesh {
-                mesh_type: OrderedMeshType::Sphere,
+                mesh_type: OrderedMeshType::Cuboid,
                 half_width: OrderedFloat(half_size.x),
                 half_height: OrderedFloat(half_size.z),
                 half_depth: OrderedFloat(half_size.y),
