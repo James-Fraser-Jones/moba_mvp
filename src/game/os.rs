@@ -3,42 +3,47 @@
 //quitting the game
 //saving/loading assets to/from the filesystem
 
-use bevy::{prelude::*, utils::hashbrown::HashMap, window::*};
+use crate::game::*;
+use bevy::{prelude::*, window::*};
+use std::collections::HashMap;
 use std::sync::LazyLock;
 
 pub struct OSPlugin;
 impl Plugin for OSPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Handles<StandardMaterial>>();
-        app.insert_resource(Handles::<Mesh>(HashMap::default()));
         app.add_systems(Startup, init);
         app.add_systems(Update, update);
     }
 }
 
-#[derive(Resource, Default)]
-pub struct Handles<A: Asset>(HashMap<String, Handle<A>>);
-impl<A: Asset> Handles<A> {
-    pub fn add_handle(&mut self, name: &str, handle: Handle<A>) {
-        self.0.insert(name.to_string(), handle);
+#[derive(Resource)]
+pub struct HandleMap<K: Eq + std::hash::Hash, A: Asset>(pub HashMap<K, Handle<A>>);
+impl<K: Eq + std::hash::Hash, A: Asset> HandleMap<K, A> {
+    pub fn insert_asset(
+        &mut self,
+        assets: &mut Assets<A>,
+        key: K,
+        value: impl Into<A>,
+    ) -> &Handle<A> {
+        let handle = assets.add(value);
+        self.0.entry(key).or_insert(handle)
     }
-    pub fn add_asset(&mut self, assets: &mut Assets<A>, name: &str, value: impl Into<A>) {
-        self.add_handle(name, assets.add(value));
+    pub fn insert_asset_path(&mut self, server: &AssetServer, key: K, path: &str) -> &Handle<A> {
+        let handle = server.load(path.to_string());
+        self.0.entry(key).or_insert(handle)
     }
-    pub fn add_path(&mut self, server: &AssetServer, name: &str, path: &str) {
-        self.add_handle(name, server.load(path.to_string()));
+    pub fn get_asset<'a>(&self, assets: &'a mut Assets<A>, key: &K) -> Option<&'a A> {
+        let handle = self.0.get(key)?;
+        assets.get(handle)
     }
-    // pub fn reserve_handle(&mut self, assets: &mut Assets<A>, name: &str) {
-    //     self.0.insert(name.to_string(), assets.reserve_handle());
-    // }
-    pub fn get_handle(&self, name: &str) -> &Handle<A> {
-        self.0.get(name).unwrap()
+    pub fn get_asset_mut<'a>(&self, assets: &'a mut Assets<A>, key: &K) -> Option<&'a mut A> {
+        let handle = self.0.get(key)?;
+        assets.get_mut(handle)
     }
-    pub fn get_asset<'a>(&self, assets: &'a mut Assets<A>, name: &str) -> &'a A {
-        assets.get(self.get_handle(name)).unwrap()
-    }
-    pub fn get_asset_mut<'a>(&self, assets: &'a mut Assets<A>, name: &str) -> &'a mut A {
-        assets.get_mut(self.get_handle(name)).unwrap()
+}
+impl<K: Eq + std::hash::Hash, A: Asset> Default for HandleMap<K, A> {
+    fn default() -> Self {
+        Self(HashMap::default())
     }
 }
 

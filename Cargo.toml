@@ -8,6 +8,7 @@ bevy = { version = "0.14.0", features = ["bevy_dev_tools"] }
 rand = "0.8.5"
 uuid = "1.10.0"
 avian2d = "0.1"
+ordered-float = "4.2.2"
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
