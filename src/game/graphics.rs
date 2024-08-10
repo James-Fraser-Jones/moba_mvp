@@ -3,8 +3,10 @@
 //adding/removing meshes/materials to/from the world, mostly in accordance with entities added/removed by the logic plugin
 
 use crate::game::*;
-use bevy::{color::palettes::css, prelude::*, render::*};
+use bevy::{color::palettes::css, pbr::wireframe::Wireframe, prelude::*, render::*};
+use logic::Team;
 use ordered_float::OrderedFloat;
+use std::f32::consts::PI;
 
 pub struct GraphicsPlugin;
 impl Plugin for GraphicsPlugin {
@@ -32,32 +34,42 @@ enum OrderedMeshType {
 #[derive(PartialEq, Eq, Hash)]
 struct OrderedMesh {
     mesh_type: OrderedMeshType,
-    radius: OrderedFloat<f32>,
-    height: OrderedFloat<f32>,
+    half_width: OrderedFloat<f32>,
+    half_height: OrderedFloat<f32>,
+    half_depth: OrderedFloat<f32>,
 }
 impl From<AllowedMesh> for OrderedMesh {
     fn from(value: AllowedMesh) -> Self {
         match value {
             AllowedMesh::Sphere(Sphere { radius }) => OrderedMesh {
                 mesh_type: OrderedMeshType::Sphere,
-                radius: OrderedFloat(radius),
-                height: OrderedFloat(radius * 2.),
+                half_width: OrderedFloat(radius),
+                half_height: OrderedFloat(radius),
+                half_depth: OrderedFloat(radius),
             },
             AllowedMesh::Cylinder(Cylinder {
                 radius,
                 half_height,
             }) => OrderedMesh {
                 mesh_type: OrderedMeshType::Sphere,
-                radius: OrderedFloat(radius),
-                height: OrderedFloat(half_height * 2.),
+                half_width: OrderedFloat(radius),
+                half_height: OrderedFloat(half_height),
+                half_depth: OrderedFloat(radius),
             },
             AllowedMesh::Capsule(Capsule3d {
                 radius,
                 half_length,
             }) => OrderedMesh {
                 mesh_type: OrderedMeshType::Sphere,
-                radius: OrderedFloat(radius),
-                height: OrderedFloat(half_length * 2.),
+                half_width: OrderedFloat(radius),
+                half_height: OrderedFloat(half_length),
+                half_depth: OrderedFloat(radius),
+            },
+            AllowedMesh::Cuboid(Cuboid { half_size }) => OrderedMesh {
+                mesh_type: OrderedMeshType::Sphere,
+                half_width: OrderedFloat(half_size.x),
+                half_height: OrderedFloat(half_size.z),
+                half_depth: OrderedFloat(half_size.y),
             },
         }
     }
@@ -87,6 +99,7 @@ pub enum AllowedMesh {
     Sphere(Sphere),
     Cylinder(Cylinder),
     Capsule(Capsule3d),
+    Cuboid(Cuboid),
 }
 impl Into<Mesh> for AllowedMesh {
     fn into(self) -> Mesh {
@@ -94,6 +107,7 @@ impl Into<Mesh> for AllowedMesh {
             AllowedMesh::Sphere(sphere) => sphere.into(),
             AllowedMesh::Cylinder(cylinder) => cylinder.into(),
             AllowedMesh::Capsule(capsule) => capsule.into(),
+            AllowedMesh::Cuboid(cuboid) => cuboid.into(),
         }
     }
 }
@@ -147,12 +161,7 @@ impl AllowedMeshMap {
 pub struct Display {
     pub allowed_mesh: AllowedMesh,
     pub color: Color,
-}
-
-#[derive(Bundle)]
-pub struct DisplayBundle {
-    mesh: Handle<Mesh>,
-    material: Handle<StandardMaterial>,
+    pub wireframe: bool,
 }
 
 fn init(mut commands: Commands, server: Res<AssetServer>, mut clear_color: ResMut<ClearColor>) {
@@ -176,9 +185,32 @@ fn update(
     mut mesh_map: ResMut<AllowedMeshMap>,
 ) {
     for (entity, display) in &mut query {
-        commands.entity(entity).insert(DisplayBundle {
+        let child = PbrBundle {
             mesh: mesh_map.clone_mesh_handle(&mut meshes, display.allowed_mesh),
             material: material_map.clone_material_handle(&mut materials, display.color),
-        });
+            transform: match display.allowed_mesh {
+                AllowedMesh::Sphere(_) => Transform::default(),
+                AllowedMesh::Cylinder(_) => {
+                    Transform::from_rotation(Quat::from_rotation_x(PI / 2.))
+                }
+                AllowedMesh::Capsule(_) => Transform::default(),
+                AllowedMesh::Cuboid(_) => Transform::default(),
+            },
+            ..default()
+        };
+        if display.wireframe {
+            let child = commands.spawn((child, Wireframe)).id();
+            commands.entity(entity).add_child(child);
+        } else {
+            let child = commands.spawn(child).id();
+            commands.entity(entity).add_child(child);
+        }
     }
+}
+
+pub fn team_color(team: logic::Team) -> Color {
+    Color::Srgba(match team {
+        Team::Red => css::DARK_RED,
+        Team::Blue => css::DARK_BLUE,
+    })
 }
