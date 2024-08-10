@@ -39,7 +39,13 @@ pub struct LastCursorPosition(pub Vec2);
 #[derive(Resource, Default)]
 pub struct ScreenAxis(pub Vec2);
 
-fn init() {}
+fn init(
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    mut last_cursor_position: ResMut<LastCursorPosition>,
+) {
+    let window = window_query.single();
+    last_cursor_position.0 = window.size() / 2.;
+}
 
 fn update(
     time: Res<Time>,

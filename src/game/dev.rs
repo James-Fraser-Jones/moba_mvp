@@ -33,11 +33,11 @@ fn update(
 
     if keyboard.just_pressed(KeyCode::KeyI) {
         let mut transform = map_query.single_mut();
-        transform.scale.z += 10.;
+        transform.scale.z += 10. / graphics::BLENDER_WALL_HEIGHT;
     }
     if keyboard.just_pressed(KeyCode::KeyK) {
         let mut transform = map_query.single_mut();
-        transform.scale.z -= 10.;
+        transform.scale.z -= 10. / graphics::BLENDER_WALL_HEIGHT;
     }
 
     if keyboard.just_pressed(KeyCode::KeyR) {
