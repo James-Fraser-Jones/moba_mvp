@@ -7,6 +7,7 @@ use bevy::{color::palettes::css, pbr::wireframe::Wireframe, prelude::*, render::
 use logic::Team;
 use ordered_float::OrderedFloat;
 use std::f32::consts::PI;
+use std::sync::LazyLock;
 
 pub struct GraphicsPlugin;
 impl Plugin for GraphicsPlugin {
@@ -112,12 +113,16 @@ impl Into<Mesh> for AllowedMesh {
         }
     }
 }
-fn color_into_unlit(color: Color) -> StandardMaterial {
+fn color_into_unlit(color: Color, texture: Option<Handle<Image>>) -> StandardMaterial {
     StandardMaterial {
+        base_color_texture: texture,
         unlit: true,
         ..StandardMaterial::from_color(color)
     }
 }
+
+#[derive(Resource)]
+struct DevTexture(Handle<Image>);
 
 //HandleMap wrappers for Meshes and Materials
 #[derive(Resource, Default)]
@@ -127,13 +132,16 @@ impl ColoredMaterialMap {
         &mut self,
         materials: &mut Assets<StandardMaterial>,
         color: Color,
+        texture: Option<&Handle<Image>>,
     ) -> Handle<StandardMaterial> {
         if let Some(handle) = self.0 .0.get(&color.into()) {
             handle.clone()
         } else {
-            let handle = self
-                .0
-                .insert_asset(materials, color.into(), color_into_unlit(color));
+            let handle = self.0.insert_asset(
+                materials,
+                color.into(),
+                color_into_unlit(color, texture.map(|t| t.clone())),
+            );
             handle.clone()
         }
     }
@@ -175,6 +183,9 @@ fn init(mut commands: Commands, server: Res<AssetServer>, mut clear_color: ResMu
         },
         Map,
     ));
+    commands.insert_resource(DevTexture(
+        server.load("textures/untracked/kenney_dev_textures/Light/texture_07.png"),
+    ));
 }
 
 fn update(
@@ -184,11 +195,16 @@ fn update(
     mut meshes: ResMut<Assets<Mesh>>,
     mut material_map: ResMut<ColoredMaterialMap>,
     mut mesh_map: ResMut<AllowedMeshMap>,
+    dev_texture: Res<DevTexture>,
 ) {
     for (entity, display) in &mut query {
         let child = PbrBundle {
             mesh: mesh_map.clone_mesh_handle(&mut meshes, display.allowed_mesh),
-            material: material_map.clone_material_handle(&mut materials, display.color),
+            material: material_map.clone_material_handle(
+                &mut materials,
+                display.color,
+                Some(&dev_texture.0),
+            ),
             transform: match display.allowed_mesh {
                 AllowedMesh::Sphere(_) => Transform::default(),
                 AllowedMesh::Cylinder(_) => {
@@ -211,7 +227,7 @@ fn update(
 
 pub fn team_color(team: logic::Team) -> Color {
     Color::Srgba(match team {
-        Team::Red => css::DARK_RED,
-        Team::Blue => css::DARK_BLUE,
+        Team::Red => css::TOMATO,
+        Team::Blue => css::DEEP_SKY_BLUE,
     })
 }
