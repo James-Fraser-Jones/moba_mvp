@@ -32,7 +32,9 @@ impl Spawner {
     pub fn new(pos: Vec2, team: Team) -> Self {
         let radius = 25.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
+            spatial: SpatialBundle::from_transform(Transform::from_translation(
+                pos.extend(-radius),
+            )),
             radius: Radius(radius),
             health: Health(1000.),
             team,
@@ -57,9 +59,7 @@ impl Tower {
     pub fn new(pos: Vec2, team: Team) -> Self {
         let half_height = 30.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(
-                pos.extend(half_height),
-            )),
+            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(logic::TOWER_RADIUS),
             health: Health(500.),
             team,
@@ -87,7 +87,7 @@ impl Minion {
     pub fn new(pos: Vec2, team: Team) -> Self {
         let radius = 8.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(radius))),
+            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
             health: Health(100.),
             team,
@@ -113,9 +113,7 @@ impl Advocate {
         let radius = 12.;
         let height = 30.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(
-                pos.extend(height / 2. + radius),
-            )),
+            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
             health: Health(200.),
             team,
@@ -140,7 +138,9 @@ impl Core {
     pub fn new(pos: Vec2, team: Team) -> Self {
         let radius = 50.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
+            spatial: SpatialBundle::from_transform(Transform::from_translation(
+                pos.extend(-radius),
+            )),
             radius: Radius(radius),
             health: Health(5000.),
             team,
@@ -165,9 +165,7 @@ impl Monster {
         let radius = 10.;
         let height = 25.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(
-                pos.extend(height / 2. + radius),
-            )),
+            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
             health: Health(150.),
             display: graphics::Display {
@@ -191,9 +189,7 @@ impl Demon {
         let radius = 25.;
         let height = 70.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(
-                pos.extend(height / 2. + radius),
-            )),
+            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
             health: Health(150.),
             display: graphics::Display {

@@ -33,10 +33,9 @@ pub static SPAWNER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
     let mut positions = Vec::new();
     for lane in [Lane::Top, Lane::Mid, Lane::Bot] {
         let ang = PI / 4. * lane as i32 as f32;
-        let point = Vec2::new(SPAWNER_RELATIVE_SPAWN_RADIUS, 0.).extend(0.);
-        let ang_point = Transform::from_rotation(Quat::from_rotation_z(ang)) * point;
-        let origin_point = ang_point.truncate() + BASE_MID_CORNER;
-        positions.push(origin_point);
+        let point = Vec2::new(SPAWNER_RELATIVE_SPAWN_RADIUS, 0.).rotate(Vec2::from_angle(ang))
+            + BASE_MID_CORNER;
+        positions.push(point);
     }
     positions
 });
@@ -51,11 +50,9 @@ pub static TOWER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
         } else {
             &TOPBOT_TOWER_RELATIVE_SPAWN_RADII
         };
-        for point in zig_zag(points, zig, zig_spacing) {
-            let point = point.extend(0.);
-            let ang_point = Transform::from_rotation(Quat::from_rotation_z(ang)) * point;
-            let origin_point = ang_point.truncate() + BASE_MID_CORNER;
-            positions.push(origin_point);
+        for zig_point in zig_zag(points, zig, zig_spacing) {
+            let point = zig_point.rotate(Vec2::from_angle(ang)) + BASE_MID_CORNER;
+            positions.push(point);
         }
     }
     positions
@@ -64,12 +61,10 @@ pub static ADVOCATE_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
     let mut positions = Vec::new();
     for i in 0..ADVOCATE_SPAWN_NUM {
         let ang = ((2. * PI) / ADVOCATE_SPAWN_NUM as f32) * i as f32;
-        let point = Vec2::new(ADVOCATE_SPAWN_RING_RADIUS, 0.).extend(0.);
-        let rotated_point =
-            Transform::from_rotation(Quat::from_rotation_z(ang + ADVOCATE_SPAWN_RING_ROTATION))
-                * point;
-        let centered_point = rotated_point.truncate() + ADVOCATE_SPAWN_RING_POSITION;
-        positions.push(centered_point);
+        let point = Vec2::new(ADVOCATE_SPAWN_RING_RADIUS, 0.)
+            .rotate(Vec2::from_angle(ang + ADVOCATE_SPAWN_RING_ROTATION))
+            + ADVOCATE_SPAWN_RING_POSITION;
+        positions.push(point);
     }
     positions
 });

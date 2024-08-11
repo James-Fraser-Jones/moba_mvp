@@ -205,12 +205,21 @@ fn update(
                 Some(&dev_texture.0),
             ),
             transform: match display.allowed_mesh {
-                AllowedMesh::Sphere(_) => Transform::default(),
-                AllowedMesh::Cylinder(_) => {
-                    Transform::from_rotation(Quat::from_rotation_x(PI / 2.))
+                AllowedMesh::Sphere(Sphere { radius }) => {
+                    Transform::from_translation(Vec3::Z * radius)
                 }
-                AllowedMesh::Capsule(_) => Transform::from_rotation(Quat::from_rotation_x(PI / 2.)),
-                AllowedMesh::Cuboid(_) => Transform::default(),
+                AllowedMesh::Cylinder(Cylinder { half_height, .. }) => {
+                    Transform::from_translation(Vec3::Z * half_height)
+                        .with_rotation(Quat::from_rotation_x(PI / 2.))
+                }
+                AllowedMesh::Capsule(Capsule3d {
+                    half_length,
+                    radius,
+                }) => Transform::from_translation(Vec3::Z * (half_length + radius))
+                    .with_rotation(Quat::from_rotation_x(PI / 2.)),
+                AllowedMesh::Cuboid(Cuboid { half_size }) => {
+                    Transform::from_translation(Vec3::Z * half_size.z)
+                }
             },
             ..default()
         };
