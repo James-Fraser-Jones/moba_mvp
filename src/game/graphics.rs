@@ -2,9 +2,8 @@
 //initializing meshes/materials correctly
 //adding/removing meshes/materials to/from the world, mostly in accordance with entities added/removed by the logic plugin
 
-use crate::game::*;
+use crate::game::{logic::types::*, *};
 use bevy::{color::palettes::css, pbr::wireframe::Wireframe, prelude::*, render::*};
-use logic::Team;
 use ordered_float::OrderedFloat;
 use std::f32::consts::PI;
 use std::sync::LazyLock;
@@ -228,7 +227,7 @@ fn update(
 pub const RED_TEAM_COLOR: Color = Color::Srgba(css::TOMATO);
 pub const BLUE_TEAM_COLOR: Color = Color::Srgba(css::DEEP_SKY_BLUE);
 pub const NO_TEAM_COLOR: Color = Color::Srgba(css::LIGHT_GREEN);
-pub fn team_color(team: logic::Team) -> Color {
+pub fn team_color(team: logic::types::Team) -> Color {
     match team {
         Team::Red => RED_TEAM_COLOR,
         Team::Blue => BLUE_TEAM_COLOR,
