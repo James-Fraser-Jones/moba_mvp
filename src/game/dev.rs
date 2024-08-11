@@ -60,6 +60,7 @@ fn draw_cursor(
         return;
     };
     let point = ray.get_point(distance);
+    //println!("{:?}", *logic::RED_TRANSFORM_INVERSE * point);
     gizmos.circle(
         point + Vec3::Z * 0.01,
         Dir3::new(Vec3::Z).unwrap(),

@@ -210,7 +210,7 @@ fn update(
                 AllowedMesh::Cylinder(_) => {
                     Transform::from_rotation(Quat::from_rotation_x(PI / 2.))
                 }
-                AllowedMesh::Capsule(_) => Transform::default(),
+                AllowedMesh::Capsule(_) => Transform::from_rotation(Quat::from_rotation_x(PI / 2.)),
                 AllowedMesh::Cuboid(_) => Transform::default(),
             },
             ..default()
@@ -225,9 +225,12 @@ fn update(
     }
 }
 
+pub const RED_TEAM_COLOR: Color = Color::Srgba(css::TOMATO);
+pub const BLUE_TEAM_COLOR: Color = Color::Srgba(css::DEEP_SKY_BLUE);
+pub const NO_TEAM_COLOR: Color = Color::Srgba(css::LIGHT_GREEN);
 pub fn team_color(team: logic::Team) -> Color {
-    Color::Srgba(match team {
-        Team::Red => css::TOMATO,
-        Team::Blue => css::DEEP_SKY_BLUE,
-    })
+    match team {
+        Team::Red => RED_TEAM_COLOR,
+        Team::Blue => BLUE_TEAM_COLOR,
+    }
 }
