@@ -40,7 +40,7 @@ impl Core {
             display: graphics::Display {
                 mesh_type: OrderedMeshType::Capsule,
                 height: radius * 2.,
-                color: graphics::team_color(team),
+                color: graphics::team_color(Some(team)),
                 raised: false,
                 wireframe: false,
             },
@@ -67,7 +67,7 @@ impl Spawner {
             display: graphics::Display {
                 mesh_type: OrderedMeshType::Capsule,
                 height: radius * 2.,
-                color: graphics::team_color(team).with_alpha(0.7),
+                color: graphics::team_color(Some(team)).with_alpha(0.7),
                 raised: false,
                 wireframe: false,
             },
@@ -92,7 +92,7 @@ impl Tower {
             team,
             display: graphics::Display {
                 mesh_type: OrderedMeshType::Cylinder,
-                color: graphics::team_color(team),
+                color: graphics::team_color(Some(team)),
                 raised: true,
                 height: 60.,
                 wireframe: false,
@@ -118,7 +118,7 @@ impl Advocate {
             team,
             display: graphics::Display {
                 mesh_type: OrderedMeshType::Capsule,
-                color: graphics::team_color(team),
+                color: graphics::team_color(Some(team)),
                 raised: true,
                 height: 42.,
                 wireframe: false,
@@ -145,7 +145,7 @@ impl Minion {
             team,
             display: graphics::Display {
                 mesh_type: OrderedMeshType::Cuboid,
-                color: graphics::team_color(team),
+                color: graphics::team_color(Some(team)),
                 raised: true,
                 height: radius * 2.,
                 wireframe: false,
@@ -169,7 +169,7 @@ impl Monster {
             health: Health(150.),
             display: graphics::Display {
                 mesh_type: OrderedMeshType::Capsule,
-                color: graphics::NO_TEAM_COLOR,
+                color: graphics::team_color(None),
                 raised: true,
                 height: 35.,
                 wireframe: false,
@@ -193,7 +193,7 @@ impl Demon {
             health: Health(150.),
             display: graphics::Display {
                 mesh_type: OrderedMeshType::Capsule,
-                color: graphics::NO_TEAM_COLOR,
+                color: graphics::team_color(None),
                 raised: true,
                 height: 95.,
                 wireframe: false,

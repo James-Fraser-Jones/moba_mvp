@@ -66,7 +66,7 @@ impl Into<Mesh> for OrderedMesh {
             }
             OrderedMeshType::Cylinder => Cylinder::new(self.radius.0, self.height.0).into(),
             OrderedMeshType::Cuboid => {
-                Cuboid::new(self.radius.0, self.radius.0, self.height.0 / 2.).into()
+                Cuboid::new(self.radius.0 * 2., self.radius.0 * 2., self.height.0).into()
             }
         }
     }
@@ -162,7 +162,13 @@ fn init(mut commands: Commands, server: Res<AssetServer>, mut clear_color: ResMu
 fn add_entities(
     mut commands: Commands,
     mut query: Query<
-        (Entity, &Radius, &mut Display, Option<&logic::types::Health>),
+        (
+            Entity,
+            &Radius,
+            &mut Display,
+            Option<&Health>,
+            Option<&Team>,
+        ),
         Added<Display>,
     >,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -171,7 +177,7 @@ fn add_entities(
     mut mesh_map: ResMut<AllowedMeshMap>,
     dev_texture: Res<DevTexture>,
 ) {
-    for (entity, radius, display, health) in &mut query {
+    for (entity, radius, display, health, team) in &mut query {
         let ordered_mesh = OrderedMesh::new(display.mesh_type, radius.0, display.height);
         let child = PbrBundle {
             mesh: mesh_map.clone_mesh_handle(&mut meshes, ordered_mesh),
@@ -201,18 +207,14 @@ fn add_entities(
             let child = commands.spawn(child).id();
             commands.entity(entity).add_child(child);
         }
-        if let Some(health) = health {
+        if let Some(_) = health {
             commands.spawn((
                 NodeBundle {
                     style: Style {
                         position_type: PositionType::Absolute,
-                        border: UiRect::all(Val::Px(3.)),
-                        min_height: Val::Px(HEALTH_BAR_MIN_SIZE.y),
-                        min_width: Val::Px(HEALTH_BAR_MIN_SIZE.x),
                         ..default()
                     },
-                    background_color: BackgroundColor(Color::Srgba(css::TOMATO)),
-                    border_color: BorderColor(Color::BLACK),
+                    background_color: BackgroundColor(team_color(team.copied())),
                     ..default()
                 },
                 DisplayUIAnchor(entity),
@@ -224,10 +226,13 @@ fn add_entities(
 pub const RED_TEAM_COLOR: Color = Color::Srgba(css::TOMATO);
 pub const BLUE_TEAM_COLOR: Color = Color::Srgba(css::DEEP_SKY_BLUE);
 pub const NO_TEAM_COLOR: Color = Color::Srgba(css::LIGHT_GREEN);
-pub fn team_color(team: logic::types::Team) -> Color {
+pub fn team_color(team: Option<Team>) -> Color {
     match team {
-        Team::Red => RED_TEAM_COLOR,
-        Team::Blue => BLUE_TEAM_COLOR,
+        Some(team) => match team {
+            Team::Red => RED_TEAM_COLOR,
+            Team::Blue => BLUE_TEAM_COLOR,
+        },
+        None => NO_TEAM_COLOR,
     }
 }
 
@@ -278,29 +283,39 @@ fn draw_cursor(
 
 fn anchor_nodes(
     mut anchor_query: Query<(&mut Style, &DisplayUIAnchor)>,
-    display_query: Query<(&Transform, &Display)>,
-    camera_query: Query<(&Camera, &GlobalTransform, &OrbitDistance)>,
+    display_query: Query<(&Transform, &Display, &Radius)>,
+    camera_query: Query<(&Camera, &GlobalTransform, &Transform), With<OrbitDistance>>,
 ) {
-    let (camera, camera_transform, orbit_distance) = camera_query.single();
+    let (camera, global_transform, camera_transform) = camera_query.single();
     for (mut style, anchor) in &mut anchor_query {
-        let (transform, display) = display_query.get(anchor.0).unwrap();
+        let (transform, display, radius) = display_query.get(anchor.0).unwrap();
+        let mut elevation = display.height;
+        if !display.raised {
+            elevation /= 2.;
+        }
+        let ang = camera_transform.rotation.to_euler(EulerRot::ZYX).2;
         let anchor_point = transform.translation
-            + (Vec3::Z * display.height * if display.raised { 1. } else { 0.5 })
-            + (Vec3::Z * HEALTH_BAR_Z_OFFSET);
-        if let Some(pixel_point) = position_to_pixel(anchor_point, camera, camera_transform) {
-            let size = HEALTH_BAR_SIZE * orbit_distance.zoom();
+            + Vec3::new(
+                0.,
+                radius.0 * ang.cos() + HEALTH_BAR_OFFSET,
+                elevation * ang.sin() + HEALTH_BAR_OFFSET,
+            );
+        if let Some(pixel_point) = position_to_pixel(anchor_point, camera, global_transform) {
+            let distance_from_camera = (camera_transform.translation - anchor_point).length();
+            let intended_width = HEALTH_BAR_WIDTH * radius.0;
+            let size = Vec2::new(intended_width, intended_width / HEALTH_BAR_ASPECT_RATIO)
+                / distance_from_camera;
             style.width = Val::Px(size.x);
             style.height = Val::Px(size.y);
-            let pos = pixel_point - (size.max(HEALTH_BAR_MIN_SIZE) / 2.);
-            style.left = Val::Px(pos.x);
-            style.top = Val::Px(pos.y);
+            style.left = Val::Px(pixel_point.x - size.x / 2.);
+            style.top = Val::Px(pixel_point.y - size.y);
         }
     }
 }
 
-const HEALTH_BAR_SIZE: Vec2 = Vec2::new(250., 25.);
-const HEALTH_BAR_MIN_SIZE: Vec2 = Vec2::new(100., 10.);
-const HEALTH_BAR_Z_OFFSET: f32 = 0.;
+const HEALTH_BAR_ASPECT_RATIO: f32 = 10.;
+const HEALTH_BAR_WIDTH: f32 = 2700.;
+const HEALTH_BAR_OFFSET: f32 = 5.;
 
 #[derive(Component)]
 struct DisplayUIAnchor(Entity);
