@@ -134,7 +134,7 @@ impl AllowedMeshMap {
 
 //single display component to be called from logic
 #[derive(Component)]
-pub struct Display {
+pub struct RenderComponent {
     pub color: Color,
 
     pub mesh_type: OrderedMeshType,
@@ -165,11 +165,11 @@ fn add_entities(
         (
             Entity,
             &Radius,
-            &mut Display,
+            &mut RenderComponent,
             Option<&Health>,
             Option<&Team>,
         ),
-        Added<Display>,
+        Added<RenderComponent>,
     >,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -208,17 +208,110 @@ fn add_entities(
             commands.entity(entity).add_child(child);
         }
         if let Some(_) = health {
-            commands.spawn((
-                NodeBundle {
-                    style: Style {
-                        position_type: PositionType::Absolute,
+            //advanced health bar
+            commands
+                .spawn((
+                    NodeBundle {
+                        style: Style {
+                            position_type: PositionType::Absolute,
+                            padding: UiRect::all(Val::Px(2.)),
+                            column_gap: Val::Px(2.),
+                            ..default()
+                        },
+                        background_color: BackgroundColor(Color::BLACK),
                         ..default()
                     },
-                    background_color: BackgroundColor(team_color(team.copied())),
-                    ..default()
-                },
-                DisplayUIAnchor(entity),
-            ));
+                    DisplayUIAnchor(entity),
+                ))
+                .with_children(|builder| {
+                    builder.spawn(NodeBundle {
+                        style: Style {
+                            height: Val::Percent(100.),
+                            width: Val::Percent(100.),
+                            ..default()
+                        },
+                        background_color: BackgroundColor(team_color(team.copied())),
+                        ..default()
+                    });
+                    builder.spawn(NodeBundle {
+                        style: Style {
+                            height: Val::Percent(100.),
+                            width: Val::Percent(100.),
+                            ..default()
+                        },
+                        background_color: BackgroundColor(team_color(team.copied())),
+                        ..default()
+                    });
+                    builder.spawn(NodeBundle {
+                        style: Style {
+                            height: Val::Percent(100.),
+                            width: Val::Percent(100.),
+                            ..default()
+                        },
+                        background_color: BackgroundColor(team_color(team.copied())),
+                        ..default()
+                    });
+                    builder.spawn(NodeBundle {
+                        style: Style {
+                            height: Val::Percent(100.),
+                            width: Val::Percent(72.),
+                            ..default()
+                        },
+                        background_color: BackgroundColor(team_color(team.copied())),
+                        ..default()
+                    });
+                    builder.spawn(NodeBundle {
+                        style: Style {
+                            height: Val::Percent(100.),
+                            width: Val::Percent(300.), //need to ensure this value accounts for missing gap pixels to prevent distortion
+                            ..default()
+                        },
+                        background_color: BackgroundColor(Color::BLACK),
+                        ..default()
+                    });
+                    builder.spawn(
+                        TextBundle::from_section(
+                            "372",
+                            TextStyle {
+                                font_size: 36.,
+                                color: Color::WHITE,
+                                ..default()
+                            },
+                        )
+                        .with_style(Style {
+                            position_type: PositionType::Absolute,
+                            height: Val::Percent(100.),
+                            width: Val::Percent(100.),
+                            ..default()
+                        })
+                        .with_text_justify(JustifyText::Center),
+                    );
+                });
+
+            // //basic health bar
+            // commands
+            //     .spawn((
+            //         NodeBundle {
+            //             style: Style {
+            //                 position_type: PositionType::Absolute,
+            //                 ..default()
+            //             },
+            //             background_color: BackgroundColor(Color::BLACK),
+            //             ..default()
+            //         },
+            //         DisplayUIAnchor(entity),
+            //     ))
+            //     .with_children(|builder| {
+            //         builder.spawn(NodeBundle {
+            //             style: Style {
+            //                 width: Val::Percent(50.),
+            //                 height: Val::Percent(100.),
+            //                 ..default()
+            //             },
+            //             background_color: BackgroundColor(team_color(team.copied())),
+            //             ..default()
+            //         });
+            //     });
         }
     }
 }
@@ -283,7 +376,7 @@ fn draw_cursor(
 
 fn anchor_nodes(
     mut anchor_query: Query<(&mut Style, &DisplayUIAnchor)>,
-    display_query: Query<(&Transform, &Display, &Radius)>,
+    display_query: Query<(&Transform, &RenderComponent, &Radius)>,
     camera_query: Query<(&Camera, &GlobalTransform, &Transform), With<OrbitDistance>>,
 ) {
     let (camera, global_transform, camera_transform) = camera_query.single();

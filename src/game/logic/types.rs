@@ -27,7 +27,7 @@ pub struct Core {
     radius: Radius,
     health: Health,
     team: Team,
-    display: graphics::Display,
+    display: graphics::RenderComponent,
 }
 impl Core {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -37,7 +37,7 @@ impl Core {
             radius: Radius(radius),
             health: Health(5000.),
             team,
-            display: graphics::Display {
+            display: graphics::RenderComponent {
                 mesh_type: OrderedMeshType::Capsule,
                 height: radius * 2.,
                 color: graphics::team_color(Some(team)),
@@ -54,7 +54,7 @@ pub struct Spawner {
     radius: Radius,
     health: Health,
     team: Team,
-    display: graphics::Display,
+    display: graphics::RenderComponent,
 }
 impl Spawner {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -64,7 +64,7 @@ impl Spawner {
             radius: Radius(radius),
             health: Health(1000.),
             team,
-            display: graphics::Display {
+            display: graphics::RenderComponent {
                 mesh_type: OrderedMeshType::Capsule,
                 height: radius * 2.,
                 color: graphics::team_color(Some(team)).with_alpha(0.7),
@@ -81,7 +81,7 @@ pub struct Tower {
     radius: Radius,
     health: Health,
     team: Team,
-    display: graphics::Display,
+    display: graphics::RenderComponent,
 }
 impl Tower {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -90,7 +90,7 @@ impl Tower {
             radius: Radius(logic::TOWER_RADIUS),
             health: Health(500.),
             team,
-            display: graphics::Display {
+            display: graphics::RenderComponent {
                 mesh_type: OrderedMeshType::Cylinder,
                 color: graphics::team_color(Some(team)),
                 raised: true,
@@ -107,7 +107,7 @@ pub struct Advocate {
     radius: Radius,
     health: Health,
     team: Team,
-    display: graphics::Display,
+    display: graphics::RenderComponent,
 }
 impl Advocate {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -116,7 +116,7 @@ impl Advocate {
             radius: Radius(12.),
             health: Health(200.),
             team,
-            display: graphics::Display {
+            display: graphics::RenderComponent {
                 mesh_type: OrderedMeshType::Capsule,
                 color: graphics::team_color(Some(team)),
                 raised: true,
@@ -133,7 +133,7 @@ pub struct Minion {
     radius: Radius,
     health: Health,
     team: Team,
-    display: graphics::Display,
+    display: graphics::RenderComponent,
 }
 impl Minion {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -143,7 +143,7 @@ impl Minion {
             radius: Radius(radius),
             health: Health(100.),
             team,
-            display: graphics::Display {
+            display: graphics::RenderComponent {
                 mesh_type: OrderedMeshType::Cuboid,
                 color: graphics::team_color(Some(team)),
                 raised: true,
@@ -159,7 +159,7 @@ pub struct Monster {
     spatial: SpatialBundle,
     radius: Radius,
     health: Health,
-    display: graphics::Display,
+    display: graphics::RenderComponent,
 }
 impl Monster {
     pub fn new(pos: Vec2) -> Self {
@@ -167,7 +167,7 @@ impl Monster {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(10.),
             health: Health(150.),
-            display: graphics::Display {
+            display: graphics::RenderComponent {
                 mesh_type: OrderedMeshType::Capsule,
                 color: graphics::team_color(None),
                 raised: true,
@@ -183,7 +183,7 @@ pub struct Demon {
     spatial: SpatialBundle,
     radius: Radius,
     health: Health,
-    display: graphics::Display,
+    display: graphics::RenderComponent,
 }
 impl Demon {
     pub fn new(pos: Vec2) -> Self {
@@ -191,7 +191,7 @@ impl Demon {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(25.),
             health: Health(150.),
-            display: graphics::Display {
+            display: graphics::RenderComponent {
                 mesh_type: OrderedMeshType::Capsule,
                 color: graphics::team_color(None),
                 raised: true,
