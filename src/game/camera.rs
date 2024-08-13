@@ -3,7 +3,7 @@
 //allowing easy reset
 //utilizing input plugin to enable movement, rotation, zoom, etc..
 
-use crate::game::*;
+use super::*;
 use bevy::prelude::*;
 use std::f32::consts::PI;
 

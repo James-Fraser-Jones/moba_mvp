@@ -2,7 +2,7 @@
 //enabling wireframe, gizmos, etc..
 //stuff for purely-dev-related functionality
 
-use crate::game::*;
+use super::*;
 use bevy::dev_tools::fps_overlay::FpsOverlayPlugin;
 use bevy::pbr::wireframe::{WireframeConfig, WireframePlugin};
 use bevy::prelude::*;

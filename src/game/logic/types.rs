@@ -1,4 +1,4 @@
-use crate::game::*;
+use super::*;
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -21,6 +21,33 @@ pub enum Lane {
 }
 
 #[derive(Bundle)]
+pub struct Core {
+    spatial: SpatialBundle,
+    radius: Radius,
+    health: Health,
+    team: Team,
+    display: graphics::Display,
+}
+impl Core {
+    pub fn new(pos: Vec2, team: Team) -> Self {
+        let radius = 50.;
+        Self {
+            spatial: SpatialBundle::from_transform(Transform::from_translation(
+                pos.extend(-radius),
+            )),
+            radius: Radius(radius),
+            health: Health(5000.),
+            team,
+            display: graphics::Display {
+                allowed_mesh: graphics::AllowedMesh::Sphere(Sphere::new(radius)),
+                color: graphics::team_color(team),
+                wireframe: false,
+            },
+        }
+    }
+}
+
+#[derive(Bundle)]
 pub struct Spawner {
     spatial: SpatialBundle,
     radius: Radius,
@@ -40,7 +67,7 @@ impl Spawner {
             team,
             display: graphics::Display {
                 allowed_mesh: graphics::AllowedMesh::Sphere(Sphere::new(radius)),
-                color: graphics::team_color(team),
+                color: graphics::team_color(team).with_alpha(0.7),
                 wireframe: false,
             },
         }
@@ -76,31 +103,6 @@ impl Tower {
 }
 
 #[derive(Bundle)]
-pub struct Minion {
-    spatial: SpatialBundle,
-    radius: Radius,
-    health: Health,
-    team: Team,
-    display: graphics::Display,
-}
-impl Minion {
-    pub fn new(pos: Vec2, team: Team) -> Self {
-        let radius = 8.;
-        Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
-            radius: Radius(radius),
-            health: Health(100.),
-            team,
-            display: graphics::Display {
-                allowed_mesh: graphics::AllowedMesh::Cuboid(Cuboid::from_length(radius * 2.)),
-                color: graphics::team_color(team),
-                wireframe: false,
-            },
-        }
-    }
-}
-
-#[derive(Bundle)]
 pub struct Advocate {
     spatial: SpatialBundle,
     radius: Radius,
@@ -127,25 +129,23 @@ impl Advocate {
 }
 
 #[derive(Bundle)]
-pub struct Core {
+pub struct Minion {
     spatial: SpatialBundle,
     radius: Radius,
     health: Health,
     team: Team,
     display: graphics::Display,
 }
-impl Core {
+impl Minion {
     pub fn new(pos: Vec2, team: Team) -> Self {
-        let radius = 50.;
+        let radius = 8.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(
-                pos.extend(-radius),
-            )),
+            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
-            health: Health(5000.),
+            health: Health(100.),
             team,
             display: graphics::Display {
-                allowed_mesh: graphics::AllowedMesh::Sphere(Sphere::new(radius)),
+                allowed_mesh: graphics::AllowedMesh::Cuboid(Cuboid::from_length(radius * 2.)),
                 color: graphics::team_color(team),
                 wireframe: false,
             },

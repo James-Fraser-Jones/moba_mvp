@@ -2,7 +2,7 @@
 //initializing meshes/materials correctly
 //adding/removing meshes/materials to/from the world, mostly in accordance with entities added/removed by the logic plugin
 
-use crate::game::{logic::types::*, *};
+use super::{logic::types::*, *};
 use bevy::{color::palettes::css, pbr::wireframe::Wireframe, prelude::*, render::*};
 use ordered_float::OrderedFloat;
 use std::f32::consts::PI;

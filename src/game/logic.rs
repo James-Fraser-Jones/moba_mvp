@@ -8,7 +8,7 @@
 pub mod spawn;
 pub mod types;
 
-use crate::game::*;
+use super::*;
 use bevy::prelude::*;
 use std::f32::consts::PI;
 use std::sync::LazyLock;

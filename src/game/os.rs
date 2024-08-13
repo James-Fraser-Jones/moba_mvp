@@ -3,7 +3,7 @@
 //quitting the game
 //saving/loading assets to/from the filesystem
 
-use crate::game::*;
+use super::*;
 use bevy::{prelude::*, window::*};
 use std::collections::HashMap;
 use std::sync::LazyLock;
