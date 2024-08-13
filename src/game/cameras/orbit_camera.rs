@@ -3,17 +3,10 @@
 //allowing easy reset
 //utilizing input plugin to enable movement, rotation, zoom, etc..
 
-use super::*;
+use super::super::*;
 use bevy::prelude::*;
+use bevy::render::view::RenderLayers;
 use std::f32::consts::PI;
-
-pub struct CameraPlugin;
-impl Plugin for CameraPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init);
-        app.add_systems(Update, update);
-    }
-}
 
 const CAMERA_DRAW_FAR: f32 = 2000.;
 const PAN_SPEED: f32 = 450.;
@@ -24,7 +17,7 @@ const ROTATION_SPEED: f32 = 0.15;
 const FLIP_ORIENTATION_SPEED: f32 = 5. * PI;
 
 #[derive(Default)]
-struct FlipOrientation(Option<f32>);
+pub struct FlipOrientation(Option<f32>);
 
 #[derive(Bundle)]
 struct OrbitCamera3dBundle {
@@ -63,7 +56,7 @@ impl Default for OrbitTransform {
 }
 
 #[derive(Component, Clone, Copy)]
-struct OrbitDistance(f32);
+pub struct OrbitDistance(f32);
 impl Default for OrbitDistance {
     fn default() -> Self {
         Self(340.)
@@ -90,13 +83,16 @@ impl OrbitDistance {
             ..default()
         }
     }
+    pub fn zoom(&self) -> f32 {
+        OrbitDistance::default().0 / self.0
+    }
 }
 
-fn init(mut commands: Commands) {
-    commands.spawn(OrbitCamera3dBundle::default());
+pub fn init(mut commands: Commands) {
+    commands.spawn((OrbitCamera3dBundle::default(), RenderLayers::layer(0)));
 }
 
-fn update(
+pub fn update(
     keyboard_buttons: Res<ButtonInput<KeyCode>>,
     mouse_axis: Res<input::MouseAxis>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,

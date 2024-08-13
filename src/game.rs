@@ -1,4 +1,4 @@
-mod camera;
+mod cameras;
 mod dev;
 mod graphics;
 mod input;
@@ -15,7 +15,7 @@ impl PluginGroup for GamePlugins {
             .add(input::InputPlugin)
             .add(logic::LogicPlugin)
             .add(graphics::GraphicsPlugin)
-            .add(camera::CameraPlugin)
+            .add(cameras::CamerasPlugin)
             .add(dev::DevPlugin)
     }
 }

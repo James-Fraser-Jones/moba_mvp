@@ -1,10 +1,11 @@
 use super::*;
 use bevy::prelude::*;
+use graphics::OrderedMeshType;
 
 #[derive(Component)]
-struct Health(f32);
+pub struct Health(f32);
 #[derive(Component)]
-struct Radius(f32);
+pub struct Radius(pub f32);
 
 #[derive(Component, Default, PartialEq, Eq, Clone, Copy)]
 pub enum Team {
@@ -32,15 +33,15 @@ impl Core {
     pub fn new(pos: Vec2, team: Team) -> Self {
         let radius = 50.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(
-                pos.extend(-radius),
-            )),
+            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
             health: Health(5000.),
             team,
             display: graphics::Display {
-                allowed_mesh: graphics::AllowedMesh::Sphere(Sphere::new(radius)),
+                mesh_type: OrderedMeshType::Capsule,
+                height: radius * 2.,
                 color: graphics::team_color(team),
+                raised: false,
                 wireframe: false,
             },
         }
@@ -59,15 +60,15 @@ impl Spawner {
     pub fn new(pos: Vec2, team: Team) -> Self {
         let radius = 25.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(
-                pos.extend(-radius),
-            )),
+            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
             health: Health(1000.),
             team,
             display: graphics::Display {
-                allowed_mesh: graphics::AllowedMesh::Sphere(Sphere::new(radius)),
+                mesh_type: OrderedMeshType::Capsule,
+                height: radius * 2.,
                 color: graphics::team_color(team).with_alpha(0.7),
+                raised: false,
                 wireframe: false,
             },
         }
@@ -84,18 +85,16 @@ pub struct Tower {
 }
 impl Tower {
     pub fn new(pos: Vec2, team: Team) -> Self {
-        let half_height = 30.;
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(logic::TOWER_RADIUS),
             health: Health(500.),
             team,
             display: graphics::Display {
-                allowed_mesh: graphics::AllowedMesh::Cylinder(Cylinder::new(
-                    logic::TOWER_RADIUS,
-                    half_height * 2.,
-                )),
+                mesh_type: OrderedMeshType::Cylinder,
                 color: graphics::team_color(team),
+                raised: true,
+                height: 60.,
                 wireframe: false,
             },
         }
@@ -112,16 +111,16 @@ pub struct Advocate {
 }
 impl Advocate {
     pub fn new(pos: Vec2, team: Team) -> Self {
-        let radius = 12.;
-        let height = 30.;
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
-            radius: Radius(radius),
+            radius: Radius(12.),
             health: Health(200.),
             team,
             display: graphics::Display {
-                allowed_mesh: graphics::AllowedMesh::Capsule(Capsule3d::new(radius, height)),
+                mesh_type: OrderedMeshType::Capsule,
                 color: graphics::team_color(team),
+                raised: true,
+                height: 42.,
                 wireframe: false,
             },
         }
@@ -145,8 +144,10 @@ impl Minion {
             health: Health(100.),
             team,
             display: graphics::Display {
-                allowed_mesh: graphics::AllowedMesh::Cuboid(Cuboid::from_length(radius * 2.)),
+                mesh_type: OrderedMeshType::Cuboid,
                 color: graphics::team_color(team),
+                raised: true,
+                height: radius * 2.,
                 wireframe: false,
             },
         }
@@ -162,15 +163,15 @@ pub struct Monster {
 }
 impl Monster {
     pub fn new(pos: Vec2) -> Self {
-        let radius = 10.;
-        let height = 25.;
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
-            radius: Radius(radius),
+            radius: Radius(10.),
             health: Health(150.),
             display: graphics::Display {
-                allowed_mesh: graphics::AllowedMesh::Capsule(Capsule3d::new(radius, height)),
+                mesh_type: OrderedMeshType::Capsule,
                 color: graphics::NO_TEAM_COLOR,
+                raised: true,
+                height: 35.,
                 wireframe: false,
             },
         }
@@ -186,15 +187,15 @@ pub struct Demon {
 }
 impl Demon {
     pub fn new(pos: Vec2) -> Self {
-        let radius = 25.;
-        let height = 70.;
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
-            radius: Radius(radius),
+            radius: Radius(25.),
             health: Health(150.),
             display: graphics::Display {
-                allowed_mesh: graphics::AllowedMesh::Capsule(Capsule3d::new(radius, height)),
+                mesh_type: OrderedMeshType::Capsule,
                 color: graphics::NO_TEAM_COLOR,
+                raised: true,
+                height: 95.,
                 wireframe: false,
             },
         }

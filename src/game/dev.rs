@@ -12,7 +12,7 @@ impl Plugin for DevPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((WireframePlugin, FpsOverlayPlugin::default()));
         app.add_systems(Startup, init);
-        app.add_systems(Update, (update, draw_cursor));
+        app.add_systems(Update, update);
     }
 }
 
@@ -45,27 +45,4 @@ fn update(
         transform.scale.z = graphics::WALL_HEIGHT / graphics::BLENDER_WALL_HEIGHT;
         wireframe_config.global = WIREFRAME_ENABLED;
     }
-}
-
-fn draw_cursor(
-    camera_query: Query<(&Camera, &GlobalTransform)>,
-    last_cursor_position: Res<input::LastCursorPosition>,
-    mut gizmos: Gizmos,
-) {
-    let (camera, camera_global_transform) = camera_query.single();
-    let ray = camera
-        .viewport_to_world(camera_global_transform, last_cursor_position.0)
-        .unwrap();
-    let Some(distance) = ray.intersect_plane(Vec3::ZERO, InfinitePlane3d::new(Vec3::Z)) else {
-        return;
-    };
-    let point = ray.get_point(distance);
-    //println!("{:?}", *logic::RED_TRANSFORM_INVERSE * point);
-    gizmos.circle(
-        point + Vec3::Z * 0.01,
-        Dir3::new(Vec3::Z).unwrap(),
-        10.,
-        Color::WHITE,
-    );
-    gizmos.arrow(point + Vec3::Z * 30., point + Vec3::Z * 0.01, Color::WHITE);
 }

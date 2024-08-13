@@ -4,6 +4,7 @@
 
 use super::{logic::types::*, *};
 use bevy::{color::palettes::css, pbr::wireframe::Wireframe, prelude::*, render::*};
+use cameras::orbit_camera::OrbitDistance;
 use ordered_float::OrderedFloat;
 use std::f32::consts::PI;
 use std::sync::LazyLock;
@@ -14,7 +15,7 @@ impl Plugin for GraphicsPlugin {
         app.init_resource::<ColoredMaterialMap>();
         app.init_resource::<AllowedMeshMap>();
         app.add_systems(Startup, init);
-        app.add_systems(Update, update);
+        app.add_systems(Update, (add_entities, draw_cursor, anchor_nodes));
     }
 }
 
@@ -25,56 +26,6 @@ pub const BLENDER_WALL_HEIGHT: f32 = 50.;
 pub struct Map;
 
 //HandleMap keys
-#[derive(PartialEq, Eq, Hash)]
-enum OrderedMeshType {
-    Sphere,
-    Cylinder,
-    Capsule,
-    Cuboid,
-}
-#[derive(PartialEq, Eq, Hash)]
-struct OrderedMesh {
-    mesh_type: OrderedMeshType,
-    half_width: OrderedFloat<f32>,
-    half_height: OrderedFloat<f32>,
-    half_depth: OrderedFloat<f32>,
-}
-impl From<AllowedMesh> for OrderedMesh {
-    fn from(value: AllowedMesh) -> Self {
-        match value {
-            AllowedMesh::Sphere(Sphere { radius }) => OrderedMesh {
-                mesh_type: OrderedMeshType::Sphere,
-                half_width: OrderedFloat(radius),
-                half_height: OrderedFloat(radius),
-                half_depth: OrderedFloat(radius),
-            },
-            AllowedMesh::Cylinder(Cylinder {
-                radius,
-                half_height,
-            }) => OrderedMesh {
-                mesh_type: OrderedMeshType::Cylinder,
-                half_width: OrderedFloat(radius),
-                half_height: OrderedFloat(half_height),
-                half_depth: OrderedFloat(radius),
-            },
-            AllowedMesh::Capsule(Capsule3d {
-                radius,
-                half_length,
-            }) => OrderedMesh {
-                mesh_type: OrderedMeshType::Capsule,
-                half_width: OrderedFloat(radius),
-                half_height: OrderedFloat(half_length),
-                half_depth: OrderedFloat(radius),
-            },
-            AllowedMesh::Cuboid(Cuboid { half_size }) => OrderedMesh {
-                mesh_type: OrderedMeshType::Cuboid,
-                half_width: OrderedFloat(half_size.x),
-                half_height: OrderedFloat(half_size.z),
-                half_depth: OrderedFloat(half_size.y),
-            },
-        }
-    }
-}
 #[derive(PartialEq, Eq, Hash)]
 struct OrderedColor {
     red: OrderedFloat<f32>,
@@ -95,20 +46,37 @@ impl From<Color> for OrderedColor {
 }
 
 //convertable into *both* keys and assets
-#[derive(Copy, Clone)]
-pub enum AllowedMesh {
-    Sphere(Sphere),
-    Cylinder(Cylinder),
-    Capsule(Capsule3d),
-    Cuboid(Cuboid),
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+pub enum OrderedMeshType {
+    Capsule,
+    Cylinder,
+    Cuboid,
 }
-impl Into<Mesh> for AllowedMesh {
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+pub struct OrderedMesh {
+    mesh_type: OrderedMeshType,
+    radius: OrderedFloat<f32>,
+    height: OrderedFloat<f32>,
+}
+impl Into<Mesh> for OrderedMesh {
     fn into(self) -> Mesh {
-        match self {
-            AllowedMesh::Sphere(sphere) => sphere.into(),
-            AllowedMesh::Cylinder(cylinder) => cylinder.into(),
-            AllowedMesh::Capsule(capsule) => capsule.into(),
-            AllowedMesh::Cuboid(cuboid) => cuboid.into(),
+        match self.mesh_type {
+            OrderedMeshType::Capsule => {
+                Capsule3d::new(self.radius.0, self.height.0 - self.radius.0 * 2.).into()
+            }
+            OrderedMeshType::Cylinder => Cylinder::new(self.radius.0, self.height.0).into(),
+            OrderedMeshType::Cuboid => {
+                Cuboid::new(self.radius.0, self.radius.0, self.height.0 / 2.).into()
+            }
+        }
+    }
+}
+impl OrderedMesh {
+    pub fn new(mesh_type: OrderedMeshType, radius: f32, height: f32) -> Self {
+        Self {
+            mesh_type,
+            radius: OrderedFloat(radius),
+            height: OrderedFloat(height),
         }
     }
 }
@@ -151,7 +119,7 @@ impl AllowedMeshMap {
     fn clone_mesh_handle(
         &mut self,
         meshes: &mut Assets<Mesh>,
-        allowed_mesh: AllowedMesh,
+        allowed_mesh: OrderedMesh,
     ) -> Handle<Mesh> {
         if let Some(handle) = self.0 .0.get(&allowed_mesh.into()) {
             handle.clone()
@@ -167,9 +135,13 @@ impl AllowedMeshMap {
 //single display component to be called from logic
 #[derive(Component)]
 pub struct Display {
-    pub allowed_mesh: AllowedMesh,
     pub color: Color,
+
+    pub mesh_type: OrderedMeshType,
+    pub height: f32,
+
     pub wireframe: bool,
+    pub raised: bool,
 }
 
 fn init(mut commands: Commands, server: Res<AssetServer>, mut clear_color: ResMut<ClearColor>) {
@@ -187,40 +159,39 @@ fn init(mut commands: Commands, server: Res<AssetServer>, mut clear_color: ResMu
     ));
 }
 
-fn update(
+fn add_entities(
     mut commands: Commands,
-    mut query: Query<(Entity, &mut Display), Added<Display>>,
+    mut query: Query<
+        (Entity, &Radius, &mut Display, Option<&logic::types::Health>),
+        Added<Display>,
+    >,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut material_map: ResMut<ColoredMaterialMap>,
     mut mesh_map: ResMut<AllowedMeshMap>,
     dev_texture: Res<DevTexture>,
 ) {
-    for (entity, display) in &mut query {
+    for (entity, radius, display, health) in &mut query {
+        let ordered_mesh = OrderedMesh::new(display.mesh_type, radius.0, display.height);
         let child = PbrBundle {
-            mesh: mesh_map.clone_mesh_handle(&mut meshes, display.allowed_mesh),
+            mesh: mesh_map.clone_mesh_handle(&mut meshes, ordered_mesh),
             material: material_map.clone_material_handle(
                 &mut materials,
                 display.color,
                 Some(&dev_texture.0),
             ),
-            transform: match display.allowed_mesh {
-                AllowedMesh::Sphere(Sphere { radius }) => {
-                    Transform::from_translation(Vec3::Z * radius)
-                }
-                AllowedMesh::Cylinder(Cylinder { half_height, .. }) => {
-                    Transform::from_translation(Vec3::Z * half_height)
-                        .with_rotation(Quat::from_rotation_x(PI / 2.))
-                }
-                AllowedMesh::Capsule(Capsule3d {
-                    half_length,
-                    radius,
-                }) => Transform::from_translation(Vec3::Z * (half_length + radius))
-                    .with_rotation(Quat::from_rotation_x(PI / 2.)),
-                AllowedMesh::Cuboid(Cuboid { half_size }) => {
-                    Transform::from_translation(Vec3::Z * half_size.z)
-                }
-            },
+            transform: Transform::from_translation(Vec3::ZERO.with_z(if display.raised {
+                display.height / 2.
+            } else {
+                0.
+            }))
+            .with_rotation(Quat::from_rotation_x(
+                if display.mesh_type == OrderedMeshType::Cuboid {
+                    0.
+                } else {
+                    PI / 2.
+                },
+            )),
             ..default()
         };
         if display.wireframe {
@@ -229,6 +200,23 @@ fn update(
         } else {
             let child = commands.spawn(child).id();
             commands.entity(entity).add_child(child);
+        }
+        if let Some(health) = health {
+            commands.spawn((
+                NodeBundle {
+                    style: Style {
+                        position_type: PositionType::Absolute,
+                        border: UiRect::all(Val::Px(3.)),
+                        min_height: Val::Px(HEALTH_BAR_MIN_SIZE.y),
+                        min_width: Val::Px(HEALTH_BAR_MIN_SIZE.x),
+                        ..default()
+                    },
+                    background_color: BackgroundColor(Color::Srgba(css::TOMATO)),
+                    border_color: BorderColor(Color::BLACK),
+                    ..default()
+                },
+                DisplayUIAnchor(entity),
+            ));
         }
     }
 }
@@ -242,3 +230,77 @@ pub fn team_color(team: logic::types::Team) -> Color {
         Team::Blue => BLUE_TEAM_COLOR,
     }
 }
+
+//logical pixels, top-left (0,0), to Vec2 representing intersection point with horizontal plane of height, in world space
+fn pixel_to_horizontal_plane(
+    pixel: Vec2,
+    height: f32,
+    camera: &Camera,
+    camera_transform: &GlobalTransform,
+) -> Option<Vec2> {
+    let pixel_ray = camera.viewport_to_world(camera_transform, pixel).unwrap();
+    let intersection_distance =
+        pixel_ray.intersect_plane(Vec3::Z * height, InfinitePlane3d::new(Vec3::Z))?;
+    let intersection_point = pixel_ray.get_point(intersection_distance);
+    Some(intersection_point.truncate())
+}
+
+fn position_to_pixel(
+    position: Vec3,
+    camera: &Camera,
+    camera_transform: &GlobalTransform,
+) -> Option<Vec2> {
+    camera.world_to_viewport(camera_transform, position)
+}
+
+fn draw_cursor(
+    camera_query: Query<(&Camera, &GlobalTransform), With<cameras::orbit_camera::OrbitDistance>>,
+    last_cursor_position: Res<input::LastCursorPosition>,
+    mut gizmos: Gizmos,
+) {
+    let ground_plane_height = 0.;
+    let (camera, camera_transform) = camera_query.single();
+    if let Some(point) = pixel_to_horizontal_plane(
+        last_cursor_position.0,
+        ground_plane_height,
+        &camera,
+        &camera_transform,
+    ) {
+        gizmos.circle(
+            point.extend(0.01),
+            Dir3::new(Vec3::Z).unwrap(),
+            10.,
+            Color::WHITE,
+        );
+        gizmos.arrow(point.extend(30.), point.extend(0.01), Color::WHITE);
+    }
+}
+
+fn anchor_nodes(
+    mut anchor_query: Query<(&mut Style, &DisplayUIAnchor)>,
+    display_query: Query<(&Transform, &Display)>,
+    camera_query: Query<(&Camera, &GlobalTransform, &OrbitDistance)>,
+) {
+    let (camera, camera_transform, orbit_distance) = camera_query.single();
+    for (mut style, anchor) in &mut anchor_query {
+        let (transform, display) = display_query.get(anchor.0).unwrap();
+        let anchor_point = transform.translation
+            + (Vec3::Z * display.height * if display.raised { 1. } else { 0.5 })
+            + (Vec3::Z * HEALTH_BAR_Z_OFFSET);
+        if let Some(pixel_point) = position_to_pixel(anchor_point, camera, camera_transform) {
+            let size = HEALTH_BAR_SIZE * orbit_distance.zoom();
+            style.width = Val::Px(size.x);
+            style.height = Val::Px(size.y);
+            let pos = pixel_point - (size.max(HEALTH_BAR_MIN_SIZE) / 2.);
+            style.left = Val::Px(pos.x);
+            style.top = Val::Px(pos.y);
+        }
+    }
+}
+
+const HEALTH_BAR_SIZE: Vec2 = Vec2::new(250., 25.);
+const HEALTH_BAR_MIN_SIZE: Vec2 = Vec2::new(100., 10.);
+const HEALTH_BAR_Z_OFFSET: f32 = 0.;
+
+#[derive(Component)]
+struct DisplayUIAnchor(Entity);
