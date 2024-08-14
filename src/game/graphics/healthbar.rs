@@ -155,13 +155,7 @@ pub fn update_healthbars(
         (Entity, &mut Style, &HealthbarAnchor, &mut Visibility),
         Without<HealthTextTag>,
     >,
-    display_query: Query<(
-        &Health,
-        &DisplayHealthbar,
-        &DisplayModel,
-        &Radius,
-        &Transform,
-    )>,
+    display_query: Query<(&DisplayHealthbar, &DisplayModel, &Radius, &Transform)>,
     camera_query: Query<(&Camera, &Transform, &GlobalTransform), With<OrbitDistance>>,
     mut text_query: Query<(&mut Text, &mut Visibility), With<HealthTextTag>>,
     children_query: Query<&Children>,
@@ -170,26 +164,20 @@ pub fn update_healthbars(
     for (healthbar_entity, mut healthbar_style, healthbar_anchor, mut healthbar_visibility) in
         &mut healthbar_query
     {
-        let (display_health, display_healthbar, display_model, display_radius, display_transform) =
+        let (display_healthbar, display_model, display_radius, display_transform) =
             display_query.get(healthbar_anchor.0).unwrap();
-
         //choose precise anchor point based on anchor position and camera orientation
         let mut elevation = display_model.height;
         if !display_model.raised {
             elevation /= 2.;
         }
-        // let (yaw, _, pitch) = camera_transform.rotation.to_euler(EulerRot::ZYX);
-        // let anchor_point = display_transform.translation
-        //     + Vec3::new(
-        //         0.,
-        //         display_radius.0 * pitch.cos() + HEALTHBAR_OFFSET,
-        //         elevation * pitch.sin() + HEALTHBAR_OFFSET,
-        //     );
         let anchor_point =
             display_transform.translation + Vec3::ZERO.with_z(elevation + HEALTHBAR_OFFSET);
-
+        //check healthbar anchor point is both within camera frustum and within cull range
+        let pixel = position_to_pixel(anchor_point, camera, global_camera_transform);
         let distance_from_camera = (camera_transform.translation - anchor_point).length();
-        if distance_from_camera >= HEALTHBAR_CULL_DISTANCE {
+        if distance_from_camera >= HEALTHBAR_CULL_DISTANCE || pixel == None {
+            //hide healthbar and text
             if *healthbar_visibility == Visibility::Visible {
                 *healthbar_visibility = Visibility::Hidden;
                 if !display_healthbar.basic {
@@ -203,49 +191,29 @@ pub fn update_healthbars(
             }
         } else {
             *healthbar_visibility = Visibility::Visible;
+            let pixel = pixel.unwrap();
             //set healthbar size and position
-            if let Some(pixel_point) =
-                position_to_pixel(anchor_point, camera, global_camera_transform)
-            {
-                let intended_width =
-                    HEALTHBAR_WIDTH_SCALE * display_radius.0 / distance_from_camera;
-                let compatible_width = if display_healthbar.basic {
-                    intended_width
-                } else {
-                    get_compatible_width(display_health.maximum, intended_width)
-                };
-                let size = Vec2::new(compatible_width, compatible_width / HEALTHBAR_ASPECT_RATIO);
-                healthbar_style.width = Val::Px(size.x);
-                healthbar_style.height = Val::Px(size.y);
-                healthbar_style.left = Val::Px(pixel_point.x - size.x / 2.);
-                healthbar_style.top = Val::Px(pixel_point.y - size.y);
-                //set text size
-                if !display_healthbar.basic {
-                    let available_height = size.y;
-                    for child in children_query.iter_descendants(healthbar_entity) {
-                        if let Ok((mut text, mut visibility)) = text_query.get_mut(child) {
-                            if let Some(font_size) = get_largest_font_size(available_height) {
-                                text.sections[0].style.font_size = font_size;
-                                *visibility = Visibility::Visible;
-                            } else {
-                                *visibility = Visibility::Hidden;
-                            }
-                            break;
+            let intended_width = HEALTHBAR_WIDTH_SCALE * display_radius.0 / distance_from_camera;
+            let size = Vec2::new(intended_width, intended_width / HEALTHBAR_ASPECT_RATIO);
+            healthbar_style.width = Val::Px(size.x);
+            healthbar_style.height = Val::Px(size.y);
+            healthbar_style.left = Val::Px(pixel.x - size.x / 2.);
+            healthbar_style.top = Val::Px(pixel.y - size.y);
+            //set text size
+            if !display_healthbar.basic {
+                let available_height = size.y;
+                for child in children_query.iter_descendants(healthbar_entity) {
+                    if let Ok((mut text, mut visibility)) = text_query.get_mut(child) {
+                        if let Some(font_size) = get_largest_font_size(available_height) {
+                            text.sections[0].style.font_size = font_size;
+                            *visibility = Visibility::Visible;
+                        } else {
+                            *visibility = Visibility::Hidden;
                         }
+                        break;
                     }
                 }
             }
         }
     }
-}
-
-//doesn't currently work with remainders
-fn get_compatible_width(health: f32, desired_width: f32) -> f32 {
-    let chunks = health / HEALTHBAR_INDICATOR_HEALTH;
-    let total_border_width = (chunks + 1.) * HEALTHBAR_INDICATOR_BORDER;
-    let borderless_width = desired_width - total_border_width;
-    let compatible_chunk_width = (borderless_width / chunks).ceil();
-    let compatible_borderless_width = compatible_chunk_width * chunks;
-    let compatible_width = compatible_borderless_width + total_border_width;
-    compatible_width
 }
