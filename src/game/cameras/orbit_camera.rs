@@ -12,7 +12,7 @@ const CAMERA_DRAW_FAR: f32 = 2000.;
 const PAN_SPEED: f32 = 450.;
 const ZOOM_MIN: f32 = 20.;
 const ZOOM_MAX: f32 = 2000.;
-const ZOOM_SPEED: f32 = 100.;
+const ZOOM_SPEED: f32 = 0.1;
 const ROTATION_SPEED: f32 = 0.15;
 const FLIP_ORIENTATION_SPEED: f32 = 5. * PI;
 
@@ -117,7 +117,7 @@ pub fn update(
         .translation
         .clamp(Vec3::splat(-1000.), Vec3::splat(1000.));
     //zoom
-    orbit_distance.0 -= wheel_axis.0.y * ZOOM_SPEED;
+    orbit_distance.0 *= (1. + ZOOM_SPEED).powf(-wheel_axis.0.y);
     orbit_distance.0 = orbit_distance.0.clamp(ZOOM_MIN, ZOOM_MAX);
     //flip orientation
     if keyboard_buttons.just_pressed(KeyCode::KeyQ) {

@@ -2,152 +2,144 @@ use super::*;
 use bevy::prelude::*;
 use model::*;
 
-const HEALTH_BAR_ASPECT_RATIO: f32 = 10.;
+const HEALTH_BAR_ASPECT_RATIO: f32 = 8.;
 const HEALTH_BAR_WIDTH: f32 = 2700.;
 const HEALTH_BAR_OFFSET: f32 = 5.;
+const HEALTH_INDICATOR_WIDTH: f32 = 4.;
+const HEALTH_INDICATOR_AMOUNT: f32 = 100.;
 
 #[derive(Component)]
-pub struct DisplayHealth {
-    anchor: Entity,
+pub struct DisplayHealthbar {
     basic: bool,
 }
-impl DisplayHealth {
-    fn new(anchor: Entity, basic: bool) -> Self {
-        Self { anchor, basic }
+impl DisplayHealthbar {
+    pub fn new(basic: bool) -> Self {
+        Self { basic }
     }
 }
 
+#[derive(Component)]
+pub struct HealthbarAnchor(Entity);
+
 pub fn add_healthbars(
     mut commands: Commands,
-    mut query: Query<
-        (
-            Entity,
-            &Radius,
-            &mut DisplayModel,
-            Option<&Health>,
-            Option<&Team>,
-        ),
-        Added<DisplayModel>,
-    >,
+    mut query: Query<(Entity, &Health, Option<&Team>, &DisplayHealthbar), Added<DisplayHealthbar>>,
 ) {
-    for (entity, radius, display, health, team) in &mut query {
-        if let Some(_) = health {
-            // //advanced health bar
-            // commands
-            //     .spawn((
-            //         NodeBundle {
-            //             style: Style {
-            //                 position_type: PositionType::Absolute,
-            //                 padding: UiRect::all(Val::Px(2.)),
-            //                 column_gap: Val::Px(2.),
-            //                 ..default()
-            //             },
-            //             background_color: BackgroundColor(Color::BLACK),
-            //             ..default()
-            //         },
-            //         DisplayUIAnchor(entity),
-            //     ))
-            //     .with_children(|builder| {
-            //         builder.spawn(NodeBundle {
-            //             style: Style {
-            //                 height: Val::Percent(100.),
-            //                 width: Val::Percent(100.),
-            //                 ..default()
-            //             },
-            //             background_color: BackgroundColor(team_color(team.copied())),
-            //             ..default()
-            //         });
-            //         builder.spawn(NodeBundle {
-            //             style: Style {
-            //                 height: Val::Percent(100.),
-            //                 width: Val::Percent(100.),
-            //                 ..default()
-            //             },
-            //             background_color: BackgroundColor(team_color(team.copied())),
-            //             ..default()
-            //         });
-            //         builder.spawn(NodeBundle {
-            //             style: Style {
-            //                 height: Val::Percent(100.),
-            //                 width: Val::Percent(100.),
-            //                 ..default()
-            //             },
-            //             background_color: BackgroundColor(team_color(team.copied())),
-            //             ..default()
-            //         });
-            //         builder.spawn(NodeBundle {
-            //             style: Style {
-            //                 height: Val::Percent(100.),
-            //                 width: Val::Percent(72.),
-            //                 ..default()
-            //             },
-            //             background_color: BackgroundColor(team_color(team.copied())),
-            //             ..default()
-            //         });
-            //         builder.spawn(NodeBundle {
-            //             style: Style {
-            //                 height: Val::Percent(100.),
-            //                 width: Val::Percent(300.), //need to ensure this value accounts for missing gap pixels to prevent distortion
-            //                 ..default()
-            //             },
-            //             background_color: BackgroundColor(Color::BLACK),
-            //             ..default()
-            //         });
-            //         builder.spawn(
-            //             TextBundle::from_section(
-            //                 "372",
-            //                 TextStyle {
-            //                     font_size: 36.,
-            //                     color: Color::WHITE,
-            //                     ..default()
-            //                 },
-            //             )
-            //             .with_style(Style {
-            //                 position_type: PositionType::Absolute,
-            //                 height: Val::Percent(100.),
-            //                 width: Val::Percent(100.),
-            //                 ..default()
-            //             })
-            //             .with_text_justify(JustifyText::Center),
-            //         );
-            //     });
-
-            //basic health bar
-            commands
-                .spawn((
-                    NodeBundle {
-                        style: Style {
-                            position_type: PositionType::Absolute,
-                            ..default()
-                        },
-                        background_color: BackgroundColor(Color::BLACK),
+    for (entity, health, team, healthbar) in &mut query {
+        let color = team_color(team.copied());
+        let health_ratio = health.current / health.maximum;
+        let mut healthbar_entity = commands
+            //black bar
+            .spawn((
+                NodeBundle {
+                    style: Style {
+                        position_type: PositionType::Absolute,
                         ..default()
                     },
-                    DisplayHealth::new(entity, true),
-                ))
-                .with_children(|builder| {
-                    builder.spawn(NodeBundle {
+                    background_color: BackgroundColor(Color::BLACK),
+                    ..default()
+                },
+                HealthbarAnchor(entity),
+            ));
+        healthbar_entity.with_children(|builder| {
+            //red bar
+            builder.spawn(NodeBundle {
+                style: Style {
+                    width: Val::Percent(health_ratio * 100.),
+                    height: Val::Percent(100.),
+                    ..default()
+                },
+                background_color: BackgroundColor(color),
+                ..default()
+            });
+        });
+        if !healthbar.basic {
+            healthbar_entity.with_children(|builder| {
+                builder
+                    //indicators
+                    .spawn(NodeBundle {
                         style: Style {
-                            width: Val::Percent(50.),
+                            position_type: PositionType::Absolute,
+                            width: Val::Percent(100.),
                             height: Val::Percent(100.),
+                            border: UiRect::axes(
+                                Val::Px(HEALTH_INDICATOR_WIDTH / 2.),
+                                Val::Px(HEALTH_INDICATOR_WIDTH),
+                            ),
                             ..default()
                         },
-                        background_color: BackgroundColor(team_color(team.copied())),
+                        border_color: BorderColor(Color::BLACK),
                         ..default()
+                    })
+                    .with_children(|builder| {
+                        for _ in 0..(health.maximum / HEALTH_INDICATOR_AMOUNT) as i32 {
+                            builder.spawn(NodeBundle {
+                                style: Style {
+                                    width: Val::Percent(100.),
+                                    height: Val::Percent(100.),
+                                    border: UiRect::axes(
+                                        Val::Px(HEALTH_INDICATOR_WIDTH / 2.),
+                                        Val::Px(0.),
+                                    ),
+                                    ..default()
+                                },
+                                border_color: BorderColor(Color::BLACK),
+                                ..default()
+                            });
+                        }
+                        let remainder = health.maximum % HEALTH_INDICATOR_AMOUNT;
+                        if remainder > 0. {
+                            builder.spawn(NodeBundle {
+                                style: Style {
+                                    width: Val::Percent(remainder),
+                                    height: Val::Percent(100.),
+                                    border: UiRect::axes(
+                                        Val::Px(HEALTH_INDICATOR_WIDTH / 2.),
+                                        Val::Px(0.),
+                                    ),
+                                    ..default()
+                                },
+                                border_color: BorderColor(Color::BLACK),
+                                ..default()
+                            });
+                        }
                     });
-                });
+                builder
+                    //text
+                    .spawn(NodeBundle {
+                        style: Style {
+                            position_type: PositionType::Absolute,
+                            width: Val::Percent(100.),
+                            height: Val::Percent(100.),
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                        ..default()
+                    })
+                    .with_children(|builder| {
+                        builder.spawn(TextBundle::from_section(
+                            format!("{}", health.current),
+                            TextStyle {
+                                font_size: 26.,
+                                color: Color::WHITE,
+                                ..default()
+                            },
+                        ));
+                    });
+            });
         }
     }
 }
 
 pub fn anchor_healthbars(
-    mut anchor_query: Query<(&mut Style, &DisplayHealth)>,
+    mut anchor_query: Query<(&mut Style, &HealthbarAnchor)>,
     display_query: Query<(&Transform, &DisplayModel, &Radius)>,
     camera_query: Query<(&Camera, &GlobalTransform, &Transform), With<OrbitDistance>>,
 ) {
     let (camera, global_transform, camera_transform) = camera_query.single();
     for (mut style, anchor) in &mut anchor_query {
-        let (transform, display, radius) = display_query.get(anchor.anchor).unwrap();
+        let (transform, display, radius) = display_query.get(anchor.0).unwrap();
         let mut elevation = display.height;
         if !display.raised {
             elevation /= 2.;

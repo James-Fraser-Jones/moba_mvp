@@ -13,6 +13,10 @@ use ordered_float::OrderedFloat;
 use std::f32::consts::PI;
 use std::sync::LazyLock;
 
+pub const RED_TEAM_COLOR: Color = Color::Srgba(css::TOMATO);
+pub const BLUE_TEAM_COLOR: Color = Color::Srgba(css::DEEP_SKY_BLUE);
+pub const NO_TEAM_COLOR: Color = Color::Srgba(css::LIGHT_GREEN);
+
 pub struct GraphicsPlugin;
 impl Plugin for GraphicsPlugin {
     fn build(&self, app: &mut App) {
@@ -32,16 +36,26 @@ impl Plugin for GraphicsPlugin {
 
 fn init() {}
 
-pub const RED_TEAM_COLOR: Color = Color::Srgba(css::TOMATO);
-pub const BLUE_TEAM_COLOR: Color = Color::Srgba(css::DEEP_SKY_BLUE);
-pub const NO_TEAM_COLOR: Color = Color::Srgba(css::LIGHT_GREEN);
-pub fn team_color(team: Option<Team>) -> Color {
-    match team {
-        Some(team) => match team {
-            Team::Red => RED_TEAM_COLOR,
-            Team::Blue => BLUE_TEAM_COLOR,
-        },
-        None => NO_TEAM_COLOR,
+fn draw_cursor(
+    camera_query: Query<(&Camera, &GlobalTransform), With<cameras::orbit_camera::OrbitDistance>>,
+    last_cursor_position: Res<input::LastCursorPosition>,
+    mut gizmos: Gizmos,
+) {
+    let ground_plane_height = 0.;
+    let (camera, camera_transform) = camera_query.single();
+    if let Some(point) = pixel_to_horizontal_plane(
+        last_cursor_position.0,
+        ground_plane_height,
+        &camera,
+        &camera_transform,
+    ) {
+        gizmos.circle(
+            point.extend(0.01),
+            Dir3::new(Vec3::Z).unwrap(),
+            10.,
+            Color::WHITE,
+        );
+        gizmos.arrow(point.extend(30.), point.extend(0.01), Color::WHITE);
     }
 }
 
@@ -67,25 +81,12 @@ fn position_to_pixel(
     camera.world_to_viewport(camera_transform, position)
 }
 
-fn draw_cursor(
-    camera_query: Query<(&Camera, &GlobalTransform), With<cameras::orbit_camera::OrbitDistance>>,
-    last_cursor_position: Res<input::LastCursorPosition>,
-    mut gizmos: Gizmos,
-) {
-    let ground_plane_height = 0.;
-    let (camera, camera_transform) = camera_query.single();
-    if let Some(point) = pixel_to_horizontal_plane(
-        last_cursor_position.0,
-        ground_plane_height,
-        &camera,
-        &camera_transform,
-    ) {
-        gizmos.circle(
-            point.extend(0.01),
-            Dir3::new(Vec3::Z).unwrap(),
-            10.,
-            Color::WHITE,
-        );
-        gizmos.arrow(point.extend(30.), point.extend(0.01), Color::WHITE);
+pub fn team_color(team: Option<Team>) -> Color {
+    match team {
+        Some(team) => match team {
+            Team::Red => RED_TEAM_COLOR,
+            Team::Blue => BLUE_TEAM_COLOR,
+        },
+        None => NO_TEAM_COLOR,
     }
 }

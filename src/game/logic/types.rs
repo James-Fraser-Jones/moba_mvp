@@ -1,17 +1,23 @@
 use super::*;
 use bevy::prelude::*;
-use graphics::model::*;
+use graphics::{healthbar::DisplayHealthbar, model::*};
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 pub struct Health {
-    current: f32,
-    maximum: f32,
+    pub current: f32,
+    pub maximum: f32,
 }
 impl Health {
     fn new(health: f32) -> Self {
         Self {
             current: health,
             maximum: health,
+        }
+    }
+    fn with_current(&self, health: f32) -> Self {
+        Self {
+            current: health,
+            maximum: self.maximum,
         }
     }
 }
@@ -39,7 +45,8 @@ pub struct Core {
     radius: Radius,
     health: Health,
     team: Team,
-    display: DisplayModel,
+    model: DisplayModel,
+    bar: DisplayHealthbar,
 }
 impl Core {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -47,14 +54,15 @@ impl Core {
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
-            health: Health::new(5000.),
+            health: Health::new(3400.).with_current(2100.),
             team,
-            display: DisplayModel {
+            model: DisplayModel {
                 mesh_type: HashableMeshType::Capsule,
                 height: radius * 2.,
                 raised: false,
                 wireframe: false,
             },
+            bar: DisplayHealthbar::new(false),
         }
     }
 }
@@ -65,7 +73,8 @@ pub struct Spawner {
     radius: Radius,
     health: Health,
     team: Team,
-    display: DisplayModel,
+    model: DisplayModel,
+    bar: DisplayHealthbar,
 }
 impl Spawner {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -73,14 +82,15 @@ impl Spawner {
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
-            health: Health::new(1000.),
+            health: Health::new(901.).with_current(900.),
             team,
-            display: DisplayModel {
+            model: DisplayModel {
                 mesh_type: HashableMeshType::Capsule,
                 height: radius * 2.,
                 raised: false,
                 wireframe: false,
             },
+            bar: DisplayHealthbar::new(false),
         }
     }
 }
@@ -91,7 +101,8 @@ pub struct Tower {
     radius: Radius,
     health: Health,
     team: Team,
-    display: DisplayModel,
+    model: DisplayModel,
+    bar: DisplayHealthbar,
 }
 impl Tower {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -100,12 +111,13 @@ impl Tower {
             radius: Radius(logic::TOWER_RADIUS),
             health: Health::new(500.),
             team,
-            display: DisplayModel {
+            model: DisplayModel {
                 mesh_type: HashableMeshType::Cylinder,
                 raised: true,
                 height: 60.,
                 wireframe: false,
             },
+            bar: DisplayHealthbar::new(false),
         }
     }
 }
@@ -116,7 +128,8 @@ pub struct Advocate {
     radius: Radius,
     health: Health,
     team: Team,
-    display: DisplayModel,
+    model: DisplayModel,
+    bar: DisplayHealthbar,
 }
 impl Advocate {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -125,12 +138,13 @@ impl Advocate {
             radius: Radius(12.),
             health: Health::new(200.),
             team,
-            display: DisplayModel {
+            model: DisplayModel {
                 mesh_type: HashableMeshType::Capsule,
                 raised: true,
                 height: 42.,
                 wireframe: false,
             },
+            bar: DisplayHealthbar::new(false),
         }
     }
 }
@@ -141,7 +155,8 @@ pub struct Minion {
     radius: Radius,
     health: Health,
     team: Team,
-    display: DisplayModel,
+    model: DisplayModel,
+    bar: DisplayHealthbar,
 }
 impl Minion {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -151,12 +166,13 @@ impl Minion {
             radius: Radius(radius),
             health: Health::new(100.),
             team,
-            display: DisplayModel {
+            model: DisplayModel {
                 mesh_type: HashableMeshType::Cuboid,
                 raised: true,
                 height: radius * 2.,
                 wireframe: false,
             },
+            bar: DisplayHealthbar::new(true),
         }
     }
 }
@@ -166,7 +182,8 @@ pub struct Monster {
     spatial: SpatialBundle,
     radius: Radius,
     health: Health,
-    display: DisplayModel,
+    model: DisplayModel,
+    bar: DisplayHealthbar,
 }
 impl Monster {
     pub fn new(pos: Vec2) -> Self {
@@ -174,12 +191,13 @@ impl Monster {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(10.),
             health: Health::new(150.),
-            display: DisplayModel {
+            model: DisplayModel {
                 mesh_type: HashableMeshType::Capsule,
                 raised: true,
                 height: 35.,
                 wireframe: false,
             },
+            bar: DisplayHealthbar::new(true),
         }
     }
 }
@@ -189,20 +207,22 @@ pub struct Demon {
     spatial: SpatialBundle,
     radius: Radius,
     health: Health,
-    display: DisplayModel,
+    model: DisplayModel,
+    bar: DisplayHealthbar,
 }
 impl Demon {
     pub fn new(pos: Vec2) -> Self {
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(25.),
-            health: Health::new(150.),
-            display: DisplayModel {
+            health: Health::new(1500.),
+            model: DisplayModel {
                 mesh_type: HashableMeshType::Capsule,
                 raised: true,
                 height: 95.,
                 wireframe: false,
             },
+            bar: DisplayHealthbar::new(false),
         }
     }
 }
