@@ -65,6 +65,8 @@ fn reframe_position(position: Vec2, team: Team, to_global: bool) -> Vec2 {
 fn init(mut commands: Commands) {
     spawn::spawn_everything(&mut commands);
     commands.spawn(Minion::new(Vec2::ZERO, Team::Red));
+    //commands.spawn(Core::new(Vec2::ZERO, Team::Red));
+    //commands.spawn(Core::new(Vec2::ZERO + 200., Team::Blue));
 }
 
 fn update() {}

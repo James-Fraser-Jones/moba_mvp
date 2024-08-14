@@ -82,7 +82,7 @@ impl Spawner {
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
-            health: Health::new(901.).with_current(900.),
+            health: Health::new(900.),
             team,
             model: DisplayModel {
                 mesh_type: HashableMeshType::Capsule,

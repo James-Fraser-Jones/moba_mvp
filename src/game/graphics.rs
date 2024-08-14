@@ -28,7 +28,7 @@ impl Plugin for GraphicsPlugin {
                 draw_cursor,
                 map::update,
                 healthbar::add_healthbars,
-                healthbar::anchor_healthbars,
+                healthbar::update_healthbars,
             ),
         );
     }
