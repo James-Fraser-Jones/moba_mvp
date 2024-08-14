@@ -1,9 +1,21 @@
 use super::*;
 use bevy::prelude::*;
-use graphics::OrderedMeshType;
+use graphics::model::*;
 
 #[derive(Component)]
-pub struct Health(f32);
+pub struct Health {
+    current: f32,
+    maximum: f32,
+}
+impl Health {
+    fn new(health: f32) -> Self {
+        Self {
+            current: health,
+            maximum: health,
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct Radius(pub f32);
 
@@ -27,7 +39,7 @@ pub struct Core {
     radius: Radius,
     health: Health,
     team: Team,
-    display: graphics::RenderComponent,
+    display: DisplayModel,
 }
 impl Core {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -35,12 +47,11 @@ impl Core {
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
-            health: Health(5000.),
+            health: Health::new(5000.),
             team,
-            display: graphics::RenderComponent {
-                mesh_type: OrderedMeshType::Capsule,
+            display: DisplayModel {
+                mesh_type: HashableMeshType::Capsule,
                 height: radius * 2.,
-                color: graphics::team_color(Some(team)),
                 raised: false,
                 wireframe: false,
             },
@@ -54,7 +65,7 @@ pub struct Spawner {
     radius: Radius,
     health: Health,
     team: Team,
-    display: graphics::RenderComponent,
+    display: DisplayModel,
 }
 impl Spawner {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -62,12 +73,11 @@ impl Spawner {
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
-            health: Health(1000.),
+            health: Health::new(1000.),
             team,
-            display: graphics::RenderComponent {
-                mesh_type: OrderedMeshType::Capsule,
+            display: DisplayModel {
+                mesh_type: HashableMeshType::Capsule,
                 height: radius * 2.,
-                color: graphics::team_color(Some(team)).with_alpha(0.7),
                 raised: false,
                 wireframe: false,
             },
@@ -81,18 +91,17 @@ pub struct Tower {
     radius: Radius,
     health: Health,
     team: Team,
-    display: graphics::RenderComponent,
+    display: DisplayModel,
 }
 impl Tower {
     pub fn new(pos: Vec2, team: Team) -> Self {
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(logic::TOWER_RADIUS),
-            health: Health(500.),
+            health: Health::new(500.),
             team,
-            display: graphics::RenderComponent {
-                mesh_type: OrderedMeshType::Cylinder,
-                color: graphics::team_color(Some(team)),
+            display: DisplayModel {
+                mesh_type: HashableMeshType::Cylinder,
                 raised: true,
                 height: 60.,
                 wireframe: false,
@@ -107,18 +116,17 @@ pub struct Advocate {
     radius: Radius,
     health: Health,
     team: Team,
-    display: graphics::RenderComponent,
+    display: DisplayModel,
 }
 impl Advocate {
     pub fn new(pos: Vec2, team: Team) -> Self {
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(12.),
-            health: Health(200.),
+            health: Health::new(200.),
             team,
-            display: graphics::RenderComponent {
-                mesh_type: OrderedMeshType::Capsule,
-                color: graphics::team_color(Some(team)),
+            display: DisplayModel {
+                mesh_type: HashableMeshType::Capsule,
                 raised: true,
                 height: 42.,
                 wireframe: false,
@@ -133,7 +141,7 @@ pub struct Minion {
     radius: Radius,
     health: Health,
     team: Team,
-    display: graphics::RenderComponent,
+    display: DisplayModel,
 }
 impl Minion {
     pub fn new(pos: Vec2, team: Team) -> Self {
@@ -141,11 +149,10 @@ impl Minion {
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(radius),
-            health: Health(100.),
+            health: Health::new(100.),
             team,
-            display: graphics::RenderComponent {
-                mesh_type: OrderedMeshType::Cuboid,
-                color: graphics::team_color(Some(team)),
+            display: DisplayModel {
+                mesh_type: HashableMeshType::Cuboid,
                 raised: true,
                 height: radius * 2.,
                 wireframe: false,
@@ -159,17 +166,16 @@ pub struct Monster {
     spatial: SpatialBundle,
     radius: Radius,
     health: Health,
-    display: graphics::RenderComponent,
+    display: DisplayModel,
 }
 impl Monster {
     pub fn new(pos: Vec2) -> Self {
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(10.),
-            health: Health(150.),
-            display: graphics::RenderComponent {
-                mesh_type: OrderedMeshType::Capsule,
-                color: graphics::team_color(None),
+            health: Health::new(150.),
+            display: DisplayModel {
+                mesh_type: HashableMeshType::Capsule,
                 raised: true,
                 height: 35.,
                 wireframe: false,
@@ -183,17 +189,16 @@ pub struct Demon {
     spatial: SpatialBundle,
     radius: Radius,
     health: Health,
-    display: graphics::RenderComponent,
+    display: DisplayModel,
 }
 impl Demon {
     pub fn new(pos: Vec2) -> Self {
         Self {
             spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
             radius: Radius(25.),
-            health: Health(150.),
-            display: graphics::RenderComponent {
-                mesh_type: OrderedMeshType::Capsule,
-                color: graphics::team_color(None),
+            health: Health::new(150.),
+            display: DisplayModel {
+                mesh_type: HashableMeshType::Capsule,
                 raised: true,
                 height: 95.,
                 wireframe: false,
