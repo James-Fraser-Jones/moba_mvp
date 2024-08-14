@@ -15,7 +15,7 @@ use std::sync::LazyLock;
 
 pub const RED_TEAM_COLOR: Color = Color::Srgba(css::TOMATO);
 pub const BLUE_TEAM_COLOR: Color = Color::Srgba(css::DEEP_SKY_BLUE);
-pub const NO_TEAM_COLOR: Color = Color::Srgba(css::LIGHT_GREEN);
+pub const NO_TEAM_COLOR: Color = Color::Srgba(css::SEA_GREEN);
 
 pub struct GraphicsPlugin;
 impl Plugin for GraphicsPlugin {

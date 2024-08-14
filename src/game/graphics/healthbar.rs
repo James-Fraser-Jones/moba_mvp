@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use model::*;
 use std::sync::LazyLock;
 
-const HEALTHBAR_ASPECT_RATIO: f32 = 8.;
+const HEALTHBAR_ASPECT_RATIO: f32 = 5.;
 const HEALTHBAR_WIDTH_SCALE: f32 = 2700.;
 const HEALTHBAR_OFFSET: f32 = 5.;
 const HEALTHBAR_INDICATOR_BORDER: f32 = 4.;
@@ -221,7 +221,7 @@ pub fn update_healthbars(
                 healthbar_style.top = Val::Px(pixel_point.y - size.y);
                 //set text size
                 if !display_healthbar.basic {
-                    let available_height = size.y - HEALTHBAR_INDICATOR_BORDER * 2.;
+                    let available_height = size.y;
                     for child in children_query.iter_descendants(healthbar_entity) {
                         if let Ok((mut text, mut visibility)) = text_query.get_mut(child) {
                             if let Some(font_size) = get_largest_font_size(available_height) {
