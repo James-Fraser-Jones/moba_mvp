@@ -69,4 +69,19 @@ pub fn init(mut commands: Commands) {
     //commands.spawn(Core::new(Vec2::ZERO + 200., Team::Blue));
 }
 
-fn update() {}
+fn update(mut query: Query<(&mut Transform, &mut MovePosition, &MoveSpeed)>, time: Res<Time>) {
+    for (mut transform, mut move_position, move_speed) in &mut query {
+        if let Some(goal) = move_position.0 {
+            let pos = transform.translation.truncate();
+            let diff = goal - pos;
+            let new_pos = pos + diff.clamp_length_max(move_speed.0 * time.delta_seconds());
+
+            transform.translation = new_pos.extend(0.);
+            transform.rotation = Quat::from_rotation_z(diff.to_angle());
+
+            if new_pos == goal {
+                move_position.0 = None;
+            }
+        }
+    }
+}

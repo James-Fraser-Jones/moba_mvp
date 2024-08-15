@@ -49,7 +49,7 @@ struct OrbitTransform {
 impl Default for OrbitTransform {
     fn default() -> Self {
         Self {
-            translation: Vec3::ZERO,
+            translation: Vec2::splat(-800.).extend(0.),
             rotation: Vec2::new(0., 0.5),
         }
     }

@@ -23,14 +23,11 @@ fn get_largest_font_size(available_height: f32) -> Option<f32> {
         .copied()
 }
 
-#[derive(Component)]
-pub struct DisplayHealthbar {
-    basic: bool,
-}
-impl DisplayHealthbar {
-    pub fn new(basic: bool) -> Self {
-        Self { basic }
-    }
+#[derive(Component, Copy, Clone, PartialEq, Eq, Default)]
+pub enum DisplayHealthbar {
+    #[default]
+    Basic,
+    Advanced,
 }
 
 #[derive(Component)]
@@ -41,11 +38,20 @@ pub struct HealthbarAnchor(Entity);
 
 pub fn add_healthbars(
     mut commands: Commands,
-    mut query: Query<(Entity, &Health, Option<&Team>, &DisplayHealthbar), Added<DisplayHealthbar>>,
+    mut query: Query<
+        (
+            Entity,
+            &Health,
+            &MaxHealth,
+            Option<&Team>,
+            &DisplayHealthbar,
+        ),
+        Added<DisplayHealthbar>,
+    >,
 ) {
-    for (entity, health, team, healthbar) in &mut query {
+    for (entity, health, max_health, team, healthbar) in &mut query {
         let color = team_color(team.copied());
-        let health_ratio = health.current / health.maximum;
+        let health_ratio = health.0 / max_health.0;
         let mut healthbar_entity = commands
             //black bar
             .spawn((
@@ -71,7 +77,7 @@ pub fn add_healthbars(
                 ..default()
             });
         });
-        if !healthbar.basic {
+        if *healthbar == DisplayHealthbar::Advanced {
             healthbar_entity.with_children(|builder| {
                 builder
                     //indicators
@@ -88,7 +94,7 @@ pub fn add_healthbars(
                         ..default()
                     })
                     .with_children(|builder| {
-                        for _ in 0..(health.maximum / HEALTHBAR_INDICATOR_HEALTH) as i32 {
+                        for _ in 0..(max_health.0 / HEALTHBAR_INDICATOR_HEALTH) as i32 {
                             builder.spawn(NodeBundle {
                                 style: Style {
                                     flex_grow: 1.,
@@ -100,7 +106,7 @@ pub fn add_healthbars(
                                 ..default()
                             });
                         }
-                        let remainder = health.maximum % HEALTHBAR_INDICATOR_HEALTH;
+                        let remainder = max_health.0 % HEALTHBAR_INDICATOR_HEALTH;
                         if remainder > 0. {
                             builder.spawn(NodeBundle {
                                 style: Style {
@@ -130,7 +136,7 @@ pub fn add_healthbars(
                     .with_children(|builder| {
                         builder.spawn((
                             TextBundle::from_section(
-                                format!("{}", health.current),
+                                format!("{}", health.0),
                                 TextStyle {
                                     font_size: 26.,
                                     color: Color::WHITE,
@@ -162,9 +168,9 @@ pub fn update_healthbars(
         let (display_healthbar, display_model, display_radius, display_transform) =
             display_query.get(healthbar_anchor.0).unwrap();
         //choose precise anchor point based on anchor position and camera orientation
-        let mut elevation = display_model.height;
-        if !display_model.raised {
-            elevation /= 2.;
+        let mut elevation = display_model.half_height_ratio * display_radius.0;
+        if display_model.raised {
+            elevation *= 2.;
         }
         let anchor_point =
             display_transform.translation + Vec3::ZERO.with_z(elevation + HEALTHBAR_OFFSET);
@@ -175,7 +181,7 @@ pub fn update_healthbars(
             //hide healthbar and text
             if *healthbar_visibility == Visibility::Visible {
                 *healthbar_visibility = Visibility::Hidden;
-                if !display_healthbar.basic {
+                if *display_healthbar == DisplayHealthbar::Advanced {
                     let child = children_query
                         .iter_descendants(healthbar_entity)
                         .skip_while(|child| text_query.get(*child).is_err())
@@ -196,7 +202,7 @@ pub fn update_healthbars(
             healthbar_style.left = Val::Px(pixel.x - size.x / 2.);
             healthbar_style.top = Val::Px(pixel.y - size.y);
             //set text size
-            if !display_healthbar.basic {
+            if *display_healthbar == DisplayHealthbar::Advanced {
                 let child = children_query
                     .iter_descendants(healthbar_entity)
                     .skip_while(|child| text_query.get(*child).is_err())

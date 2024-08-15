@@ -86,14 +86,14 @@ impl MeshMap {
 pub struct HashableMesh {
     mesh_type: HashableMeshType,
     radius: OrderedFloat<f32>,
-    height: OrderedFloat<f32>,
+    half_height: OrderedFloat<f32>,
 }
 impl HashableMesh {
-    pub fn new(mesh_type: HashableMeshType, radius: f32, height: f32) -> Self {
+    pub fn new(mesh_type: HashableMeshType, radius: f32, half_height: f32) -> Self {
         Self {
             mesh_type,
             radius: OrderedFloat(radius),
-            height: OrderedFloat(height),
+            half_height: OrderedFloat(half_height),
         }
     }
 }
@@ -101,29 +101,89 @@ impl Into<Mesh> for HashableMesh {
     fn into(self) -> Mesh {
         match self.mesh_type {
             HashableMeshType::Capsule => {
-                Capsule3d::new(self.radius.0, self.height.0 - self.radius.0 * 2.).into()
+                Capsule3d::new(self.radius.0, (self.half_height.0 - self.radius.0) * 2.).into()
             }
-            HashableMeshType::Cylinder => Cylinder::new(self.radius.0, self.height.0).into(),
-            HashableMeshType::Cuboid => {
-                Cuboid::new(self.radius.0 * 2., self.radius.0 * 2., self.height.0).into()
+            HashableMeshType::Cylinder => {
+                Cylinder::new(self.radius.0, self.half_height.0 * 2.).into()
             }
+            HashableMeshType::Cuboid => Cuboid::new(
+                self.radius.0 * 2.,
+                self.radius.0 * 2.,
+                self.half_height.0 * 2.,
+            )
+            .into(),
         }
     }
 }
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Default)]
 pub enum HashableMeshType {
     Capsule,
     Cylinder,
+    #[default]
     Cuboid,
 }
 
 //component
-#[derive(Component)]
+#[derive(Component, Copy, Clone)]
 pub struct DisplayModel {
     pub mesh_type: HashableMeshType,
-    pub height: f32,
+    pub half_height_ratio: f32,
     pub raised: bool,
     pub wireframe: bool,
+}
+impl Default for DisplayModel {
+    fn default() -> Self {
+        Self {
+            mesh_type: HashableMeshType::default(),
+            half_height_ratio: 1.0,
+            raised: true,
+            wireframe: false,
+        }
+    }
+}
+impl DisplayModel {
+    pub fn cuboid() -> Self {
+        Self { ..default() }
+    }
+    pub fn cube() -> Self {
+        Self::cuboid()
+    }
+    pub fn capsule() -> Self {
+        Self {
+            mesh_type: HashableMeshType::Capsule,
+            ..default()
+        }
+    }
+    pub fn sphere() -> Self {
+        Self::capsule()
+    }
+    pub fn hemisphere() -> Self {
+        Self::sphere().unraised()
+    }
+    pub fn cylinder() -> Self {
+        Self {
+            mesh_type: HashableMeshType::Cylinder,
+            ..default()
+        }
+    }
+    pub fn unraised(self) -> Self {
+        Self {
+            raised: false,
+            ..self
+        }
+    }
+    pub fn wireframed(self) -> Self {
+        Self {
+            wireframe: true,
+            ..self
+        }
+    }
+    pub fn with_height(self, half_height_ratio: f32) -> Self {
+        Self {
+            half_height_ratio,
+            ..self
+        }
+    }
 }
 
 fn init(mut commands: Commands, server: Res<AssetServer>) {
@@ -142,7 +202,8 @@ fn add_models(
     dev_texture: Res<DevTexture>,
 ) {
     for (entity, display, radius, team) in &mut query {
-        let mesh = HashableMesh::new(display.mesh_type, radius.0, display.height);
+        let half_height = display.half_height_ratio * radius.0;
+        let mesh = HashableMesh::new(display.mesh_type, radius.0, half_height);
         let material_color = graphics::team_color(team.copied());
         let material_texture = &dev_texture.0;
 
@@ -154,7 +215,7 @@ fn add_models(
                 Some(material_texture),
             ),
             transform: Transform::from_translation(Vec3::ZERO.with_z(if display.raised {
-                display.height / 2.
+                half_height
             } else {
                 0.
             }))

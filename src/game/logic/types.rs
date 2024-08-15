@@ -1,26 +1,18 @@
 use super::*;
 use bevy::prelude::*;
-use graphics::{healthbar::DisplayHealthbar, model::*};
+use graphics::{healthbar::*, model::*};
 
 #[derive(Component, Clone, Copy)]
-pub struct Health {
-    pub current: f32,
-    pub maximum: f32,
-}
-impl Health {
-    fn new(health: f32) -> Self {
-        Self {
-            current: health,
-            maximum: health,
-        }
-    }
-    fn with_current(&self, health: f32) -> Self {
-        Self {
-            current: health,
-            maximum: self.maximum,
-        }
-    }
-}
+pub struct Health(pub f32);
+
+#[derive(Component, Clone, Copy)]
+pub struct MaxHealth(pub f32);
+
+#[derive(Component, Clone, Copy)]
+pub struct MovePosition(pub Option<Vec2>);
+
+#[derive(Component, Clone, Copy)]
+pub struct MoveSpeed(pub f32);
 
 #[derive(Component)]
 pub struct Radius(pub f32);
@@ -40,192 +32,214 @@ pub enum Lane {
 }
 
 #[derive(Bundle)]
-pub struct Core {
-    spatial: SpatialBundle,
+pub struct MoveBundle {
+    move_position: MovePosition,
+    move_speed: MoveSpeed,
+}
+impl MoveBundle {
+    pub fn new(move_speed: f32) -> Self {
+        Self {
+            move_position: MovePosition(None),
+            move_speed: MoveSpeed(move_speed),
+        }
+    }
+}
+
+#[derive(Bundle)]
+pub struct ModelBundle {
     radius: Radius,
-    health: Health,
-    team: Team,
     model: DisplayModel,
-    bar: DisplayHealthbar,
+}
+impl ModelBundle {
+    pub fn new(radius: f32, model: DisplayModel) -> Self {
+        Self {
+            radius: Radius(radius),
+            model,
+        }
+    }
+}
+
+#[derive(Bundle)]
+pub struct HealthBundle {
+    health: Health,
+    max_health: MaxHealth,
+    display: DisplayHealthbar,
+}
+impl HealthBundle {
+    pub fn new(health: f32, display: DisplayHealthbar) -> Self {
+        Self {
+            health: Health(health),
+            max_health: MaxHealth(health),
+            display,
+        }
+    }
+}
+
+#[derive(Bundle)]
+pub struct Unit {
+    spatial: SpatialBundle,
+    model: ModelBundle,
+    health: HealthBundle,
+}
+impl Unit {
+    pub fn new(
+        pos: Vec2,
+        radius: f32,
+        model: DisplayModel,
+        health: f32,
+        healthbar: DisplayHealthbar,
+    ) -> Self {
+        Self {
+            spatial: new_spatial(pos),
+            model: ModelBundle::new(radius, model),
+            health: HealthBundle::new(health, healthbar),
+        }
+    }
+}
+fn new_spatial(pos: Vec2) -> SpatialBundle {
+    SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.)))
+}
+
+#[derive(Bundle)]
+pub struct Core {
+    unit: Unit,
+    team: Team,
 }
 impl Core {
     pub fn new(pos: Vec2, team: Team) -> Self {
-        let radius = 50.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
-            radius: Radius(radius),
-            health: Health::new(3400.).with_current(2100.),
+            unit: Unit::new(
+                pos,
+                50.,
+                DisplayModel::hemisphere(),
+                3400.,
+                DisplayHealthbar::Advanced,
+            ),
             team,
-            model: DisplayModel {
-                mesh_type: HashableMeshType::Capsule,
-                height: radius * 2.,
-                raised: false,
-                wireframe: false,
-            },
-            bar: DisplayHealthbar::new(false),
         }
     }
 }
 
 #[derive(Bundle)]
 pub struct Spawner {
-    spatial: SpatialBundle,
-    radius: Radius,
-    health: Health,
+    unit: Unit,
     team: Team,
-    model: DisplayModel,
-    bar: DisplayHealthbar,
 }
 impl Spawner {
     pub fn new(pos: Vec2, team: Team) -> Self {
-        let radius = 25.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
-            radius: Radius(radius),
-            health: Health::new(900.),
+            unit: Unit::new(
+                pos,
+                25.,
+                DisplayModel::hemisphere(),
+                900.,
+                DisplayHealthbar::Advanced,
+            ),
             team,
-            model: DisplayModel {
-                mesh_type: HashableMeshType::Capsule,
-                height: radius * 2.,
-                raised: false,
-                wireframe: false,
-            },
-            bar: DisplayHealthbar::new(false),
         }
     }
 }
 
 #[derive(Bundle)]
 pub struct Tower {
-    spatial: SpatialBundle,
-    radius: Radius,
-    health: Health,
+    unit: Unit,
     team: Team,
-    model: DisplayModel,
-    bar: DisplayHealthbar,
 }
 impl Tower {
     pub fn new(pos: Vec2, team: Team) -> Self {
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
-            radius: Radius(logic::TOWER_RADIUS),
-            health: Health::new(500.),
+            unit: Unit::new(
+                pos,
+                TOWER_RADIUS,
+                DisplayModel::cylinder().with_height(1.5),
+                500.,
+                DisplayHealthbar::Advanced,
+            ),
             team,
-            model: DisplayModel {
-                mesh_type: HashableMeshType::Cylinder,
-                raised: true,
-                height: 60.,
-                wireframe: false,
-            },
-            bar: DisplayHealthbar::new(false),
         }
     }
 }
 
+//handle for player plugin to access
 #[derive(Component)]
 pub struct PlayerID(pub i32);
 
 #[derive(Bundle)]
 pub struct Advocate {
-    spatial: SpatialBundle,
-    radius: Radius,
-    health: Health,
+    unit: Unit,
     team: Team,
-    model: DisplayModel,
-    bar: DisplayHealthbar,
+    move_: MoveBundle,
+    player_id: PlayerID,
 }
 impl Advocate {
-    pub fn new(pos: Vec2, team: Team) -> Self {
+    pub fn new(pos: Vec2, team: Team, player_id: PlayerID) -> Self {
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
-            radius: Radius(12.),
-            health: Health::new(200.),
+            unit: Unit::new(
+                pos,
+                12.,
+                DisplayModel::capsule().with_height(1.75),
+                200.,
+                DisplayHealthbar::Advanced,
+            ),
             team,
-            model: DisplayModel {
-                mesh_type: HashableMeshType::Capsule,
-                raised: true,
-                height: 42.,
-                wireframe: false,
-            },
-            bar: DisplayHealthbar::new(false),
+            move_: MoveBundle::new(100.),
+            player_id,
         }
     }
 }
 
 #[derive(Bundle)]
 pub struct Minion {
-    spatial: SpatialBundle,
-    radius: Radius,
-    health: Health,
+    unit: Unit,
     team: Team,
-    model: DisplayModel,
-    bar: DisplayHealthbar,
+    move_: MoveBundle,
 }
 impl Minion {
     pub fn new(pos: Vec2, team: Team) -> Self {
-        let radius = 8.;
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
-            radius: Radius(radius),
-            health: Health::new(100.),
+            unit: Unit::new(pos, 8., DisplayModel::cube(), 100., DisplayHealthbar::Basic),
             team,
-            model: DisplayModel {
-                mesh_type: HashableMeshType::Cuboid,
-                raised: true,
-                height: radius * 2.,
-                wireframe: false,
-            },
-            bar: DisplayHealthbar::new(true),
+            move_: MoveBundle::new(50.),
         }
     }
 }
 
 #[derive(Bundle)]
 pub struct Monster {
-    spatial: SpatialBundle,
-    radius: Radius,
-    health: Health,
-    model: DisplayModel,
-    bar: DisplayHealthbar,
+    unit: Unit,
+    move_: MoveBundle,
 }
 impl Monster {
     pub fn new(pos: Vec2) -> Self {
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
-            radius: Radius(10.),
-            health: Health::new(150.),
-            model: DisplayModel {
-                mesh_type: HashableMeshType::Capsule,
-                raised: true,
-                height: 35.,
-                wireframe: false,
-            },
-            bar: DisplayHealthbar::new(true),
+            unit: Unit::new(
+                pos,
+                10.,
+                DisplayModel::capsule().with_height(1.75),
+                150.,
+                DisplayHealthbar::Basic,
+            ),
+            move_: MoveBundle::new(200.),
         }
     }
 }
 
 #[derive(Bundle)]
 pub struct Demon {
-    spatial: SpatialBundle,
-    radius: Radius,
-    health: Health,
-    model: DisplayModel,
-    bar: DisplayHealthbar,
+    unit: Unit,
+    move_: MoveBundle,
 }
 impl Demon {
     pub fn new(pos: Vec2) -> Self {
         Self {
-            spatial: SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.))),
-            radius: Radius(25.),
-            health: Health::new(1500.),
-            model: DisplayModel {
-                mesh_type: HashableMeshType::Capsule,
-                raised: true,
-                height: 95.,
-                wireframe: false,
-            },
-            bar: DisplayHealthbar::new(false),
+            unit: Unit::new(
+                pos,
+                25.,
+                DisplayModel::capsule().with_height(1.9),
+                1500.,
+                DisplayHealthbar::Advanced,
+            ),
+            move_: MoveBundle::new(300.),
         }
     }
 }

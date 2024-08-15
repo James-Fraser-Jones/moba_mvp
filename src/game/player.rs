@@ -29,13 +29,13 @@ fn init(mut commands: Commands, query: Query<(Entity, &PlayerID)>) {
 
 fn update(
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    mut query: Query<&mut Transform>,
+    mut query: Query<&mut MovePosition>,
     player: Res<Player>,
     cursor_world_position: Res<input::CursorWorldPosition>,
 ) {
     if mouse_buttons.just_pressed(MouseButton::Right) {
         if let Some(point) = cursor_world_position.0 {
-            query.get_mut(player.0).unwrap().translation = point.extend(0.);
+            query.get_mut(player.0).unwrap().0 = Some(point);
         }
     }
 }

@@ -7,8 +7,10 @@ pub mod map;
 pub mod model;
 
 use super::{logic::types::*, *};
-use bevy::{color::palettes::css, pbr::wireframe::Wireframe, prelude::*, render::*};
 use cameras::orbit_camera::OrbitDistance;
+use model::*;
+
+use bevy::{color::palettes::css, pbr::wireframe::Wireframe, prelude::*, render::*};
 use ordered_float::OrderedFloat;
 use std::f32::consts::PI;
 use std::sync::LazyLock;

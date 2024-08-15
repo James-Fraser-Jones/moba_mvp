@@ -99,8 +99,9 @@ pub fn spawn_everything(commands: &mut Commands) {
             ));
         }
         for (i, position) in ADVOCATE_SPAWN_POSITIONS.iter().enumerate() {
-            commands.spawn((
-                Advocate::new(logic::reframe_position(*position, team, true), team),
+            commands.spawn(Advocate::new(
+                logic::reframe_position(*position, team, true),
+                team,
                 PlayerID(i as i32),
             ));
         }
