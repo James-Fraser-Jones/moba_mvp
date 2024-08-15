@@ -6,7 +6,7 @@ use std::sync::LazyLock;
 const HEALTHBAR_ASPECT_RATIO: f32 = 5.;
 const HEALTHBAR_WIDTH_SCALE: f32 = 2700.;
 const HEALTHBAR_OFFSET: f32 = 5.;
-const HEALTHBAR_INDICATOR_BORDER: f32 = 4.;
+const HEALTHBAR_INDICATOR_BORDER: f32 = 2.;
 const HEALTHBAR_INDICATOR_HEALTH: f32 = 100.;
 const HEALTHBAR_CULL_DISTANCE: f32 = 1000.;
 
@@ -77,10 +77,8 @@ pub fn add_healthbars(
                             position_type: PositionType::Absolute,
                             width: Val::Percent(100.),
                             height: Val::Percent(100.),
-                            border: UiRect::axes(
-                                Val::Px(HEALTHBAR_INDICATOR_BORDER / 2.),
-                                Val::Px(HEALTHBAR_INDICATOR_BORDER),
-                            ),
+                            border: UiRect::all(Val::Px(HEALTHBAR_INDICATOR_BORDER))
+                                .with_right(Val::Px(0.)),
                             ..default()
                         },
                         border_color: BorderColor(Color::BLACK),
@@ -92,10 +90,7 @@ pub fn add_healthbars(
                                 style: Style {
                                     flex_grow: 1.,
                                     height: Val::Percent(100.),
-                                    border: UiRect::axes(
-                                        Val::Px(HEALTHBAR_INDICATOR_BORDER / 2.),
-                                        Val::Px(0.),
-                                    ),
+                                    border: UiRect::right(Val::Px(HEALTHBAR_INDICATOR_BORDER)),
                                     ..default()
                                 },
                                 border_color: BorderColor(Color::BLACK),
@@ -108,10 +103,7 @@ pub fn add_healthbars(
                                 style: Style {
                                     flex_grow: remainder,
                                     height: Val::Percent(100.),
-                                    border: UiRect::axes(
-                                        Val::Px(HEALTHBAR_INDICATOR_BORDER / 2.),
-                                        Val::Px(0.),
-                                    ),
+                                    border: UiRect::right(Val::Px(HEALTHBAR_INDICATOR_BORDER)),
                                     ..default()
                                 },
                                 border_color: BorderColor(Color::BLACK),
