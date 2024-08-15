@@ -8,7 +8,7 @@ use bevy::prelude::*;
 const PLAYER_ID: i32 = 0;
 
 #[derive(Resource)]
-struct Player(Entity);
+pub struct Player(pub Entity);
 
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {

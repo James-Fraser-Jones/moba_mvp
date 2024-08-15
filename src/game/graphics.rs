@@ -8,12 +8,10 @@ pub mod model;
 
 use super::{logic::types::*, *};
 use cameras::orbit_camera::OrbitDistance;
-use model::*;
 
-use bevy::{color::palettes::css, pbr::wireframe::Wireframe, prelude::*, render::*};
+use bevy::{color::palettes::css, pbr::wireframe::Wireframe, prelude::*};
 use ordered_float::OrderedFloat;
 use std::f32::consts::PI;
-use std::sync::LazyLock;
 
 pub const RED_TEAM_COLOR: Color = Color::Srgba(css::TOMATO);
 pub const BLUE_TEAM_COLOR: Color = Color::Srgba(css::DEEP_SKY_BLUE);
@@ -27,7 +25,6 @@ impl Plugin for GraphicsPlugin {
         app.add_systems(
             Update,
             (
-                draw_cursor,
                 map::update,
                 healthbar::add_healthbars,
                 healthbar::update_healthbars,
@@ -37,18 +34,6 @@ impl Plugin for GraphicsPlugin {
 }
 
 fn init() {}
-
-fn draw_cursor(cursor_world_position: Res<input::CursorWorldPosition>, mut gizmos: Gizmos) {
-    if let Some(point) = cursor_world_position.0 {
-        gizmos.circle(
-            point.extend(0.01),
-            Dir3::new(Vec3::Z).unwrap(),
-            10.,
-            Color::WHITE,
-        );
-        gizmos.arrow(point.extend(30.), point.extend(0.01), Color::WHITE);
-    }
-}
 
 pub fn team_color(team: Option<Team>) -> Color {
     match team {

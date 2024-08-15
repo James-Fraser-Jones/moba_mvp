@@ -101,6 +101,8 @@ pub fn update(
     mut camera_query: Query<(&mut Transform, &mut OrbitDistance)>,
     mut flip_orientation: Local<FlipOrientation>,
     time: Res<Time>,
+    player: Res<player::Player>,
+    transform_query: Query<&Transform, Without<OrbitDistance>>,
 ) {
     let (mut transform, mut orbit_distance) = camera_query.single_mut();
     let mut orbit_transform = orbit_distance.transform_to_orbit_transform(&transform);
@@ -134,11 +136,14 @@ pub fn update(
             orbit_transform.rotation.x += flip_delta;
         }
     }
-    //reset
-    if keyboard_buttons.pressed(KeyCode::KeyR) {
+    //reset zoom and pitch
+    if keyboard_buttons.just_pressed(KeyCode::KeyR) {
         *orbit_distance = OrbitDistance::default();
-        orbit_transform = OrbitTransform::default();
-        flip_orientation.0 = None;
+        orbit_transform.rotation.y = OrbitTransform::default().rotation.y;
+    }
+    //follow player
+    if keyboard_buttons.pressed(KeyCode::Space) {
+        orbit_transform.translation = transform_query.get(player.0).unwrap().translation;
     }
     *transform = orbit_distance.orbit_transform_to_transform(&orbit_transform);
 }

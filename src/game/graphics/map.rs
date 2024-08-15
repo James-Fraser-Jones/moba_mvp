@@ -1,4 +1,3 @@
-use super::*;
 use bevy::prelude::*;
 
 pub const WALL_HEIGHT: f32 = 30.;
@@ -29,9 +28,5 @@ pub fn update(
     if keyboard.just_pressed(KeyCode::KeyK) {
         let mut transform = map_query.single_mut();
         transform.scale.z -= 10. / BLENDER_WALL_HEIGHT;
-    }
-    if keyboard.just_pressed(KeyCode::KeyR) {
-        let mut transform = map_query.single_mut();
-        transform.scale.z = WALL_HEIGHT / BLENDER_WALL_HEIGHT;
     }
 }
