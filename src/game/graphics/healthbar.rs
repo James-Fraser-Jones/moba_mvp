@@ -10,13 +10,16 @@ const HEALTHBAR_INDICATOR_BORDER: f32 = 2.;
 const HEALTHBAR_INDICATOR_HEALTH: f32 = 100.;
 const HEALTHBAR_CULL_DISTANCE: f32 = 1000.;
 
-pub static SUPPORTED_FONT_SIZES: LazyLock<Vec<f32>> =
-    LazyLock::new(|| vec![11., 12., 13., 14., 18., 24., 30., 36., 48., 60., 72., 96.]);
+pub static SUPPORTED_FONT_SIZES: LazyLock<Vec<f32>> = LazyLock::new(|| {
+    let mut font_sizes = vec![11., 12., 13., 14., 18., 24., 30., 36., 48., 60., 72., 96.];
+    font_sizes.reverse();
+    font_sizes
+});
 fn get_largest_font_size(available_height: f32) -> Option<f32> {
     SUPPORTED_FONT_SIZES
         .iter()
-        .filter(|x| **x <= available_height)
-        .last()
+        .skip_while(|x| **x > available_height)
+        .next()
         .copied()
 }
 
@@ -166,19 +169,20 @@ pub fn update_healthbars(
         let anchor_point =
             display_transform.translation + Vec3::ZERO.with_z(elevation + HEALTHBAR_OFFSET);
         //check healthbar anchor point is both within camera frustum and within cull range
-        let pixel = position_to_pixel(anchor_point, camera, global_camera_transform);
+        let pixel = cameras::position_to_pixel(anchor_point, camera, global_camera_transform);
         let distance_from_camera = (camera_transform.translation - anchor_point).length();
         if distance_from_camera >= HEALTHBAR_CULL_DISTANCE || pixel == None {
             //hide healthbar and text
             if *healthbar_visibility == Visibility::Visible {
                 *healthbar_visibility = Visibility::Hidden;
                 if !display_healthbar.basic {
-                    for child in children_query.iter_descendants(healthbar_entity) {
-                        if let Ok((_, mut visibility)) = text_query.get_mut(child) {
-                            *visibility = Visibility::Hidden;
-                            break;
-                        }
-                    }
+                    let child = children_query
+                        .iter_descendants(healthbar_entity)
+                        .skip_while(|child| text_query.get(*child).is_err())
+                        .next()
+                        .unwrap();
+                    let (_, mut visibility) = text_query.get_mut(child).unwrap();
+                    *visibility = Visibility::Hidden;
                 }
             }
         } else {
@@ -193,17 +197,17 @@ pub fn update_healthbars(
             healthbar_style.top = Val::Px(pixel.y - size.y);
             //set text size
             if !display_healthbar.basic {
-                let available_height = size.y;
-                for child in children_query.iter_descendants(healthbar_entity) {
-                    if let Ok((mut text, mut visibility)) = text_query.get_mut(child) {
-                        if let Some(font_size) = get_largest_font_size(available_height) {
-                            text.sections[0].style.font_size = font_size;
-                            *visibility = Visibility::Visible;
-                        } else {
-                            *visibility = Visibility::Hidden;
-                        }
-                        break;
-                    }
+                let child = children_query
+                    .iter_descendants(healthbar_entity)
+                    .skip_while(|child| text_query.get(*child).is_err())
+                    .next()
+                    .unwrap();
+                let (mut text, mut visibility) = text_query.get_mut(child).unwrap();
+                if let Some(font_size) = get_largest_font_size(size.y) {
+                    text.sections[0].style.font_size = font_size;
+                    *visibility = Visibility::Visible;
+                } else {
+                    *visibility = Visibility::Hidden;
                 }
             }
         }

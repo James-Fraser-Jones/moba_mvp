@@ -36,19 +36,8 @@ impl Plugin for GraphicsPlugin {
 
 fn init() {}
 
-fn draw_cursor(
-    camera_query: Query<(&Camera, &GlobalTransform), With<cameras::orbit_camera::OrbitDistance>>,
-    last_cursor_position: Res<input::LastCursorPosition>,
-    mut gizmos: Gizmos,
-) {
-    let ground_plane_height = 0.;
-    let (camera, camera_transform) = camera_query.single();
-    if let Some(point) = pixel_to_horizontal_plane(
-        last_cursor_position.0,
-        ground_plane_height,
-        &camera,
-        &camera_transform,
-    ) {
+fn draw_cursor(cursor_world_position: Res<input::CursorWorldPosition>, mut gizmos: Gizmos) {
+    if let Some(point) = cursor_world_position.0 {
         gizmos.circle(
             point.extend(0.01),
             Dir3::new(Vec3::Z).unwrap(),
@@ -57,28 +46,6 @@ fn draw_cursor(
         );
         gizmos.arrow(point.extend(30.), point.extend(0.01), Color::WHITE);
     }
-}
-
-//logical pixels, top-left (0,0), to Vec2 representing intersection point with horizontal plane of height, in world space
-fn pixel_to_horizontal_plane(
-    pixel: Vec2,
-    height: f32,
-    camera: &Camera,
-    camera_transform: &GlobalTransform,
-) -> Option<Vec2> {
-    let pixel_ray = camera.viewport_to_world(camera_transform, pixel).unwrap();
-    let intersection_distance =
-        pixel_ray.intersect_plane(Vec3::Z * height, InfinitePlane3d::new(Vec3::Z))?;
-    let intersection_point = pixel_ray.get_point(intersection_distance);
-    Some(intersection_point.truncate())
-}
-
-fn position_to_pixel(
-    position: Vec3,
-    camera: &Camera,
-    camera_transform: &GlobalTransform,
-) -> Option<Vec2> {
-    camera.world_to_viewport(camera_transform, position)
 }
 
 pub fn team_color(team: Option<Team>) -> Color {

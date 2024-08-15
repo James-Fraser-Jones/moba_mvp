@@ -4,6 +4,7 @@ mod graphics;
 mod input;
 mod logic;
 mod os;
+mod player;
 
 use bevy::{app::PluginGroupBuilder, prelude::*};
 
@@ -17,5 +18,6 @@ impl PluginGroup for GamePlugins {
             .add(graphics::GraphicsPlugin)
             .add(cameras::CamerasPlugin)
             .add(dev::DevPlugin)
+            .add(player::PlayerPlugin)
     }
 }

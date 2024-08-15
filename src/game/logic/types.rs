@@ -122,6 +122,9 @@ impl Tower {
     }
 }
 
+#[derive(Component)]
+pub struct PlayerID(pub i32);
+
 #[derive(Bundle)]
 pub struct Advocate {
     spatial: SpatialBundle,

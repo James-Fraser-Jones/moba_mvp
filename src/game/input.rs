@@ -3,6 +3,7 @@
 //(e.g. keyboardaxis, as a resource, of Vec3)
 //facilitating different choices of concrete key bindings
 
+use super::*;
 use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
@@ -16,6 +17,7 @@ impl Plugin for InputPlugin {
         app.init_resource::<WheelAxis>();
         app.init_resource::<ScreenAxis>();
         app.init_resource::<LastCursorPosition>();
+        app.init_resource::<CursorWorldPosition>();
         app.add_systems(Startup, init);
         app.add_systems(Update, update);
     }
@@ -35,6 +37,9 @@ pub struct WheelAxis(pub Vec2);
 
 #[derive(Resource, Default)]
 pub struct LastCursorPosition(pub Vec2);
+
+#[derive(Resource, Default)]
+pub struct CursorWorldPosition(pub Option<Vec2>);
 
 #[derive(Resource, Default)]
 pub struct ScreenAxis(pub Vec2);
@@ -57,7 +62,9 @@ fn update(
     mut wheel_axis: ResMut<WheelAxis>,
     mut screen_axis: ResMut<ScreenAxis>,
     mut last_cursor_position: ResMut<LastCursorPosition>,
+    mut cursor_world_position: ResMut<CursorWorldPosition>,
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<cameras::orbit_camera::OrbitDistance>>,
 ) {
     //keyboard
     let mut axis: Vec3 = Vec3::ZERO;
@@ -110,6 +117,16 @@ fn update(
     if let Some(cursor_position) = window.cursor_position() {
         last_cursor_position.0 = cursor_position;
     }
+
+    //cursor world position
+    let ground_plane_height = 0.;
+    let (camera, camera_transform) = camera_query.single();
+    cursor_world_position.0 = cameras::pixel_to_horizontal_plane(
+        last_cursor_position.0,
+        ground_plane_height,
+        &camera,
+        &camera_transform,
+    );
 
     //screen
     let window_size = window.resolution.size(); //range ([0, WINDOW_WIDTH], [0, WINDOW_HEIGHT]), +y down
