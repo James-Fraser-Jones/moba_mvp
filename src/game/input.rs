@@ -8,6 +8,8 @@ use bevy::{
     prelude::*,
 };
 
+use super::UpdateInput;
+
 pub struct InputPlugin;
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
@@ -25,7 +27,8 @@ impl Plugin for InputPlugin {
                 get_wheel_axis,
                 get_cursor2d,
                 get_screen_axis.after(get_cursor2d),
-            ),
+            )
+                .in_set(UpdateInput),
         );
     }
 }

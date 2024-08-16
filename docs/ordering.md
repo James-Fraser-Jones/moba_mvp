@@ -110,3 +110,13 @@ so I guess we have the following ordering:
 `Input -> Player -> Logic -> Cameras -> (Graphics, Dev)`
 
 something I don't like is that, currently, the cursor used by the player is from the previous frame
+
+okay here's an idea, the 3d cursor actually belongs on Player because it's an essential part of player action (i.e. being able to select things etc..)
+
+also, it's a shame but we only really need to update the camera based on input before logic runs so that we can get the projection correctly, I propose that we are explcit about using camera for the purposes of 3d projection whilst also wanting to provide the most up-to-date info for logic but without causing stuttering
+
+in this case it seems in fact useful to have the following set up:
+
+`Input -> Cameras -> Player -> Logic -> Cameras -> (Graphics, Dev)`
+
+so essentially: 2 update cycles on the main camera, the first to respond to inputs to give Player the most up-to-date information, the second to sync the camera up with the resulting game state after logic has run

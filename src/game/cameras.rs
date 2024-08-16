@@ -1,18 +1,15 @@
 pub mod orbit_camera;
 pub mod overlay_camera;
 
+use super::*;
 use bevy::color::palettes::css;
 use bevy::prelude::*;
 
 pub struct CamerasPlugin;
 impl Plugin for CamerasPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            orbit_camera::OrbitCameraPlugin,
-            overlay_camera::OverlayCameraPlugin,
-        ));
         app.add_systems(Startup, init);
-        app.add_systems(Update, update);
+        app.add_systems(Update, update.in_set(UpdateCameras::PreLogic));
     }
 }
 

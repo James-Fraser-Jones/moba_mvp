@@ -8,10 +8,7 @@ impl Plugin for HealthbarPlugin {
         app.add_systems(Startup, init);
         app.add_systems(
             Update,
-            (
-                add_healthbars,
-                update_healthbars.after(cameras::orbit_camera::update_camera),
-            ),
+            (add_healthbars, update_healthbars).in_set(UpdateGraphics),
         );
     }
 }

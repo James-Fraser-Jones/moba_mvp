@@ -7,7 +7,7 @@
 
 pub mod spawn;
 
-use super::types::*;
+use super::{types::*, *};
 use bevy::prelude::*;
 use std::f32::consts::PI;
 use std::sync::LazyLock;
@@ -15,9 +15,8 @@ use std::sync::LazyLock;
 pub struct LogicPlugin;
 impl Plugin for LogicPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(spawn::SpawnPlugin);
         app.add_systems(Startup, init);
-        app.add_systems(Update, update_move);
+        app.add_systems(Update, update_move.in_set(UpdateLogic));
     }
 }
 

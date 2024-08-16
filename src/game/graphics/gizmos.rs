@@ -2,23 +2,19 @@
 //enabling wireframe, gizmos, etc..
 //stuff for purely-dev-related functionality
 
-use super::{types::*, *};
+use super::super::{types::*, *};
 use bevy::dev_tools::fps_overlay::FpsOverlayPlugin;
 use bevy::pbr::wireframe::{WireframeConfig, WireframePlugin};
 use bevy::prelude::*;
 
-pub struct DevPlugin;
-impl Plugin for DevPlugin {
+pub struct GizmosPlugin;
+impl Plugin for GizmosPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((WireframePlugin, FpsOverlayPlugin::default()));
         app.add_systems(Startup, init);
         app.add_systems(
             Update,
-            (
-                draw_player.after(logic::update_move),
-                draw_wireframe,
-                draw_cursor3d.after(cameras::orbit_camera::update_cursor3d),
-            ),
+            (draw_player, draw_wireframe, draw_cursor3d).in_set(UpdateGraphics),
         );
     }
 }
@@ -56,7 +52,7 @@ fn draw_player(
     }
 }
 
-fn draw_cursor3d(cursor_3d: Res<cameras::orbit_camera::Cursor3D>, mut gizmos: Gizmos) {
+fn draw_cursor3d(cursor_3d: Res<player::Cursor3D>, mut gizmos: Gizmos) {
     if let Some(point) = cursor_3d.0 {
         gizmos.circle(
             point.extend(0.01),

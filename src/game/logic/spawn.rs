@@ -7,7 +7,7 @@ pub struct SpawnPlugin;
 impl Plugin for SpawnPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init);
-        app.add_systems(Update, update);
+        app.add_systems(Update, update.in_set(UpdateLogic));
     }
 }
 

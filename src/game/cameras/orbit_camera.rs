@@ -3,7 +3,7 @@
 //allowing easy reset
 //utilizing input plugin to enable movement, rotation, zoom, etc..
 
-use super::super::*;
+use super::{super::*, *};
 use bevy::prelude::*;
 use bevy::render::view::RenderLayers;
 use std::f32::consts::PI;
@@ -11,13 +11,12 @@ use std::f32::consts::PI;
 pub struct OrbitCameraPlugin;
 impl Plugin for OrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Cursor3D>();
         app.add_systems(Startup, init);
         app.add_systems(
             Update,
             (
-                update_camera.after(logic::update_move),
-                update_cursor3d.after(update_camera),
+                update_camera.in_set(UpdateCameras::PreLogic),
+                update_camera_post_logic.in_set(UpdateCameras::PostLogic),
             ),
         );
     }
@@ -30,9 +29,6 @@ const PAN_SPEED: f32 = 450.;
 const ZOOM_SPEED: f32 = 0.1;
 const ZOOM_MIN: f32 = 20.;
 const ZOOM_MAX: f32 = 2000.;
-
-#[derive(Resource, Default)]
-pub struct Cursor3D(pub Option<Vec2>);
 
 #[derive(Default)]
 pub struct FlipOrientation(Option<f32>);
@@ -112,7 +108,7 @@ fn init(mut commands: Commands) {
     commands.spawn((OrbitCamera3dBundle::default(), RenderLayers::layer(0)));
 }
 
-pub fn update_camera(
+fn update_camera(
     keyboard_buttons: Res<ButtonInput<KeyCode>>,
     mouse_axis: Res<input::MouseAxis>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
@@ -121,8 +117,6 @@ pub fn update_camera(
     mut camera_query: Query<(&mut Transform, &mut GlobalTransform, &mut OrbitDistance)>,
     mut flip_orientation: Local<FlipOrientation>,
     time: Res<Time>,
-    player: Res<player::Player>,
-    player_query: Query<&Transform, Without<OrbitDistance>>,
 ) {
     let (mut transform, mut global_transform, mut orbit_distance) = camera_query.single_mut();
     let mut orbit_transform = orbit_distance.transform_to_orbit_transform(&transform);
@@ -137,10 +131,6 @@ pub fn update_camera(
         if flip_orientation.0 == None {
             flip_orientation.0 = Some(orbit_transform.rotation.x + PI);
         }
-    }
-    //center position on player
-    if keyboard_buttons.pressed(KeyCode::Space) {
-        orbit_transform.translation = player_query.get(player.0).unwrap().translation.truncate();
     }
 
     //adjust pitch
@@ -175,17 +165,26 @@ pub fn update_camera(
     *global_transform = GlobalTransform::from(*transform); //manually update global transform, ahead of transform propagation
 }
 
-pub fn update_cursor3d(
-    cursor_2d: Res<input::Cursor2D>,
-    mut cursor_3d: ResMut<Cursor3D>,
-    mut camera_query: Query<(&Camera, &GlobalTransform), With<OrbitDistance>>,
+fn update_camera_post_logic(
+    keyboard_buttons: Res<ButtonInput<KeyCode>>,
+    mut camera_query: Query<
+        (&mut Transform, &mut GlobalTransform, &OrbitDistance),
+        With<OrbitDistance>,
+    >,
+    player: Res<player::Player>,
+    player_query: Query<&Transform, Without<OrbitDistance>>,
 ) {
-    let (camera, transform) = camera_query.single_mut();
-    let ground_plane_z = 0.;
-    cursor_3d.0 = pixel_to_horizontal_plane(cursor_2d.0, ground_plane_z, camera, &transform);
+    let (mut transform, mut global_transform, orbit_distance) = camera_query.single_mut();
+    let mut orbit_transform = orbit_distance.transform_to_orbit_transform(&transform);
+    let player = player_query.get(player.0).unwrap();
+    if keyboard_buttons.pressed(KeyCode::Space) {
+        orbit_transform.translation = player.translation.truncate();
+        *transform = orbit_distance.orbit_transform_to_transform(&orbit_transform);
+        *global_transform = GlobalTransform::from(*transform); //manually update global transform, ahead of transform propagation
+    }
 }
 
-//these functions should be used after update_camera system above to get correct global transform for this frame
+//these functions should be used after camera update (either pre or post logic) to get correct global transform
 
 //logical pixels, top-left (0,0), to Vec2 representing intersection point with horizontal plane of height, in world space
 pub fn pixel_to_horizontal_plane(
