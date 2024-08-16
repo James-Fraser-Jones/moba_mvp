@@ -29,13 +29,26 @@ fn init(mut commands: Commands, query: Query<(Entity, &PlayerID)>) {
 
 fn update(
     mouse_buttons: Res<ButtonInput<MouseButton>>,
+    keyboard_buttons: Res<ButtonInput<KeyCode>>,
     mut query: Query<&mut MovePosition>,
     player: Res<Player>,
     cursor_world_position: Res<input::CursorWorldPosition>,
 ) {
+    let mut move_position = query.get_mut(player.0).unwrap();
+    //move
     if mouse_buttons.pressed(MouseButton::Right) {
         if let Some(point) = cursor_world_position.0 {
-            query.get_mut(player.0).unwrap().0 = Some(point);
+            move_position.0 = Some(point);
         }
+    }
+    //attack move
+    if keyboard_buttons.just_pressed(KeyCode::KeyA) {
+        if let Some(point) = cursor_world_position.0 {
+            move_position.0 = Some(point);
+        }
+    }
+    //stop move
+    if keyboard_buttons.just_pressed(KeyCode::KeyS) {
+        move_position.0 = None;
     }
 }
