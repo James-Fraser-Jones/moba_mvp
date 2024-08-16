@@ -33,7 +33,7 @@ fn update(
     player: Res<Player>,
     cursor_world_position: Res<input::CursorWorldPosition>,
 ) {
-    if mouse_buttons.just_pressed(MouseButton::Right) {
+    if mouse_buttons.pressed(MouseButton::Right) {
         if let Some(point) = cursor_world_position.0 {
             query.get_mut(player.0).unwrap().0 = Some(point);
         }

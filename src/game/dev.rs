@@ -12,10 +12,13 @@ impl Plugin for DevPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((WireframePlugin, FpsOverlayPlugin::default()));
         app.add_systems(Startup, init);
-        app.add_systems(Update, (draw_player, draw_wireframe));
+        app.add_systems(
+            Update,
+            (draw_player.after(logic::update_move), draw_wireframe),
+        );
         app.add_systems(
             PostUpdate,
-            draw_cursor.after(input::get_cursor_world_position),
+            (draw_cursor).after(input::get_cursor_world_position),
         );
     }
 }
