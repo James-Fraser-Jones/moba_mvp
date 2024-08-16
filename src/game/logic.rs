@@ -6,39 +6,32 @@
 //can recieve events from player plugins to determine player actions, through a strongly-typed interface (only source of non-determinism)
 
 pub mod spawn;
-pub mod types;
 
-use super::*;
+use super::types::*;
 use bevy::prelude::*;
 use std::f32::consts::PI;
 use std::sync::LazyLock;
-use types::*;
 
 pub struct LogicPlugin;
 impl Plugin for LogicPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(spawn::SpawnPlugin);
         app.add_systems(Startup, init);
-        app.add_systems(Update, update);
+        app.add_systems(Update, update_move);
     }
 }
 
-const TOWER_RADIUS: f32 = 20.;
-
-//descriptive of the blender file
-const LANE_WIDTH: f32 = 130.;
-const OUTER_WALL_WIDTH: f32 = 100.;
-
 //multiply Vec3s in X_TRANSFORM space, by X_TRANSFORM, to convert them to GLOBAL space
-pub static RED_TRANSFORM: LazyLock<Transform> =
+static RED_TRANSFORM: LazyLock<Transform> =
     LazyLock::new(|| Transform::from_translation(Vec2::splat(-1000.).extend(0.)));
-pub static BLUE_TRANSFORM: LazyLock<Transform> = LazyLock::new(|| {
+static BLUE_TRANSFORM: LazyLock<Transform> = LazyLock::new(|| {
     Transform::from_translation(Vec2::splat(1000.).extend(0.))
         .with_rotation(Quat::from_rotation_z(PI))
 });
 //multiply Vec3s in GLOBAL space, by X_TRANSFORM_INVERSE, to convert them to X_TRANSFORM space
-pub static RED_TRANSFORM_INVERSE: LazyLock<Transform> =
+static RED_TRANSFORM_INVERSE: LazyLock<Transform> =
     LazyLock::new(|| Transform::from_matrix(RED_TRANSFORM.compute_matrix().inverse()));
-pub static BLUE_TRANSFORM_INVERSE: LazyLock<Transform> =
+static BLUE_TRANSFORM_INVERSE: LazyLock<Transform> =
     LazyLock::new(|| Transform::from_matrix(BLUE_TRANSFORM.compute_matrix().inverse()));
 fn team_transform(team: Team, inverse: bool) -> Transform {
     match team {
@@ -58,18 +51,20 @@ fn team_transform(team: Team, inverse: bool) -> Transform {
         }
     }
 }
-fn reframe_position(position: Vec2, team: Team, to_global: bool) -> Vec2 {
+pub fn reframe_position(position: Vec2, team: Team, to_global: bool) -> Vec2 {
     (team_transform(team, !to_global) * position.extend(0.)).truncate()
 }
 
-pub fn init(mut commands: Commands) {
-    spawn::spawn_everything(&mut commands);
+fn init(mut commands: Commands) {
     commands.spawn(Minion::new(Vec2::ZERO, Team::Red));
     //commands.spawn(Core::new(Vec2::ZERO, Team::Red));
     //commands.spawn(Core::new(Vec2::ZERO + 200., Team::Blue));
 }
 
-fn update(mut query: Query<(&mut Transform, &mut MovePosition, &MoveSpeed)>, time: Res<Time>) {
+pub fn update_move(
+    mut query: Query<(&mut Transform, &mut MovePosition, &MoveSpeed)>,
+    time: Res<Time>,
+) {
     for (mut transform, mut move_position, move_speed) in &mut query {
         if let Some(goal) = move_position.0 {
             let pos = transform.translation.truncate();

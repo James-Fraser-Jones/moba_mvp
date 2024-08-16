@@ -19,7 +19,20 @@ impl Plugin for InputPlugin {
         app.init_resource::<LastCursorPosition>();
         app.init_resource::<CursorWorldPosition>();
         app.add_systems(Startup, init);
-        app.add_systems(Update, update);
+        app.add_systems(
+            Update,
+            (
+                get_keyboard_axis,
+                get_mouse_axis,
+                get_wheel_axis,
+                get_last_cursor_position,
+                (get_screen_axis).after(get_last_cursor_position),
+            ),
+        );
+        app.add_systems(
+            PostUpdate,
+            get_cursor_world_position.after(TransformSystem::TransformPropagate),
+        );
     }
 }
 
@@ -52,21 +65,11 @@ fn init(
     last_cursor_position.0 = window.size() / 2.;
 }
 
-fn update(
+fn get_keyboard_axis(
     time: Res<Time>,
     keyboard_buttons: Res<ButtonInput<KeyCode>>,
-    mut mouse_motion: EventReader<MouseMotion>,
-    mut mouse_wheel: EventReader<MouseWheel>,
     mut keyboard_axis: ResMut<KeyboardAxis>,
-    mut mouse_axis: ResMut<MouseAxis>,
-    mut wheel_axis: ResMut<WheelAxis>,
-    mut screen_axis: ResMut<ScreenAxis>,
-    mut last_cursor_position: ResMut<LastCursorPosition>,
-    mut cursor_world_position: ResMut<CursorWorldPosition>,
-    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
-    camera_query: Query<(&Camera, &GlobalTransform), With<cameras::orbit_camera::OrbitDistance>>,
 ) {
-    //keyboard
     let mut axis: Vec3 = Vec3::ZERO;
     if keyboard_buttons.pressed(KeyCode::KeyW) {
         axis.y += 1.;
@@ -88,16 +91,26 @@ fn update(
     }
     axis = axis.clamp_length_max(1.) * time.delta_seconds();
     keyboard_axis.0 = axis;
+}
 
-    //mouse
+fn get_mouse_axis(
+    time: Res<Time>,
+    mut mouse_motion: EventReader<MouseMotion>,
+    mut mouse_axis: ResMut<MouseAxis>,
+) {
     let mut axis: Vec2 = Vec2::ZERO;
     for motion in mouse_motion.read() {
         axis += motion.delta;
     }
     axis *= time.delta_seconds();
     mouse_axis.0 = axis;
+}
 
-    //mouse wheel
+fn get_wheel_axis(
+    time: Res<Time>,
+    mut mouse_wheel: EventReader<MouseWheel>,
+    mut wheel_axis: ResMut<WheelAxis>,
+) {
     let mut axis: Vec2 = Vec2::ZERO;
     for motion in mouse_wheel.read() {
         match motion.unit {
@@ -111,14 +124,23 @@ fn update(
     }
     axis *= time.delta_seconds();
     wheel_axis.0 = axis;
+}
 
-    //last cursor position
+fn get_last_cursor_position(
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    mut last_cursor_position: ResMut<LastCursorPosition>,
+) {
     let window = window_query.single();
     if let Some(cursor_position) = window.cursor_position() {
         last_cursor_position.0 = cursor_position;
     }
+}
 
-    //cursor world position
+pub fn get_cursor_world_position(
+    last_cursor_position: Res<LastCursorPosition>,
+    mut cursor_world_position: ResMut<CursorWorldPosition>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<cameras::orbit_camera::OrbitDistance>>,
+) {
     let ground_plane_height = 0.;
     let (camera, camera_transform) = camera_query.single();
     cursor_world_position.0 = cameras::pixel_to_horizontal_plane(
@@ -127,8 +149,15 @@ fn update(
         &camera,
         &camera_transform,
     );
+}
 
-    //screen
+fn get_screen_axis(
+    time: Res<Time>,
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    mut screen_axis: ResMut<ScreenAxis>,
+    last_cursor_position: Res<LastCursorPosition>,
+) {
+    let window = window_query.single();
     let window_size = window.resolution.size(); //range ([0, WINDOW_WIDTH], [0, WINDOW_HEIGHT]), +y down
     let cursor_centered = last_cursor_position.0 - window_size / 2.; //range ([-WINDOW_WIDTH, WINDOW_WIDTH], [-WINDOW_HEIGHT, WINDOW_HEIGHT]), +y down
     let cursor_scaled = 2. * cursor_centered / window_size; //range ([-1., 1.], [-1., 1.]), +y down

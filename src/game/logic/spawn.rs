@@ -1,21 +1,29 @@
-use super::*;
+use super::super::{graphics::*, types::*, *};
 use bevy::prelude::*;
 use std::f32::consts::PI;
 use std::sync::LazyLock;
 
+pub struct SpawnPlugin;
+impl Plugin for SpawnPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, init);
+        app.add_systems(Update, update);
+    }
+}
+
 //spawn settings
-pub const CORE_SPAWN_POSITION: Vec2 = Vec2::splat(300.);
-pub const SPAWNER_RELATIVE_SPAWN_RADIUS: f32 = 350.;
-pub static TOPBOT_TOWER_RELATIVE_SPAWN_RADII: LazyLock<Vec<f32>> =
+const CORE_SPAWN_POSITION: Vec2 = Vec2::splat(300.);
+const SPAWNER_RELATIVE_SPAWN_RADIUS: f32 = 350.;
+static TOPBOT_TOWER_RELATIVE_SPAWN_RADII: LazyLock<Vec<f32>> =
     LazyLock::new(|| vec![500., 830., 1350.]);
-pub static MID_TOWER_RELATIVE_SPAWN_RADII: LazyLock<Vec<f32>> =
+static MID_TOWER_RELATIVE_SPAWN_RADII: LazyLock<Vec<f32>> =
     LazyLock::new(|| vec![540., 780., 1000.]);
-pub const ADVOCATE_SPAWN_NUM: i32 = 5;
-pub const ADVOCATE_SPAWN_RING_POSITION: Vec2 = Vec2::splat(200.);
-pub const ADVOCATE_SPAWN_RING_RADIUS: f32 = 50.;
-pub const ADVOCATE_SPAWN_RING_ROTATION: f32 = PI / 2.;
-pub const DEMON_SPAWN_POSITION: Vec2 = Vec2::new(1341., 586.);
-pub static MONSTER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
+const ADVOCATE_SPAWN_NUM: i32 = 5;
+const ADVOCATE_SPAWN_RING_POSITION: Vec2 = Vec2::splat(200.);
+const ADVOCATE_SPAWN_RING_RADIUS: f32 = 50.;
+const ADVOCATE_SPAWN_RING_ROTATION: f32 = PI / 2.;
+const DEMON_SPAWN_POSITION: Vec2 = Vec2::new(1341., 586.);
+static MONSTER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
     vec![
         Vec2::new(1129., 351.),
         Vec2::new(1047., 527.),
@@ -27,8 +35,9 @@ pub static MONSTER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
 });
 
 //derived spawn consts/statics
-pub const BASE_MID_CORNER: Vec2 = Vec2::splat(logic::OUTER_WALL_WIDTH + logic::LANE_WIDTH / 2.); //some spawns are relative to center-point of overlapping lanes in each base
-pub static SPAWNER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
+const BASE_MID_CORNER: Vec2 =
+    Vec2::splat(map::BLENDER_OUTER_WALL_WIDTH + map::BLENDER_LANE_WIDTH / 2.); //some spawns are relative to center-point of overlapping lanes in each base
+static SPAWNER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
     let mut positions = Vec::new();
     for lane in [Lane::Top, Lane::Mid, Lane::Bot] {
         let ang = PI / 4. * lane as i32 as f32;
@@ -38,9 +47,9 @@ pub static SPAWNER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
     }
     positions
 });
-pub static TOWER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
+static TOWER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
     let mut positions = Vec::new();
-    let zig_spacing = logic::LANE_WIDTH / 2. - logic::TOWER_RADIUS;
+    let zig_spacing = map::BLENDER_LANE_WIDTH / 2. - TOWER_RADIUS;
     for lane in [Lane::Top, Lane::Mid, Lane::Bot] {
         let ang = PI / 4. * lane as i32 as f32;
         let zig = lane != Lane::Bot;
@@ -56,7 +65,7 @@ pub static TOWER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
     }
     positions
 });
-pub static ADVOCATE_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
+static ADVOCATE_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
     let mut positions = Vec::new();
     for i in 0..ADVOCATE_SPAWN_NUM {
         let ang = ((2. * PI) / ADVOCATE_SPAWN_NUM as f32) * i as f32;
@@ -80,7 +89,7 @@ fn zig_zag(points: &Vec<f32>, zig_first: bool, zig_spacing: f32) -> Vec<Vec2> {
     zig_zag
 }
 
-pub fn spawn_everything(commands: &mut Commands) {
+pub fn init(mut commands: Commands) {
     for team in [Team::Red, Team::Blue] {
         commands.spawn(Core::new(
             logic::reframe_position(CORE_SPAWN_POSITION, team, true),
@@ -115,3 +124,5 @@ pub fn spawn_everything(commands: &mut Commands) {
         )));
     }
 }
+
+fn update() {}

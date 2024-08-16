@@ -8,6 +8,14 @@ use bevy::prelude::*;
 use bevy::render::view::RenderLayers;
 use std::f32::consts::PI;
 
+pub struct OrbitCameraPlugin;
+impl Plugin for OrbitCameraPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, init);
+        app.add_systems(Update, update.after(logic::update_move));
+    }
+}
+
 const CAMERA_DRAW_FAR: f32 = 2000.;
 const PAN_SPEED: f32 = 450.;
 const ZOOM_MIN: f32 = 20.;
@@ -17,7 +25,7 @@ const ROTATION_SPEED: f32 = 0.15;
 const FLIP_ORIENTATION_SPEED: f32 = 5. * PI;
 
 #[derive(Default)]
-pub struct FlipOrientation(Option<f32>);
+struct FlipOrientation(Option<f32>);
 
 #[derive(Bundle)]
 struct OrbitCamera3dBundle {
@@ -88,11 +96,11 @@ impl OrbitDistance {
     }
 }
 
-pub fn init(mut commands: Commands) {
+fn init(mut commands: Commands) {
     commands.spawn((OrbitCamera3dBundle::default(), RenderLayers::layer(0)));
 }
 
-pub fn update(
+fn update(
     keyboard_buttons: Res<ButtonInput<KeyCode>>,
     mouse_axis: Res<input::MouseAxis>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,

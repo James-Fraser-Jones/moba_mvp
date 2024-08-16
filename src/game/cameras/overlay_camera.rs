@@ -1,7 +1,15 @@
 use bevy::prelude::*;
 use bevy::render::view::RenderLayers;
 
-pub fn init(mut commands: Commands) {
+pub struct OverlayCameraPlugin;
+impl Plugin for OverlayCameraPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, init);
+        app.add_systems(Update, update);
+    }
+}
+
+fn init(mut commands: Commands) {
     commands.spawn((
         Camera2dBundle {
             camera: Camera {
@@ -15,4 +23,4 @@ pub fn init(mut commands: Commands) {
     ));
 }
 
-pub fn update() {}
+fn update() {}

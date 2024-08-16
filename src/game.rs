@@ -5,6 +5,7 @@ mod input;
 mod logic;
 mod os;
 mod player;
+mod types;
 
 use bevy::{app::PluginGroupBuilder, prelude::*};
 

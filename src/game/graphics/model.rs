@@ -1,5 +1,7 @@
-use super::*;
-use bevy::prelude::*;
+use super::super::{types::*, *};
+use bevy::{pbr::wireframe::Wireframe, prelude::*};
+use ordered_float::OrderedFloat;
+use std::f32::consts::PI;
 
 pub struct ModelPlugin;
 impl Plugin for ModelPlugin {
@@ -83,13 +85,13 @@ impl MeshMap {
     }
 }
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub struct HashableMesh {
+struct HashableMesh {
     mesh_type: HashableMeshType,
     radius: OrderedFloat<f32>,
     half_height: OrderedFloat<f32>,
 }
 impl HashableMesh {
-    pub fn new(mesh_type: HashableMeshType, radius: f32, half_height: f32) -> Self {
+    fn new(mesh_type: HashableMeshType, radius: f32, half_height: f32) -> Self {
         Self {
             mesh_type,
             radius: OrderedFloat(radius),
@@ -116,7 +118,7 @@ impl Into<Mesh> for HashableMesh {
     }
 }
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Default)]
-pub enum HashableMeshType {
+enum HashableMeshType {
     Capsule,
     Cylinder,
     #[default]
@@ -126,10 +128,10 @@ pub enum HashableMeshType {
 //component
 #[derive(Component, Copy, Clone)]
 pub struct DisplayModel {
-    pub mesh_type: HashableMeshType,
-    pub half_height_ratio: f32,
-    pub raised: bool,
-    pub wireframe: bool,
+    mesh_type: HashableMeshType,
+    half_height_ratio: f32,
+    raised: bool,
+    wireframe: bool,
 }
 impl Default for DisplayModel {
     fn default() -> Self {
@@ -178,11 +180,14 @@ impl DisplayModel {
             ..self
         }
     }
-    pub fn with_height(self, half_height_ratio: f32) -> Self {
+    pub fn with_height_ratio(self, half_height_ratio: f32) -> Self {
         Self {
             half_height_ratio,
             ..self
         }
+    }
+    pub fn get_height(&self, radius: f32) -> f32 {
+        self.half_height_ratio * radius * if self.raised { 2. } else { 1. }
     }
 }
 

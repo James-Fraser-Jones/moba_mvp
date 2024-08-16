@@ -55,6 +55,7 @@ static WINDOW: LazyLock<Window> = LazyLock::new(|| Window {
     mode: WindowMode::Windowed,
     cursor: Cursor {
         grab_mode: CursorGrabMode::None,
+        visible: false,
         ..default()
     },
     ..default()

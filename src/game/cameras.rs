@@ -7,11 +7,12 @@ use bevy::prelude::*;
 pub struct CamerasPlugin;
 impl Plugin for CamerasPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (init, orbit_camera::init, overlay_camera::init));
-        app.add_systems(
-            Update,
-            (update, orbit_camera::update, overlay_camera::update),
-        );
+        app.add_plugins((
+            orbit_camera::OrbitCameraPlugin,
+            overlay_camera::OverlayCameraPlugin,
+        ));
+        app.add_systems(Startup, init);
+        app.add_systems(Update, update);
     }
 }
 
@@ -20,6 +21,11 @@ fn init(mut clear_color: ResMut<ClearColor>) {
 }
 
 fn update() {}
+
+//=================================================================================
+//UTILITY FUNCTIONS BELOW MUST BE CALLED AFTER TRANSFORM PROPAGATION IN PostUpdate:
+//https://bevy-cheatbook.github.io/fundamentals/transforms.html#transform-propagation
+//else, global transform for given camera will be 1 frame behind
 
 //logical pixels, top-left (0,0), to Vec2 representing intersection point with horizontal plane of height, in world space
 pub fn pixel_to_horizontal_plane(
@@ -35,6 +41,7 @@ pub fn pixel_to_horizontal_plane(
     Some(intersection_point.truncate())
 }
 
+//inverse
 pub fn position_to_pixel(
     position: Vec3,
     camera: &Camera,
@@ -42,3 +49,4 @@ pub fn position_to_pixel(
 ) -> Option<Vec2> {
     camera.world_to_viewport(camera_transform, position)
 }
+//=================================================================================

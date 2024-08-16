@@ -2,7 +2,7 @@
 //attaching to, and keeping track of, player entities, via a tag
 //utilizing input and camera plugins to drive player actions, through events sent to the logic plugin
 
-use super::{logic::types::*, *};
+use super::{types::*, *};
 use bevy::prelude::*;
 
 const PLAYER_ID: i32 = 0;
@@ -13,7 +13,7 @@ pub struct Player(pub Entity);
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init.after(logic::init));
+        app.add_systems(Startup, init.after(logic::spawn::init));
         app.add_systems(Update, update);
     }
 }

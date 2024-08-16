@@ -1,7 +1,14 @@
-use super::*;
+use super::super::{types::*, *};
 use bevy::prelude::*;
-use model::*;
 use std::sync::LazyLock;
+
+pub struct HealthbarPlugin;
+impl Plugin for HealthbarPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, init);
+        app.add_systems(Update, (add_healthbars, update_healthbars));
+    }
+}
 
 const HEALTHBAR_ASPECT_RATIO: f32 = 5.;
 const HEALTHBAR_WIDTH_SCALE: f32 = 2700.;
@@ -10,7 +17,7 @@ const HEALTHBAR_INDICATOR_BORDER: f32 = 2.;
 const HEALTHBAR_INDICATOR_HEALTH: f32 = 100.;
 const HEALTHBAR_CULL_DISTANCE: f32 = 1000.;
 
-pub static SUPPORTED_FONT_SIZES: LazyLock<Vec<f32>> = LazyLock::new(|| {
+static SUPPORTED_FONT_SIZES: LazyLock<Vec<f32>> = LazyLock::new(|| {
     let mut font_sizes = vec![11., 12., 13., 14., 18., 24., 30., 36., 48., 60., 72., 96.];
     font_sizes.reverse();
     font_sizes
@@ -31,12 +38,14 @@ pub enum DisplayHealthbar {
 }
 
 #[derive(Component)]
-pub struct HealthTextTag;
+struct HealthTextTag;
 
 #[derive(Component)]
-pub struct HealthbarAnchor(Entity);
+struct HealthbarAnchor(Entity);
 
-pub fn add_healthbars(
+fn init() {}
+
+fn add_healthbars(
     mut commands: Commands,
     mut query: Query<
         (
@@ -50,7 +59,7 @@ pub fn add_healthbars(
     >,
 ) {
     for (entity, health, max_health, team, healthbar) in &mut query {
-        let color = team_color(team.copied());
+        let color = graphics::team_color(team.copied());
         let health_ratio = health.0 / max_health.0;
         let mut healthbar_entity = commands
             //black bar
@@ -151,13 +160,21 @@ pub fn add_healthbars(
     }
 }
 
-pub fn update_healthbars(
+fn update_healthbars(
     mut healthbar_query: Query<
         (Entity, &mut Style, &HealthbarAnchor, &mut Visibility),
         Without<HealthTextTag>,
     >,
-    display_query: Query<(&DisplayHealthbar, &DisplayModel, &Radius, &Transform)>,
-    camera_query: Query<(&Camera, &Transform, &GlobalTransform), With<OrbitDistance>>,
+    display_query: Query<(
+        &DisplayHealthbar,
+        &graphics::model::DisplayModel,
+        &Radius,
+        &Transform,
+    )>,
+    camera_query: Query<
+        (&Camera, &Transform, &GlobalTransform),
+        With<cameras::orbit_camera::OrbitDistance>,
+    >,
     mut text_query: Query<(&mut Text, &mut Visibility), With<HealthTextTag>>,
     children_query: Query<&Children>,
 ) {
@@ -168,12 +185,9 @@ pub fn update_healthbars(
         let (display_healthbar, display_model, display_radius, display_transform) =
             display_query.get(healthbar_anchor.0).unwrap();
         //choose precise anchor point based on anchor position and camera orientation
-        let mut elevation = display_model.half_height_ratio * display_radius.0;
-        if display_model.raised {
-            elevation *= 2.;
-        }
+        let height = display_model.get_height(display_radius.0);
         let anchor_point =
-            display_transform.translation + Vec3::ZERO.with_z(elevation + HEALTHBAR_OFFSET);
+            display_transform.translation + Vec3::ZERO.with_z(height + HEALTHBAR_OFFSET);
         //check healthbar anchor point is both within camera frustum and within cull range
         let pixel = cameras::position_to_pixel(anchor_point, camera, global_camera_transform);
         let distance_from_camera = (camera_transform.translation - anchor_point).length();

@@ -140,6 +140,7 @@ impl Spawner {
     }
 }
 
+pub const TOWER_RADIUS: f32 = 20.;
 #[derive(Bundle)]
 pub struct Tower {
     unit: Unit,
@@ -151,7 +152,7 @@ impl Tower {
             unit: Unit::new(
                 pos,
                 TOWER_RADIUS,
-                DisplayModel::cylinder().with_height(1.5),
+                DisplayModel::cylinder().with_height_ratio(1.5),
                 500.,
                 DisplayHealthbar::Advanced,
             ),
@@ -177,7 +178,7 @@ impl Advocate {
             unit: Unit::new(
                 pos,
                 12.,
-                DisplayModel::capsule().with_height(1.75),
+                DisplayModel::capsule().with_height_ratio(1.75),
                 200.,
                 DisplayHealthbar::Advanced,
             ),
@@ -215,7 +216,7 @@ impl Monster {
             unit: Unit::new(
                 pos,
                 10.,
-                DisplayModel::capsule().with_height(1.75),
+                DisplayModel::capsule().with_height_ratio(1.75),
                 150.,
                 DisplayHealthbar::Basic,
             ),
@@ -235,7 +236,7 @@ impl Demon {
             unit: Unit::new(
                 pos,
                 25.,
-                DisplayModel::capsule().with_height(1.9),
+                DisplayModel::capsule().with_height_ratio(1.9),
                 1500.,
                 DisplayHealthbar::Advanced,
             ),
