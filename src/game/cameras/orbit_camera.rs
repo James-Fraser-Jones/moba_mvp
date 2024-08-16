@@ -3,7 +3,7 @@
 //allowing easy reset
 //utilizing input plugin to enable movement, rotation, zoom, etc..
 
-use super::{super::*, *};
+use super::super::*;
 use bevy::prelude::*;
 use bevy::render::view::RenderLayers;
 use std::f32::consts::PI;
@@ -118,8 +118,11 @@ fn update_camera(
     mut flip_orientation: Local<FlipOrientation>,
     time: Res<Time>,
 ) {
+    //get camera transform
     let (mut transform, mut global_transform, mut orbit_distance) = camera_query.single_mut();
     let mut orbit_transform = orbit_distance.transform_to_orbit_transform(&transform);
+
+    //do stuff
 
     //reset pitch and zoom
     if keyboard_buttons.just_pressed(KeyCode::KeyR) {
@@ -160,7 +163,7 @@ fn update_camera(
     orbit_distance.0 *= (1. + ZOOM_SPEED).powf(-wheel_axis.0.y);
     orbit_distance.0 = orbit_distance.0.clamp(ZOOM_MIN, ZOOM_MAX);
 
-    //update transforms
+    //update camera transforms
     *transform = orbit_distance.orbit_transform_to_transform(&orbit_transform);
     *global_transform = GlobalTransform::from(*transform); //manually update global transform, ahead of transform propagation
 }
@@ -174,11 +177,14 @@ fn update_camera_post_logic(
     player: Res<player::Player>,
     player_query: Query<&Transform, Without<OrbitDistance>>,
 ) {
-    let (mut transform, mut global_transform, orbit_distance) = camera_query.single_mut();
-    let mut orbit_transform = orbit_distance.transform_to_orbit_transform(&transform);
-    let player = player_query.get(player.0).unwrap();
     if keyboard_buttons.pressed(KeyCode::Space) {
+        let player = player_query.get(player.0).unwrap();
+        //get camera transform
+        let (mut transform, mut global_transform, orbit_distance) = camera_query.single_mut();
+        let mut orbit_transform = orbit_distance.transform_to_orbit_transform(&transform);
+        //do stuff
         orbit_transform.translation = player.translation.truncate();
+        //update camera transforms
         *transform = orbit_distance.orbit_transform_to_transform(&orbit_transform);
         *global_transform = GlobalTransform::from(*transform); //manually update global transform, ahead of transform propagation
     }

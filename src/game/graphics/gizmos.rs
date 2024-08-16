@@ -52,8 +52,15 @@ fn draw_player(
     }
 }
 
-fn draw_cursor3d(cursor_3d: Res<player::Cursor3D>, mut gizmos: Gizmos) {
-    if let Some(point) = cursor_3d.0 {
+fn draw_cursor3d(
+    mut gizmos: Gizmos,
+    camera_query: Query<(&Camera, &GlobalTransform), With<cameras::orbit_camera::OrbitDistance>>,
+    cursor_2d: Res<input::Cursor2D>,
+) {
+    let (camera, transform) = camera_query.single();
+    if let Some(point) =
+        cameras::orbit_camera::pixel_to_horizontal_plane(cursor_2d.0, 0., camera, &transform)
+    {
         gizmos.circle(
             point.extend(0.01),
             Dir3::new(Vec3::Z).unwrap(),
