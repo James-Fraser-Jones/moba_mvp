@@ -3,7 +3,6 @@
 //(e.g. keyboardaxis, as a resource, of Vec3)
 //facilitating different choices of concrete key bindings
 
-use super::*;
 use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
@@ -16,8 +15,7 @@ impl Plugin for InputPlugin {
         app.init_resource::<MouseAxis>();
         app.init_resource::<WheelAxis>();
         app.init_resource::<ScreenAxis>();
-        app.init_resource::<LastCursorPosition>();
-        app.init_resource::<CursorWorldPosition>();
+        app.init_resource::<Cursor2D>();
         app.add_systems(Startup, init);
         app.add_systems(
             Update,
@@ -25,13 +23,9 @@ impl Plugin for InputPlugin {
                 get_keyboard_axis,
                 get_mouse_axis,
                 get_wheel_axis,
-                get_last_cursor_position,
-                (get_screen_axis).after(get_last_cursor_position),
+                get_cursor2d,
+                get_screen_axis.after(get_cursor2d),
             ),
-        );
-        app.add_systems(
-            PostUpdate,
-            get_cursor_world_position.after(TransformSystem::TransformPropagate),
         );
     }
 }
@@ -49,17 +43,14 @@ pub struct MouseAxis(pub Vec2);
 pub struct WheelAxis(pub Vec2);
 
 #[derive(Resource, Default)]
-pub struct LastCursorPosition(pub Vec2);
-
-#[derive(Resource, Default)]
-pub struct CursorWorldPosition(pub Option<Vec2>);
+pub struct Cursor2D(pub Vec2);
 
 #[derive(Resource, Default)]
 pub struct ScreenAxis(pub Vec2);
 
 fn init(
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
-    mut last_cursor_position: ResMut<LastCursorPosition>,
+    mut last_cursor_position: ResMut<Cursor2D>,
 ) {
     let window = window_query.single();
     last_cursor_position.0 = window.size() / 2.;
@@ -126,9 +117,9 @@ fn get_wheel_axis(
     wheel_axis.0 = axis;
 }
 
-fn get_last_cursor_position(
+pub fn get_cursor2d(
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
-    mut last_cursor_position: ResMut<LastCursorPosition>,
+    mut last_cursor_position: ResMut<Cursor2D>,
 ) {
     let window = window_query.single();
     if let Some(cursor_position) = window.cursor_position() {
@@ -136,26 +127,11 @@ fn get_last_cursor_position(
     }
 }
 
-pub fn get_cursor_world_position(
-    last_cursor_position: Res<LastCursorPosition>,
-    mut cursor_world_position: ResMut<CursorWorldPosition>,
-    camera_query: Query<(&Camera, &GlobalTransform), With<cameras::orbit_camera::OrbitDistance>>,
-) {
-    let ground_plane_height = 0.;
-    let (camera, camera_transform) = camera_query.single();
-    cursor_world_position.0 = cameras::pixel_to_horizontal_plane(
-        last_cursor_position.0,
-        ground_plane_height,
-        &camera,
-        &camera_transform,
-    );
-}
-
 fn get_screen_axis(
     time: Res<Time>,
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut screen_axis: ResMut<ScreenAxis>,
-    last_cursor_position: Res<LastCursorPosition>,
+    last_cursor_position: Res<Cursor2D>,
 ) {
     let window = window_query.single();
     let window_size = window.resolution.size(); //range ([0, WINDOW_WIDTH], [0, WINDOW_HEIGHT]), +y down

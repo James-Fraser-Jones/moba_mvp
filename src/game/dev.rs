@@ -14,11 +14,11 @@ impl Plugin for DevPlugin {
         app.add_systems(Startup, init);
         app.add_systems(
             Update,
-            (draw_player.after(logic::update_move), draw_wireframe),
-        );
-        app.add_systems(
-            PostUpdate,
-            (draw_cursor).after(input::get_cursor_world_position),
+            (
+                draw_player.after(logic::update_move),
+                draw_wireframe,
+                draw_cursor3d.after(cameras::orbit_camera::update_cursor3d),
+            ),
         );
     }
 }
@@ -29,12 +29,21 @@ fn init(mut wireframe_config: ResMut<WireframeConfig>) {
     wireframe_config.global = WIREFRAME_ENABLED;
 }
 
+fn draw_wireframe(
+    mut wireframe_config: ResMut<WireframeConfig>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+) {
+    if keyboard.just_pressed(KeyCode::KeyV) {
+        wireframe_config.global = !wireframe_config.global;
+    }
+}
+
 fn draw_player(
     mut gizmos: Gizmos,
     player: Res<player::Player>,
-    query: Query<(&Transform, &MovePosition)>,
+    player_query: Query<(&Transform, &MovePosition)>,
 ) {
-    let (transform, move_position) = query.get(player.0).unwrap();
+    let (transform, move_position) = player_query.get(player.0).unwrap();
     let start = transform.translation.with_z(25.);
     let diff = transform.rotation.mul_vec3(Vec3::X * 30.);
     gizmos.arrow(start, start + diff, Color::WHITE);
@@ -47,17 +56,8 @@ fn draw_player(
     }
 }
 
-fn draw_wireframe(
-    mut wireframe_config: ResMut<WireframeConfig>,
-    keyboard: Res<ButtonInput<KeyCode>>,
-) {
-    if keyboard.just_pressed(KeyCode::KeyV) {
-        wireframe_config.global = !wireframe_config.global;
-    }
-}
-
-fn draw_cursor(cursor_world_position: Res<input::CursorWorldPosition>, mut gizmos: Gizmos) {
-    if let Some(point) = cursor_world_position.0 {
+fn draw_cursor3d(cursor_3d: Res<cameras::orbit_camera::Cursor3D>, mut gizmos: Gizmos) {
+    if let Some(point) = cursor_3d.0 {
         gizmos.circle(
             point.extend(0.01),
             Dir3::new(Vec3::Z).unwrap(),

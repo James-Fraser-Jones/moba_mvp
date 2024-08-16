@@ -6,7 +6,13 @@ pub struct HealthbarPlugin;
 impl Plugin for HealthbarPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init);
-        app.add_systems(Update, (add_healthbars, update_healthbars));
+        app.add_systems(
+            Update,
+            (
+                add_healthbars,
+                update_healthbars.after(cameras::orbit_camera::update_camera),
+            ),
+        );
     }
 }
 
@@ -189,7 +195,8 @@ fn update_healthbars(
         let anchor_point =
             display_transform.translation + Vec3::ZERO.with_z(height + HEALTHBAR_OFFSET);
         //check healthbar anchor point is both within camera frustum and within cull range
-        let pixel = cameras::position_to_pixel(anchor_point, camera, global_camera_transform);
+        let pixel =
+            cameras::orbit_camera::position_to_pixel(anchor_point, camera, global_camera_transform);
         let distance_from_camera = (camera_transform.translation - anchor_point).length();
         if distance_from_camera >= HEALTHBAR_CULL_DISTANCE || pixel == None {
             //hide healthbar and text

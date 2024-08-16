@@ -32,18 +32,18 @@ fn update(
     keyboard_buttons: Res<ButtonInput<KeyCode>>,
     mut query: Query<&mut MovePosition>,
     player: Res<Player>,
-    cursor_world_position: Res<input::CursorWorldPosition>,
+    cursor_3d: Res<cameras::orbit_camera::Cursor3D>,
 ) {
     let mut move_position = query.get_mut(player.0).unwrap();
     //move
     if mouse_buttons.pressed(MouseButton::Right) {
-        if let Some(point) = cursor_world_position.0 {
+        if let Some(point) = cursor_3d.0 {
             move_position.0 = Some(point);
         }
     }
     //attack move
     if keyboard_buttons.just_pressed(KeyCode::KeyA) {
-        if let Some(point) = cursor_world_position.0 {
+        if let Some(point) = cursor_3d.0 {
             move_position.0 = Some(point);
         }
     }
