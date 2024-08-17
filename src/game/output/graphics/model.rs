@@ -34,7 +34,7 @@ struct DevTexture(Handle<Image>);
 
 //materials
 #[derive(Resource, Default)]
-struct MaterialMap(os::HandleMap<HashableColor, StandardMaterial>);
+struct MaterialMap(HandleMap<HashableColor, StandardMaterial>);
 impl MaterialMap {
     fn clone_material_handle(
         &mut self,
@@ -82,7 +82,7 @@ fn color_into_unlit(color: Color, texture: Option<Handle<Image>>) -> StandardMat
 
 //meshes
 #[derive(Resource, Default)]
-struct MeshMap(os::HandleMap<HashableMesh, Mesh>);
+struct MeshMap(HandleMap<HashableMesh, Mesh>);
 impl MeshMap {
     fn clone_mesh_handle(
         &mut self,
