@@ -1,6 +1,5 @@
 use bevy::prelude::*;
-
-use crate::game::*;
+//use crate::game::*;
 
 pub struct MapPlugin;
 impl Plugin for MapPlugin {
