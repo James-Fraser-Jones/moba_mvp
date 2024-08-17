@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::game::UpdateGraphics;
+use crate::game::*;
 
 pub struct MapPlugin;
 impl Plugin for MapPlugin {

@@ -1,4 +1,4 @@
-use super::super::{types::*, *};
+use crate::game::*;
 use bevy::prelude::*;
 use std::sync::LazyLock;
 
@@ -62,7 +62,7 @@ fn add_healthbars(
     >,
 ) {
     for (entity, health, max_health, team, healthbar) in &mut query {
-        let color = graphics::model::team_color(team.copied());
+        let color = team_color(team.copied());
         let health_ratio = health.0 / max_health.0;
         let mut healthbar_entity = commands
             //black bar
@@ -168,16 +168,8 @@ fn update_healthbars(
         (Entity, &mut Style, &HealthbarAnchor, &mut Visibility),
         Without<HealthTextTag>,
     >,
-    display_query: Query<(
-        &DisplayHealthbar,
-        &graphics::model::DisplayModel,
-        &Radius,
-        &Transform,
-    )>,
-    camera_query: Query<
-        (&Camera, &Transform, &GlobalTransform),
-        With<cameras::orbit_camera::OrbitDistance>,
-    >,
+    display_query: Query<(&DisplayHealthbar, &DisplayModel, &Radius, &Transform)>,
+    camera_query: Query<(&Camera, &Transform, &GlobalTransform), With<OrbitDistance>>,
     mut text_query: Query<(&mut Text, &mut Visibility), With<HealthTextTag>>,
     children_query: Query<&Children>,
 ) {
@@ -192,8 +184,7 @@ fn update_healthbars(
         let anchor_point =
             display_transform.translation + Vec3::ZERO.with_z(height + HEALTHBAR_OFFSET);
         //check healthbar anchor point is both within camera frustum and within cull range
-        let pixel =
-            cameras::orbit_camera::position_to_pixel(anchor_point, camera, global_camera_transform);
+        let pixel = position_to_pixel(anchor_point, camera, global_camera_transform);
         let distance_from_camera = (camera_transform.translation - anchor_point).length();
         if distance_from_camera >= HEALTHBAR_CULL_DISTANCE || pixel == None {
             //hide healthbar and text

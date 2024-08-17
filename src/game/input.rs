@@ -8,7 +8,7 @@ use bevy::{
     prelude::*,
 };
 
-use super::UpdateInput;
+use crate::game::*;
 
 pub struct InputPlugin;
 impl Plugin for InputPlugin {

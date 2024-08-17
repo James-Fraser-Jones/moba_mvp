@@ -5,9 +5,7 @@
 //entirely self contained, no direct communication with any other plugins
 //can recieve events from player plugins to determine player actions, through a strongly-typed interface (only source of non-determinism)
 
-pub mod spawn;
-
-use super::{types::*, *};
+use crate::game::*;
 use bevy::prelude::*;
 use std::f32::consts::PI;
 use std::sync::LazyLock;
@@ -57,8 +55,6 @@ pub fn reframe_position(position: Vec2, team: Team, to_global: bool) -> Vec2 {
 
 fn init(mut commands: Commands) {
     commands.spawn(Minion::new(Vec2::ZERO, Team::Red));
-    //commands.spawn(Core::new(Vec2::ZERO, Team::Red));
-    //commands.spawn(Core::new(Vec2::ZERO + 200., Team::Blue));
 }
 
 fn update_move(mut query: Query<(&mut Transform, &mut MovePosition, &MoveSpeed)>, time: Res<Time>) {

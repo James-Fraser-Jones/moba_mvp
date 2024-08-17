@@ -1,6 +1,5 @@
-use super::*;
+use crate::game::*;
 use bevy::prelude::*;
-use graphics::{healthbar::*, model::*};
 
 #[derive(Component, Clone, Copy)]
 pub struct Health(pub f32);

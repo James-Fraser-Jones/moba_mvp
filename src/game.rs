@@ -1,90 +1,49 @@
-mod cameras;
-mod graphics;
+mod gametypes;
+pub use gametypes::*;
+
+mod systemsets;
+pub use systemsets::*;
+mod gizmos;
+pub use gizmos::*;
+mod healthbar;
+pub use healthbar::*;
 mod input;
+pub use input::*;
 mod logic;
+pub use logic::*;
+mod map;
+pub use map::*;
+mod model;
+pub use model::*;
+mod orbit_camera;
+pub use orbit_camera::*;
 mod os;
+pub use os::*;
+mod overlay_camera;
+pub use overlay_camera::*;
 mod player;
-mod types;
+pub use player::*;
+mod spawn;
+pub use spawn::*;
 
-use bevy::{app::PluginGroupBuilder, prelude::*};
+use bevy::app::PluginGroupBuilder;
+use bevy::prelude::*;
 
-pub struct GamePlugin;
-impl Plugin for GamePlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(GamePlugins);
-        app.configure_sets(
-            Update,
-            (
-                UpdateInput,
-                UpdateCameras::PreLogic,
-                UpdatePlayer,
-                UpdateLogic,
-                UpdateCameras::PostLogic,
-                UpdateGraphics,
-            )
-                .chain(),
-        );
-    }
-}
-
-struct GamePlugins;
+pub struct GamePlugins;
 impl PluginGroup for GamePlugins {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
-            .add(os::OSPlugin)
-            .add(input::InputPlugin)
-            .add_group(CameraPlugins)
-            .add(player::PlayerPlugin)
-            .add_group(LogicPlugins)
-            .add_group(GraphicsPlugins)
+            .add(GizmosPlugin)
+            .add(HealthbarPlugin)
+            .add(InputPlugin)
+            .add(LogicPlugin)
+            .add(MapPlugin)
+            .add(ModelPlugin)
+            .add(OrbitCameraPlugin)
+            .add(OSPlugin)
+            .add(OverlayCameraPlugin)
+            .add(PlayerPlugin)
+            .add(SpawnPlugin)
+            .add(SetsPlugin)
     }
 }
-
-struct CameraPlugins;
-impl PluginGroup for CameraPlugins {
-    fn build(self) -> PluginGroupBuilder {
-        PluginGroupBuilder::start::<Self>()
-            .add(cameras::CamerasPlugin)
-            .add(cameras::orbit_camera::OrbitCameraPlugin)
-            .add(cameras::overlay_camera::OverlayCameraPlugin)
-    }
-}
-
-struct GraphicsPlugins;
-impl PluginGroup for GraphicsPlugins {
-    fn build(self) -> PluginGroupBuilder {
-        PluginGroupBuilder::start::<Self>()
-            .add(graphics::GraphicsPlugin)
-            .add(graphics::model::ModelPlugin)
-            .add(graphics::map::MapPlugin)
-            .add(graphics::healthbar::HealthbarPlugin)
-            .add(graphics::gizmos::GizmosPlugin)
-    }
-}
-
-struct LogicPlugins;
-impl PluginGroup for LogicPlugins {
-    fn build(self) -> PluginGroupBuilder {
-        PluginGroupBuilder::start::<Self>()
-            .add(logic::LogicPlugin)
-            .add(logic::spawn::SpawnPlugin)
-    }
-}
-
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct UpdateInput;
-
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum UpdateCameras {
-    PreLogic,
-    PostLogic,
-}
-
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct UpdatePlayer;
-
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct UpdateLogic;
-
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct UpdateGraphics;

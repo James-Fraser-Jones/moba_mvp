@@ -139,7 +139,7 @@ hence, we'll actually have the following:
 
 ```
 PreUpdate: Input
-FixedUpdate: Player -> Logic -> Physics  ...Networking???
+FixedUpdate: Networking -> Player -> Logic -> Physics -> Networking
 Update: Camera, Graphics, Gizmos
 PostUpdate: Healthbars, 3D Cursor, ..anything else which needs to be drawn *after* the camera was updated this frame
 ```
@@ -164,3 +164,7 @@ Regardling modules. I basically only started using modules because I wanted to b
 With this in mind, I find it quite frustrating that both of Rust's options for facillitating this are not ideal.
 
 Actually what am I talking about this is fine. I'll just use mod.rs from now on as it makes things considerably simpler.
+
+thinking about the server, I guess the tick loop goes like this:
+
+`Networking -> Players -> Logic -> Physics -> Networking`

@@ -3,7 +3,7 @@
 //allowing easy reset
 //utilizing input plugin to enable movement, rotation, zoom, etc..
 
-use super::super::*;
+use crate::game::*;
 use bevy::color::palettes::css;
 use bevy::prelude::*;
 use bevy::render::view::RenderLayers;

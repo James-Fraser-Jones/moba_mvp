@@ -2,13 +2,13 @@
 //attaching to, and keeping track of, player entities, via a tag
 //utilizing input and camera plugins to drive player actions, through events sent to the logic plugin
 
-use super::{types::*, *};
+use crate::game::*;
 use bevy::prelude::*;
 
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init.after(logic::spawn::init));
+        app.add_systems(Startup, init.after(spawn::init));
         app.add_systems(Update, update.in_set(UpdatePlayer));
     }
 }
@@ -29,15 +29,14 @@ fn init(mut commands: Commands, query: Query<(Entity, &PlayerID)>) {
 
 fn update(
     cursor_2d: Res<input::Cursor2D>,
-    camera_query: Query<(&Camera, &GlobalTransform), With<cameras::orbit_camera::OrbitDistance>>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<OrbitDistance>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     keyboard_buttons: Res<ButtonInput<KeyCode>>,
     player: Res<Player>,
     mut player_query: Query<&mut MovePosition>,
 ) {
     let (camera, transform) = camera_query.single();
-    let point =
-        cameras::orbit_camera::pixel_to_horizontal_plane(cursor_2d.0, 0., camera, &transform);
+    let point = pixel_to_horizontal_plane(cursor_2d.0, 0., camera, &transform);
     let mut move_position = player_query.get_mut(player.0).unwrap();
 
     //move

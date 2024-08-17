@@ -2,7 +2,7 @@
 //enabling wireframe, gizmos, etc..
 //stuff for purely-dev-related functionality
 
-use super::super::{types::*, *};
+use crate::game::*;
 use bevy::dev_tools::fps_overlay::FpsOverlayPlugin;
 use bevy::pbr::wireframe::{WireframeConfig, WireframePlugin};
 use bevy::prelude::*;
@@ -54,13 +54,11 @@ fn draw_player(
 
 fn draw_cursor3d(
     mut gizmos: Gizmos,
-    camera_query: Query<(&Camera, &GlobalTransform), With<cameras::orbit_camera::OrbitDistance>>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<OrbitDistance>>,
     cursor_2d: Res<input::Cursor2D>,
 ) {
     let (camera, transform) = camera_query.single();
-    if let Some(point) =
-        cameras::orbit_camera::pixel_to_horizontal_plane(cursor_2d.0, 0., camera, &transform)
-    {
+    if let Some(point) = pixel_to_horizontal_plane(cursor_2d.0, 0., camera, &transform) {
         gizmos.circle(
             point.extend(0.01),
             Dir3::new(Vec3::Z).unwrap(),
