@@ -13,9 +13,9 @@ use std::sync::LazyLock;
 pub struct LogicPlugin;
 impl Plugin for LogicPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Time::<Fixed>::from_hz(32.0));
+        app.insert_resource(Time::<Fixed>::from_hz(16.0));
         app.add_systems(Startup, init);
-        app.add_systems(Update, update_move.in_set(UpdateLogic));
+        app.add_systems(FixedUpdate, update_move.in_set(LogicSet));
     }
 }
 

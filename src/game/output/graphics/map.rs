@@ -6,7 +6,7 @@ pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init);
-        app.add_systems(Update, update.in_set(UpdateGraphics));
+        app.add_systems(Update, update);
     }
 }
 

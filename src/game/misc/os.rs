@@ -52,7 +52,7 @@ fn init(mut window_query: Query<&mut Window, With<PrimaryWindow>>, windows: NonS
 }
 
 fn update(keyboard: Res<ButtonInput<KeyCode>>, mut writer: EventWriter<AppExit>) {
-    if keyboard.just_pressed(KeyCode::Escape) {
+    if keyboard.pressed(KeyCode::Escape) {
         writer.send(AppExit::Success);
     }
 }

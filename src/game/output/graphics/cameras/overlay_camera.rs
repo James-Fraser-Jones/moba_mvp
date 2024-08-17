@@ -6,7 +6,7 @@ pub struct OverlayCameraPlugin;
 impl Plugin for OverlayCameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init);
-        app.add_systems(Update, update.in_set(UpdateCameras::PreLogic));
+        app.add_systems(Update, update);
     }
 }
 

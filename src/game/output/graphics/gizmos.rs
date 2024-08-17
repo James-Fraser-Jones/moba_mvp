@@ -12,10 +12,8 @@ impl Plugin for GizmosPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((WireframePlugin, FpsOverlayPlugin::default()));
         app.add_systems(Startup, init);
-        app.add_systems(
-            Update,
-            (draw_player, draw_wireframe, draw_cursor3d).in_set(UpdateGraphics),
-        );
+        app.add_systems(Update, (draw_player, draw_wireframe));
+        app.add_systems(PostUpdate, draw_cursor3d.in_set(ProjectCameraSet));
     }
 }
 

@@ -9,7 +9,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init.after(spawn::init));
-        app.add_systems(Update, update.in_set(UpdatePlayer));
+        app.add_systems(FixedUpdate, update.in_set(PlayerSet));
     }
 }
 
@@ -31,7 +31,7 @@ fn update(
     cursor_2d: Res<input::Cursor2D>,
     camera_query: Query<(&Camera, &GlobalTransform), With<OrbitDistance>>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    keyboard_buttons: Res<ButtonInput<KeyCode>>,
+    mut keyboard_buttons: ResMut<ButtonInput<KeyCode>>,
     player: Res<Player>,
     mut player_query: Query<&mut MovePosition>,
 ) {
@@ -44,11 +44,13 @@ fn update(
         move_position.0 = point;
     }
     //attack move
-    if keyboard_buttons.just_pressed(KeyCode::KeyA) {
+    if keyboard_buttons.clear_just_pressed(KeyCode::KeyA) {
+        //clear_just_pressed is *required* inside FixedUpdate
         move_position.0 = point;
     }
     //stop move
-    if keyboard_buttons.just_pressed(KeyCode::KeyS) {
+    if keyboard_buttons.clear_just_pressed(KeyCode::KeyS) {
+        //clear_just_pressed is *required* inside FixedUpdate
         move_position.0 = None;
     }
 }

@@ -6,10 +6,8 @@ pub struct HealthbarPlugin;
 impl Plugin for HealthbarPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init);
-        app.add_systems(
-            Update,
-            (add_healthbars, update_healthbars).in_set(UpdateGraphics),
-        );
+        app.add_systems(Update, add_healthbars);
+        app.add_systems(PostUpdate, update_healthbars.in_set(ProjectCameraSet));
     }
 }
 

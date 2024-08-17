@@ -1,13 +1,13 @@
-pub mod misc;
-pub use misc::*;
-pub mod gametypes;
-pub use gametypes::*;
-pub mod input;
-pub use input::*;
-pub mod output;
-pub use output::*;
-pub mod process;
-pub use process::*;
+mod misc;
+use misc::*;
+mod gametypes;
+use gametypes::*;
+mod input;
+use input::*;
+mod output;
+use output::*;
+mod process;
+use process::*;
 
 use bevy::app::PluginGroupBuilder;
 use bevy::prelude::*;

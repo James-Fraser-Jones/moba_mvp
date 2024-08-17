@@ -20,7 +20,7 @@ impl Plugin for InputPlugin {
         app.init_resource::<Cursor2D>();
         app.add_systems(Startup, init);
         app.add_systems(
-            Update,
+            PreUpdate,
             (
                 get_keyboard_axis,
                 get_mouse_axis,
@@ -28,7 +28,7 @@ impl Plugin for InputPlugin {
                 get_cursor2d,
                 get_screen_axis.after(get_cursor2d),
             )
-                .in_set(UpdateInput),
+                .in_set(InputSet),
         );
     }
 }

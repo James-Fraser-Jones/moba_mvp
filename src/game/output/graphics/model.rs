@@ -10,7 +10,7 @@ impl Plugin for ModelPlugin {
         app.init_resource::<MaterialMap>();
         app.init_resource::<MeshMap>();
         app.add_systems(Startup, init);
-        app.add_systems(Update, add_models.in_set(UpdateGraphics));
+        app.add_systems(Update, add_models);
     }
 }
 

@@ -13,13 +13,7 @@ pub struct OrbitCameraPlugin;
 impl Plugin for OrbitCameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init);
-        app.add_systems(
-            Update,
-            (
-                update_camera.in_set(UpdateCameras::PreLogic),
-                update_camera_post_logic.in_set(UpdateCameras::PostLogic),
-            ),
-        );
+        app.add_systems(Update, update_camera);
     }
 }
 
@@ -120,12 +114,14 @@ fn update_camera(
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     wheel_axis: Res<input::WheelAxis>,
     screen_axis: Res<input::ScreenAxis>,
-    mut camera_query: Query<(&mut Transform, &mut GlobalTransform, &mut OrbitDistance)>,
+    mut camera_query: Query<(&mut Transform, &mut OrbitDistance)>,
     mut flip_orientation: Local<FlipOrientation>,
     time: Res<Time>,
+    player: Res<player::Player>,
+    player_query: Query<&Transform, Without<OrbitDistance>>,
 ) {
     //get camera transform
-    let (mut transform, mut global_transform, mut orbit_distance) = camera_query.single_mut();
+    let (mut transform, mut orbit_distance) = camera_query.single_mut();
     let mut orbit_transform = orbit_distance.transform_to_orbit_transform(&transform);
 
     //do stuff
@@ -140,6 +136,10 @@ fn update_camera(
         if flip_orientation.0 == None {
             flip_orientation.0 = Some(orbit_transform.rotation.x + PI);
         }
+    }
+    if keyboard_buttons.pressed(KeyCode::Space) {
+        let player = player_query.get(player.0).unwrap();
+        orbit_transform.translation = player.translation.truncate();
     }
 
     //adjust pitch
@@ -171,32 +171,9 @@ fn update_camera(
 
     //update camera transforms
     *transform = orbit_distance.orbit_transform_to_transform(&orbit_transform);
-    *global_transform = GlobalTransform::from(*transform); //manually update global transform, ahead of transform propagation
 }
 
-fn update_camera_post_logic(
-    keyboard_buttons: Res<ButtonInput<KeyCode>>,
-    mut camera_query: Query<
-        (&mut Transform, &mut GlobalTransform, &OrbitDistance),
-        With<OrbitDistance>,
-    >,
-    player: Res<player::Player>,
-    player_query: Query<&Transform, Without<OrbitDistance>>,
-) {
-    if keyboard_buttons.pressed(KeyCode::Space) {
-        let player = player_query.get(player.0).unwrap();
-        //get camera transform
-        let (mut transform, mut global_transform, orbit_distance) = camera_query.single_mut();
-        let mut orbit_transform = orbit_distance.transform_to_orbit_transform(&transform);
-        //do stuff
-        orbit_transform.translation = player.translation.truncate();
-        //update camera transforms
-        *transform = orbit_distance.orbit_transform_to_transform(&orbit_transform);
-        *global_transform = GlobalTransform::from(*transform); //manually update global transform, ahead of transform propagation
-    }
-}
-
-//these functions should be used after camera update (either pre or post logic) to get correct global transform
+//these functions should be used in the ProjectCamera system set so that they recieve the correct GlobalTransform for this frame
 
 //logical pixels, top-left (0,0), to Vec2 representing intersection point with horizontal plane of height, in world space
 pub fn pixel_to_horizontal_plane(
