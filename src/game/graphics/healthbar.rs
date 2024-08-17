@@ -62,7 +62,7 @@ fn add_healthbars(
     >,
 ) {
     for (entity, health, max_health, team, healthbar) in &mut query {
-        let color = graphics::team_color(team.copied());
+        let color = graphics::model::team_color(team.copied());
         let health_ratio = health.0 / max_health.0;
         let mut healthbar_entity = commands
             //black bar

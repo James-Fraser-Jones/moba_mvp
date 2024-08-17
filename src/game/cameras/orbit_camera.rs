@@ -4,6 +4,7 @@
 //utilizing input plugin to enable movement, rotation, zoom, etc..
 
 use super::super::*;
+use bevy::color::palettes::css;
 use bevy::prelude::*;
 use bevy::render::view::RenderLayers;
 use std::f32::consts::PI;
@@ -22,6 +23,7 @@ impl Plugin for OrbitCameraPlugin {
     }
 }
 
+const CLEAR_COLOR: Color = Color::Srgba(css::FOREST_GREEN);
 const CAMERA_DRAW_FAR: f32 = 2000.;
 const PITCH_SPEED: f32 = 0.15;
 const FLIP_YAW_SPEED: f32 = 5. * PI;
@@ -43,6 +45,10 @@ impl Default for OrbitCamera3dBundle {
         let orbit_distance = OrbitDistance::default();
         Self {
             camera_3d_bundle: Camera3dBundle {
+                camera: Camera {
+                    clear_color: ClearColorConfig::Custom(CLEAR_COLOR),
+                    ..default()
+                },
                 projection: Projection::Perspective(PerspectiveProjection {
                     far: CAMERA_DRAW_FAR,
                     ..default()

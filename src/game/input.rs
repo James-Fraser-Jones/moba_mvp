@@ -120,7 +120,7 @@ fn get_wheel_axis(
     wheel_axis.0 = axis;
 }
 
-pub fn get_cursor2d(
+fn get_cursor2d(
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut last_cursor_position: ResMut<Cursor2D>,
 ) {

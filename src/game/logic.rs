@@ -15,6 +15,7 @@ use std::sync::LazyLock;
 pub struct LogicPlugin;
 impl Plugin for LogicPlugin {
     fn build(&self, app: &mut App) {
+        app.insert_resource(Time::<Fixed>::from_hz(32.0));
         app.add_systems(Startup, init);
         app.add_systems(Update, update_move.in_set(UpdateLogic));
     }
@@ -60,10 +61,7 @@ fn init(mut commands: Commands) {
     //commands.spawn(Core::new(Vec2::ZERO + 200., Team::Blue));
 }
 
-pub fn update_move(
-    mut query: Query<(&mut Transform, &mut MovePosition, &MoveSpeed)>,
-    time: Res<Time>,
-) {
+fn update_move(mut query: Query<(&mut Transform, &mut MovePosition, &MoveSpeed)>, time: Res<Time>) {
     for (mut transform, mut move_position, move_speed) in &mut query {
         if let Some(goal) = move_position.0 {
             let pos = transform.translation.truncate();

@@ -1,4 +1,5 @@
 use super::super::{types::*, *};
+use bevy::color::palettes::css;
 use bevy::{pbr::wireframe::Wireframe, prelude::*};
 use ordered_float::OrderedFloat;
 use std::f32::consts::PI;
@@ -10,6 +11,20 @@ impl Plugin for ModelPlugin {
         app.init_resource::<MeshMap>();
         app.add_systems(Startup, init);
         app.add_systems(Update, add_models.in_set(UpdateGraphics));
+    }
+}
+
+//colors
+const RED_TEAM_COLOR: Color = Color::Srgba(css::TOMATO);
+const BLUE_TEAM_COLOR: Color = Color::Srgba(css::DEEP_SKY_BLUE);
+const NO_TEAM_COLOR: Color = Color::Srgba(css::SEA_GREEN);
+pub fn team_color(team: Option<Team>) -> Color {
+    match team {
+        Some(team) => match team {
+            Team::Red => RED_TEAM_COLOR,
+            Team::Blue => BLUE_TEAM_COLOR,
+        },
+        None => NO_TEAM_COLOR,
     }
 }
 
@@ -125,7 +140,7 @@ enum HashableMeshType {
     Cuboid,
 }
 
-//component
+//models
 #[derive(Component, Copy, Clone)]
 pub struct DisplayModel {
     mesh_type: HashableMeshType,
@@ -209,7 +224,7 @@ fn add_models(
     for (entity, display, radius, team) in &mut query {
         let half_height = display.half_height_ratio * radius.0;
         let mesh = HashableMesh::new(display.mesh_type, radius.0, half_height);
-        let material_color = graphics::team_color(team.copied());
+        let material_color = team_color(team.copied());
         let material_texture = &dev_texture.0;
 
         let model_bundle = PbrBundle {

@@ -120,3 +120,47 @@ in this case it seems in fact useful to have the following set up:
 `Input -> Cameras -> Player -> Logic -> Cameras -> (Graphics, Dev)`
 
 so essentially: 2 update cycles on the main camera, the first to respond to inputs to give Player the most up-to-date information, the second to sync the camera up with the resulting game state after logic has run
+
+After having looked at the first section of the Bevy book on "Transform Interpolation/Extrapolation" I've been reminded that actually my game logic should be running in Fixedupdate
+
+this has a few implications:
+
+Bevy's update goes like this:
+
+`PreUpdate -> (PreFixedUpdate -> FixedUpdate -> PostFixedUpdate -> Loop...) -> Update -> PostUpdate`
+
+where the fixed update loop runs `0..n` times
+
+this implies that my previous ordering is null because we basically want to put everything other than `Player` and `Logic` into `Update` to guarantee smooth operation
+
+also, I think there's a general principle here that what the player is seeing on their screen is what their inputs are interfacing with, and that isn't true when you're taking their inputs to move the camera and _then_ in the same update cycle using that new camera position to determine player cursor selection before you've even rendered it to their screen
+
+hence, we'll actually have the following:
+
+```
+PreUpdate: Input
+FixedUpdate: Player -> Logic -> Physics  ...Networking???
+Update: Camera, Graphics, Gizmos
+PostUpdate: Healthbars, 3D Cursor, ..anything else which needs to be drawn *after* the camera was updated this frame
+```
+
+Input needs to go in `PreUpdate` specifically because it needs to be available before the fixedupdate loop (which is before normal `Update`)
+
+Also, we're going to have a 32Hz tick rate as opposed to the default of 64Hz.
+
+Also I think we need to get networking set up sooner rather than later because it might demand significant project structure changes
+
+Also I found out that `Pub Use` is a thing that exists
+
+Also I think module files should have their own naming conventions and should largely be used to facilitate the desired file structure rather than being bevy plugins in their own right
+
+I'm going to look at the bevy project structure for inspiration
+
+Also does Avian have a deterministic mode like Rapier?
+It doesn't, so we're going to use Rapier I think.
+
+Regardling modules. I basically only started using modules because I wanted to be able to use seperate files in a folder hierarchy for the sake of code organization.
+
+With this in mind, I find it quite frustrating that both of Rust's options for facillitating this are not ideal.
+
+Actually what am I talking about this is fine. I'll just use mod.rs from now on as it makes things considerably simpler.
