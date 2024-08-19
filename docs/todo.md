@@ -1,8 +1,7 @@
 # Todo
 
-- Implement optional Update capping with sleep
-- Implement FixedUpdate-safe just-pressed input system
-- Entirely separate logical entities from 3D transforms
+- Implement Action events for Action and Player plugins
+- Entirely separate logical entities from 3D transforms (unless Rapier requires transforms)
 - Implement transform extrapolation
 
 ---

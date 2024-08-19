@@ -33,7 +33,7 @@ impl Plugin for MobaPlugin {
         app.configure_sets(FixedUpdate, (PlayerSet, LogicSet, PhysicsSet).chain());
         //specific ordering dependencies
         app.configure_sets(Startup, PlayerSet.after(LogicSet));
-        app.configure_sets(Update, (GizmosSet, HealthbarSet).after(OrbitCameraSet));
+        app.configure_sets(Update, (GizmoSet, HealthbarSet).after(OrbitCameraSet));
         //utility system sets
         app.configure_sets(
             PostUpdate,
@@ -99,7 +99,7 @@ impl PluginGroup for GamePlugins {
             .add(MapPlugin)
             .add(ModelPlugin)
             .add(HealthbarPlugin)
-            .add(GizmosPlugin)
+            .add(GizmoPlugin)
     }
 }
 

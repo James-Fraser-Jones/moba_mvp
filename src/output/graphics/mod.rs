@@ -1,7 +1,7 @@
 pub mod camera;
 pub use camera::*;
-pub mod gizmos;
-pub use gizmos::*;
+pub mod gizmo;
+pub use gizmo::*;
 pub mod healthbar;
 pub use healthbar::*;
 pub mod map;

@@ -1,19 +1,19 @@
 use crate::*;
 use bevy::{pbr::wireframe::WireframeConfig, prelude::*};
 
-pub struct GizmosPlugin;
-impl Plugin for GizmosPlugin {
+pub struct GizmoPlugin;
+impl Plugin for GizmoPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init.in_set(GizmosSet));
+        app.add_systems(Startup, init.in_set(GizmoSet));
         app.add_systems(
             Update,
-            (draw_player, draw_wireframe, draw_cursor3d).in_set(GizmosSet),
+            (update_player, update_wireframe, update_cursor3d).in_set(GizmoSet),
         );
     }
 }
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct GizmosSet;
+pub struct GizmoSet;
 
 const WIREFRAME_ENABLED: bool = false;
 
@@ -21,7 +21,7 @@ fn init(mut wireframe_config: ResMut<WireframeConfig>) {
     wireframe_config.global = WIREFRAME_ENABLED;
 }
 
-fn draw_wireframe(
+fn update_wireframe(
     mut wireframe_config: ResMut<WireframeConfig>,
     keyboard: Res<ButtonInput<KeyCode>>,
 ) {
@@ -30,7 +30,7 @@ fn draw_wireframe(
     }
 }
 
-fn draw_player(
+fn update_player(
     mut gizmos: Gizmos,
     player: Res<player::Player>,
     player_query: Query<(&Transform, &MovePosition)>,
@@ -48,7 +48,7 @@ fn draw_player(
     }
 }
 
-fn draw_cursor3d(
+fn update_cursor3d(
     mut gizmos: Gizmos,
     camera_query: Query<(&Camera, &GlobalTransform), With<OrbitDistance>>,
     cursor_2d: Res<input::CursorPosition2D>,
