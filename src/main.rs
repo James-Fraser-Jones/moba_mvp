@@ -13,6 +13,35 @@ use bevy_framepace::*;
 use std::sync::LazyLock;
 use winit::window::Icon;
 
+fn main() -> AppExit {
+    App::new().add_plugins(MobaPlugin).run()
+}
+
+pub struct MobaPlugin;
+impl Plugin for MobaPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, init.in_set(MainSet));
+        app.add_systems(Update, update.in_set(MainSet));
+        //plugins
+        app.add_plugins(DefaultPlugins);
+        app.add_plugins(AdditionalPlugins);
+        app.add_plugins(ExternalPlugins);
+        app.add_plugins(GamePlugins);
+        //core ordering configuration
+        app.configure_sets(PreUpdate, InputSet.after(bevy::input::InputSystem));
+        app.configure_sets(PreUpdate, ActionSet.after(AxisSet));
+        app.configure_sets(FixedUpdate, (PlayerSet, LogicSet, PhysicsSet).chain());
+        //specific ordering dependencies
+        app.configure_sets(Startup, PlayerSet.after(LogicSet));
+        app.configure_sets(Update, (GizmosSet, HealthbarSet).after(OrbitCameraSet));
+        //utility system sets
+        app.configure_sets(
+            PostUpdate,
+            AfterTransformPropagationSet.after(TransformSystem::TransformPropagate),
+        );
+    }
+}
+
 const GAME_ICON: &str = "assets/textures/moba_icon.png";
 const GAME_NAME: &str = "Moba MVP";
 static GAME_WINDOW: LazyLock<Window> = LazyLock::new(|| Window {
@@ -31,34 +60,8 @@ static GAME_WINDOW: LazyLock<Window> = LazyLock::new(|| Window {
 const UPDATE_MAX_RATE: Option<f64> = None;
 const UPDATE_FIXED_RATE: f64 = 16.;
 
-fn main() -> AppExit {
-    App::new().add_plugins((DefaultPlugins, MobaPlugin)).run()
-}
-
-pub struct MobaPlugin;
-impl Plugin for MobaPlugin {
-    fn build(&self, app: &mut App) {
-        //plugins
-        app.add_plugins(AdditionalPlugins);
-        app.add_plugins(ExternalPlugins);
-        app.add_plugins(GamePlugins);
-        //systems
-        app.add_systems(Startup, init);
-        app.add_systems(Update, update);
-        //core ordering configuration
-        app.configure_sets(PreUpdate, InputSet.after(bevy::input::InputSystem));
-        app.configure_sets(PreUpdate, ActionSet.after(AxisSet));
-        app.configure_sets(FixedUpdate, (PlayerSet, LogicSet, PhysicsSet).chain());
-        //specific ordering dependencies
-        app.configure_sets(Startup, PlayerSet.after(LogicSet));
-        app.configure_sets(Update, (GizmosSet, HealthbarSet).after(OrbitCameraSet));
-        //utility system sets
-        app.configure_sets(
-            PostUpdate,
-            AfterTransformPropagationSet.after(TransformSystem::TransformPropagate),
-        );
-    }
-}
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct MainSet;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AfterTransformPropagationSet;
@@ -111,9 +114,7 @@ fn init(
     *window = GAME_WINDOW.clone();
     //set window icon
     let (icon_rgba, icon_width, icon_height) = {
-        let image = image::open(GAME_ICON)
-            .expect("Failed to open icon path")
-            .into_rgba8();
+        let image = image::open(GAME_ICON).unwrap().into_rgba8();
         let (width, height) = image.dimensions();
         let rgba = image.into_raw();
         (rgba, width, height)
