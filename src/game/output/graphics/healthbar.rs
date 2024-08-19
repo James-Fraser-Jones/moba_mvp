@@ -5,18 +5,10 @@ use std::sync::LazyLock;
 pub struct HealthbarPlugin;
 impl Plugin for HealthbarPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Startup,
-            init.in_set(HealthbarSet)
-                .in_set(GraphicsSet)
-                .in_set(OutputSet),
-        );
+        app.add_systems(Startup, init.in_set(HealthbarSet));
         app.add_systems(
             Update,
-            (add_healthbars, update_healthbars)
-                .in_set(HealthbarSet)
-                .in_set(GraphicsSet)
-                .in_set(OutputSet),
+            (add_healthbars, update_healthbars).in_set(HealthbarSet),
         );
     }
 }

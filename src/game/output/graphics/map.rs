@@ -1,17 +1,11 @@
-use crate::game::*;
+//use crate::game::*;
 use bevy::prelude::*;
 
 pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Startup,
-            init.in_set(MapSet).in_set(GraphicsSet).in_set(OutputSet),
-        );
-        app.add_systems(
-            Update,
-            update.in_set(MapSet).in_set(GraphicsSet).in_set(OutputSet),
-        );
+        app.add_systems(Startup, init.in_set(MapSet));
+        app.add_systems(Update, update.in_set(MapSet));
     }
 }
 

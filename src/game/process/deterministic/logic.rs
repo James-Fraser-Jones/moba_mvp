@@ -13,19 +13,8 @@ use std::sync::LazyLock;
 pub struct LogicPlugin;
 impl Plugin for LogicPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Startup,
-            init.in_set(LogicSet)
-                .in_set(DeterministicSet)
-                .in_set(ProcessSet),
-        );
-        app.add_systems(
-            FixedUpdate,
-            update_move
-                .in_set(LogicSet)
-                .in_set(DeterministicSet)
-                .in_set(ProcessSet),
-        );
+        app.add_systems(Startup, init.in_set(LogicSet));
+        app.add_systems(FixedUpdate, update_move.in_set(LogicSet));
     }
 }
 

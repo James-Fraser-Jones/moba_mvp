@@ -12,21 +12,8 @@ use std::f32::consts::PI;
 pub struct OrbitCameraPlugin;
 impl Plugin for OrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Startup,
-            init.in_set(OrbitCameraSet)
-                .in_set(CameraSet)
-                .in_set(GraphicsSet)
-                .in_set(OutputSet),
-        );
-        app.add_systems(
-            Update,
-            update
-                .in_set(OrbitCameraSet)
-                .in_set(CameraSet)
-                .in_set(GraphicsSet)
-                .in_set(OutputSet),
-        );
+        app.add_systems(Startup, init.in_set(OrbitCameraSet));
+        app.add_systems(Update, update.in_set(OrbitCameraSet));
     }
 }
 

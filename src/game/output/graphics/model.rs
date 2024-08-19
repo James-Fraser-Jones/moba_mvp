@@ -9,17 +9,8 @@ impl Plugin for ModelPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MaterialMap>();
         app.init_resource::<MeshMap>();
-        app.add_systems(
-            Startup,
-            init.in_set(ModelSet).in_set(GraphicsSet).in_set(OutputSet),
-        );
-        app.add_systems(
-            Update,
-            update
-                .in_set(ModelSet)
-                .in_set(GraphicsSet)
-                .in_set(OutputSet),
-        );
+        app.add_systems(Startup, init.in_set(ModelSet));
+        app.add_systems(Update, update.in_set(ModelSet));
     }
 }
 

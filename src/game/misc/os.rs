@@ -3,7 +3,7 @@
 //quitting the game
 //saving/loading assets to/from the filesystem
 
-use crate::game::*;
+//use crate::game::*;
 use bevy::{prelude::*, window::*, winit::WinitWindows};
 use std::sync::LazyLock;
 use winit::window::Icon;
@@ -11,7 +11,7 @@ use winit::window::Icon;
 pub struct OSPlugin;
 impl Plugin for OSPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init.in_set(OSSet).in_set(MiscSet));
+        app.add_systems(Startup, init.in_set(OSSet));
     }
 }
 

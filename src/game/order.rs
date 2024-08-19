@@ -10,6 +10,7 @@ impl Plugin for OrderPlugin {
         app.add_systems(Update, update.in_set(OrderSet));
         //core ordering configuration
         app.configure_sets(PreUpdate, InputSet.after(bevy::input::InputSystem));
+        app.configure_sets(PreUpdate, ActionSet.after(AxisSet));
         app.configure_sets(FixedUpdate, (PlayerSet, LogicSet, PhysicsSet).chain());
         //specific ordering dependencies
         app.configure_sets(Startup, PlayerSet.after(LogicSet));

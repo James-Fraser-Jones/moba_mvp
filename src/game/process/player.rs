@@ -9,8 +9,8 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<RightPressed>();
-        app.add_systems(Startup, init.in_set(PlayerSet).in_set(ProcessSet));
-        app.add_systems(FixedUpdate, update.in_set(PlayerSet).in_set(ProcessSet));
+        app.add_systems(Startup, init.in_set(PlayerSet));
+        app.add_systems(FixedUpdate, update.in_set(PlayerSet));
     }
 }
 

@@ -8,7 +8,3 @@ pub mod map;
 pub use map::*;
 pub mod model;
 pub use model::*;
-
-use bevy::prelude::*;
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct GraphicsSet;

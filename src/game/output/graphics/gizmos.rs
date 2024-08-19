@@ -11,16 +11,10 @@ pub struct GizmosPlugin;
 impl Plugin for GizmosPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((WireframePlugin, FpsOverlayPlugin::default()));
-        app.add_systems(
-            Startup,
-            init.in_set(GizmosSet).in_set(GraphicsSet).in_set(OutputSet),
-        );
+        app.add_systems(Startup, init.in_set(GizmosSet));
         app.add_systems(
             Update,
-            (draw_player, draw_wireframe, draw_cursor3d)
-                .in_set(GizmosSet)
-                .in_set(GraphicsSet)
-                .in_set(OutputSet),
+            (draw_player, draw_wireframe, draw_cursor3d).in_set(GizmosSet),
         );
     }
 }
