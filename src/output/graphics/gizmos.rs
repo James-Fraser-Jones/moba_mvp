@@ -1,16 +1,9 @@
-//responsibilities:
-//enabling wireframe, gizmos, etc..
-//stuff for purely-dev-related functionality
-
-use crate::game::*;
-use bevy::dev_tools::fps_overlay::FpsOverlayPlugin;
-use bevy::pbr::wireframe::{WireframeConfig, WireframePlugin};
-use bevy::prelude::*;
+use crate::*;
+use bevy::{pbr::wireframe::WireframeConfig, prelude::*};
 
 pub struct GizmosPlugin;
 impl Plugin for GizmosPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((WireframePlugin, FpsOverlayPlugin::default()));
         app.add_systems(Startup, init.in_set(GizmosSet));
         app.add_systems(
             Update,

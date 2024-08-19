@@ -1,8 +1,4 @@
-//responsibilities:
-//attaching to, and keeping track of, player entities, via a tag
-//utilizing input and camera plugins to drive player actions, through events sent to the logic plugin
-
-use crate::game::*;
+use crate::*;
 use bevy::prelude::*;
 
 pub struct PlayerPlugin;
@@ -47,22 +43,18 @@ fn update(
     let point = pixel_to_horizontal_plane(cursor_2d.0, 0., camera, &transform);
     let mut move_position = player_query.get_mut(player.0).unwrap();
 
-    println!("UPDATE");
-
     //move
     //"pressed" can also be missed if button pressed briefly during frames that did not run FixedUpdate
     for event in mouse_events.read() {
         match event.state {
             bevy::input::ButtonState::Pressed => match event.button {
                 MouseButton::Right => {
-                    println!("PRESSED");
                     right_pressed.0 = true;
                 }
                 _ => {}
             },
             bevy::input::ButtonState::Released => match event.button {
                 MouseButton::Right => {
-                    println!("RELEASED");
                     right_pressed.0 = false;
                 }
                 _ => {}

@@ -1,6 +1,5 @@
-//use crate::game::*;
-use bevy::prelude::*;
-use bevy::render::view::RenderLayers;
+//use crate::*;
+use bevy::{prelude::*, render::view::RenderLayers};
 
 pub struct OverlayCameraPlugin;
 impl Plugin for OverlayCameraPlugin {

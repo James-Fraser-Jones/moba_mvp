@@ -1,7 +1,6 @@
-use crate::game::*;
+use crate::*;
 use bevy::prelude::*;
-use std::f32::consts::PI;
-use std::sync::LazyLock;
+use std::{f32::consts::PI, sync::LazyLock};
 
 //spawn settings
 const CORE_SPAWN_POSITION: Vec2 = Vec2::splat(300.);

@@ -1,12 +1,5 @@
-//responsibilities:
-//initializing useful camera abstraction, and associated camera settings
-//allowing easy reset
-//utilizing input plugin to enable movement, rotation, zoom, etc..
-
-use crate::game::*;
-use bevy::color::palettes::css;
-use bevy::prelude::*;
-use bevy::render::view::RenderLayers;
+use crate::*;
+use bevy::{color::palettes::css, prelude::*, render::view::RenderLayers};
 use std::f32::consts::PI;
 
 pub struct OrbitCameraPlugin;

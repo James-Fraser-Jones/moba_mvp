@@ -1,9 +1,4 @@
-//responsibilities:
-//collecting inputs into more useful abstractions
-//(e.g. keyboardaxis, as a resource, of Vec3)
-//facilitating different choices of concrete key bindings
-
-use crate::game::*;
+use crate::*;
 use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,

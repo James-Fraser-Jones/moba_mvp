@@ -1,4 +1,4 @@
-use crate::game::*;
+use crate::*;
 use bevy::prelude::*;
 
 #[derive(Component, Clone, Copy)]
