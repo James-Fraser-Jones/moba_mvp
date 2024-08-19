@@ -27,6 +27,6 @@ impl PluginGroup for GamePlugins {
             .add(OverlayCameraPlugin)
             .add(PlayerPlugin)
             .add(SpawnPlugin)
-            .add(SetsPlugin)
+            .add(SystemPlugin)
     }
 }

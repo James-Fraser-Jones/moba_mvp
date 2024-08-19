@@ -5,9 +5,7 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.14.0", features = ["bevy_dev_tools", "dynamic_linking"] }
-rand = "0.8.5"
-uuid = "1.10.0"
-avian2d = "0.1"
+bevy_framepace = "0.17.1"
 ordered-float = "4.2.2"
 winit = "0.30.5"
 image = "0.25.2"

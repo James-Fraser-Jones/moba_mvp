@@ -18,7 +18,7 @@ impl Plugin for OSPlugin {
 
 const GAME_ICON: &str = "assets/textures/moba_icon.png";
 const GAME_NAME: &str = "Moba MVP";
-static WINDOW: LazyLock<Window> = LazyLock::new(|| Window {
+static GAME_WINDOW: LazyLock<Window> = LazyLock::new(|| Window {
     title: GAME_NAME.to_string(),
     name: Some(GAME_NAME.to_string()),
     position: WindowPosition::At(IVec2::new(0, 0)),
@@ -35,7 +35,7 @@ static WINDOW: LazyLock<Window> = LazyLock::new(|| Window {
 fn init(mut window_query: Query<&mut Window, With<PrimaryWindow>>, windows: NonSend<WinitWindows>) {
     //set window settings
     let mut window = window_query.single_mut();
-    *window = WINDOW.clone();
+    *window = GAME_WINDOW.clone();
     //set window icon
     let (icon_rgba, icon_width, icon_height) = {
         let image = image::open(GAME_ICON)
@@ -51,8 +51,4 @@ fn init(mut window_query: Query<&mut Window, With<PrimaryWindow>>, windows: NonS
     }
 }
 
-fn update(keyboard: Res<ButtonInput<KeyCode>>, mut writer: EventWriter<AppExit>) {
-    if keyboard.pressed(KeyCode::Escape) {
-        writer.send(AppExit::Success);
-    }
-}
+fn update() {}
