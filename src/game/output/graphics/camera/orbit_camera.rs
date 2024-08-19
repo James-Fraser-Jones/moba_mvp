@@ -12,10 +12,26 @@ use std::f32::consts::PI;
 pub struct OrbitCameraPlugin;
 impl Plugin for OrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init);
-        app.add_systems(Update, update_camera);
+        app.add_systems(
+            Startup,
+            init.in_set(OrbitCameraSet)
+                .in_set(CameraSet)
+                .in_set(GraphicsSet)
+                .in_set(OutputSet),
+        );
+        app.add_systems(
+            Update,
+            update
+                .in_set(OrbitCameraSet)
+                .in_set(CameraSet)
+                .in_set(GraphicsSet)
+                .in_set(OutputSet),
+        );
     }
 }
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct OrbitCameraSet;
 
 const CLEAR_COLOR: Color = Color::Srgba(css::FOREST_GREEN);
 const CAMERA_DRAW_FAR: f32 = 2000.;
@@ -108,20 +124,20 @@ fn init(mut commands: Commands) {
     commands.spawn((OrbitCamera3dBundle::default(), RenderLayers::layer(0)));
 }
 
-fn update_camera(
+fn update(
     keyboard_buttons: Res<ButtonInput<KeyCode>>,
     mouse_axis: Res<input::MouseAxis>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     wheel_axis: Res<input::WheelAxis>,
     screen_axis: Res<input::ScreenAxis>,
-    mut camera_query: Query<(&mut Transform, &mut OrbitDistance)>,
+    mut camera_query: Query<(&mut Transform, &mut GlobalTransform, &mut OrbitDistance)>,
     mut flip_orientation: Local<FlipOrientation>,
     time: Res<Time>,
     player: Res<player::Player>,
     player_query: Query<&Transform, Without<OrbitDistance>>,
 ) {
     //get camera transform
-    let (mut transform, mut orbit_distance) = camera_query.single_mut();
+    let (mut transform, mut global_transform, mut orbit_distance) = camera_query.single_mut();
     let mut orbit_transform = orbit_distance.transform_to_orbit_transform(&transform);
 
     //do stuff
@@ -171,6 +187,7 @@ fn update_camera(
 
     //update camera transforms
     *transform = orbit_distance.orbit_transform_to_transform(&orbit_transform);
+    *global_transform = GlobalTransform::from(*transform);
 }
 
 //these functions should be used in the ProjectCamera system set so that they recieve the correct GlobalTransform for this frame

@@ -1,13 +1,22 @@
+use crate::game::*;
 use bevy::prelude::*;
-//use crate::game::*;
 
 pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init);
-        app.add_systems(Update, update);
+        app.add_systems(
+            Startup,
+            init.in_set(MapSet).in_set(GraphicsSet).in_set(OutputSet),
+        );
+        app.add_systems(
+            Update,
+            update.in_set(MapSet).in_set(GraphicsSet).in_set(OutputSet),
+        );
     }
 }
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct MapSet;
 
 pub const BLENDER_LANE_WIDTH: f32 = 130.;
 pub const BLENDER_OUTER_WALL_WIDTH: f32 = 100.;

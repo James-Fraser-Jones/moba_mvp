@@ -11,11 +11,22 @@ pub struct GizmosPlugin;
 impl Plugin for GizmosPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((WireframePlugin, FpsOverlayPlugin::default()));
-        app.add_systems(Startup, init);
-        app.add_systems(Update, (draw_player, draw_wireframe));
-        app.add_systems(PostUpdate, draw_cursor3d.in_set(ProjectCameraSet));
+        app.add_systems(
+            Startup,
+            init.in_set(GizmosSet).in_set(GraphicsSet).in_set(OutputSet),
+        );
+        app.add_systems(
+            Update,
+            (draw_player, draw_wireframe, draw_cursor3d)
+                .in_set(GizmosSet)
+                .in_set(GraphicsSet)
+                .in_set(OutputSet),
+        );
     }
 }
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct GizmosSet;
 
 const WIREFRAME_ENABLED: bool = false;
 
@@ -53,7 +64,7 @@ fn draw_player(
 fn draw_cursor3d(
     mut gizmos: Gizmos,
     camera_query: Query<(&Camera, &GlobalTransform), With<OrbitDistance>>,
-    cursor_2d: Res<input::Cursor2D>,
+    cursor_2d: Res<input::CursorPosition2D>,
 ) {
     let (camera, transform) = camera_query.single();
     if let Some(point) = pixel_to_horizontal_plane(cursor_2d.0, 0., camera, &transform) {

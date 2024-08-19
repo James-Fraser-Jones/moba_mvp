@@ -3,41 +3,39 @@
 //(e.g. keyboardaxis, as a resource, of Vec3)
 //facilitating different choices of concrete key bindings
 
+use crate::game::*;
 use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
 };
 
-use crate::game::*;
-
-pub struct InputPlugin;
-impl Plugin for InputPlugin {
+pub struct AxisPlugin;
+impl Plugin for AxisPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<KeyboardAxis>();
         app.init_resource::<MouseAxis>();
         app.init_resource::<WheelAxis>();
         app.init_resource::<ScreenAxis>();
-        app.init_resource::<Cursor2D>();
-        app.add_systems(Startup, init);
+        app.init_resource::<CursorPosition2D>();
+        app.add_systems(Startup, init.in_set(AxisSet).in_set(InputSet));
         app.add_systems(
             PreUpdate,
             (
-                get_keyboard_axis,
                 get_mouse_axis,
                 get_wheel_axis,
                 get_cursor2d,
                 get_screen_axis.after(get_cursor2d),
             )
+                .in_set(AxisSet)
                 .in_set(InputSet),
         );
     }
 }
 
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AxisSet;
+
 const LINE_TO_PIXEL_SCALE: f32 = 50.;
 const SCREEN_AXIS_RADIUS: f32 = 0.8;
-
-#[derive(Resource, Default)]
-pub struct KeyboardAxis(pub Vec3);
 
 #[derive(Resource, Default)]
 pub struct MouseAxis(pub Vec2);
@@ -46,45 +44,17 @@ pub struct MouseAxis(pub Vec2);
 pub struct WheelAxis(pub Vec2);
 
 #[derive(Resource, Default)]
-pub struct Cursor2D(pub Vec2);
+pub struct CursorPosition2D(pub Vec2);
 
 #[derive(Resource, Default)]
 pub struct ScreenAxis(pub Vec2);
 
 fn init(
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
-    mut last_cursor_position: ResMut<Cursor2D>,
+    mut last_cursor_position: ResMut<CursorPosition2D>,
 ) {
     let window = window_query.single();
     last_cursor_position.0 = window.size() / 2.;
-}
-
-fn get_keyboard_axis(
-    time: Res<Time>,
-    keyboard_buttons: Res<ButtonInput<KeyCode>>,
-    mut keyboard_axis: ResMut<KeyboardAxis>,
-) {
-    let mut axis: Vec3 = Vec3::ZERO;
-    if keyboard_buttons.pressed(KeyCode::KeyW) {
-        axis.y += 1.;
-    }
-    if keyboard_buttons.pressed(KeyCode::KeyS) {
-        axis.y -= 1.;
-    }
-    if keyboard_buttons.pressed(KeyCode::KeyD) {
-        axis.x += 1.;
-    }
-    if keyboard_buttons.pressed(KeyCode::KeyA) {
-        axis.x -= 1.;
-    }
-    if keyboard_buttons.pressed(KeyCode::Space) {
-        axis.z += 1.;
-    }
-    if keyboard_buttons.pressed(KeyCode::ControlLeft) {
-        axis.z -= 1.;
-    }
-    axis = axis.clamp_length_max(1.) * time.delta_seconds();
-    keyboard_axis.0 = axis;
 }
 
 fn get_mouse_axis(
@@ -122,11 +92,11 @@ fn get_wheel_axis(
 
 fn get_cursor2d(
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
-    mut last_cursor_position: ResMut<Cursor2D>,
+    mut cursor_position_2d: ResMut<CursorPosition2D>,
 ) {
     let window = window_query.single();
     if let Some(cursor_position) = window.cursor_position() {
-        last_cursor_position.0 = cursor_position;
+        cursor_position_2d.0 = cursor_position;
     }
 }
 
@@ -134,7 +104,7 @@ fn get_screen_axis(
     time: Res<Time>,
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut screen_axis: ResMut<ScreenAxis>,
-    last_cursor_position: Res<Cursor2D>,
+    last_cursor_position: Res<CursorPosition2D>,
 ) {
     let window = window_query.single();
     let window_size = window.resolution.size(); //range ([0, WINDOW_WIDTH], [0, WINDOW_HEIGHT]), +y down

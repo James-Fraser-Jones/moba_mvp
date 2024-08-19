@@ -3,7 +3,7 @@
 //quitting the game
 //saving/loading assets to/from the filesystem
 
-//use crate::game::*;
+use crate::game::*;
 use bevy::{prelude::*, window::*, winit::WinitWindows};
 use std::sync::LazyLock;
 use winit::window::Icon;
@@ -11,10 +11,12 @@ use winit::window::Icon;
 pub struct OSPlugin;
 impl Plugin for OSPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init);
-        app.add_systems(Update, update);
+        app.add_systems(Startup, init.in_set(OSSet).in_set(MiscSet));
     }
 }
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct OSSet;
 
 const GAME_ICON: &str = "assets/textures/moba_icon.png";
 const GAME_NAME: &str = "Moba MVP";
@@ -50,5 +52,3 @@ fn init(mut window_query: Query<&mut Window, With<PrimaryWindow>>, windows: NonS
         window.set_window_icon(Some(icon.clone()));
     }
 }
-
-fn update() {}

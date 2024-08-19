@@ -9,10 +9,22 @@ impl Plugin for ModelPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MaterialMap>();
         app.init_resource::<MeshMap>();
-        app.add_systems(Startup, init);
-        app.add_systems(Update, add_models);
+        app.add_systems(
+            Startup,
+            init.in_set(ModelSet).in_set(GraphicsSet).in_set(OutputSet),
+        );
+        app.add_systems(
+            Update,
+            update
+                .in_set(ModelSet)
+                .in_set(GraphicsSet)
+                .in_set(OutputSet),
+        );
     }
 }
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ModelSet;
 
 //colors
 const RED_TEAM_COLOR: Color = Color::Srgba(css::TOMATO);
@@ -212,7 +224,7 @@ fn init(mut commands: Commands, server: Res<AssetServer>) {
     ));
 }
 
-fn add_models(
+fn update(
     mut commands: Commands,
     mut query: Query<(Entity, &mut DisplayModel, &Radius, Option<&Team>), Added<DisplayModel>>,
     mut materials: ResMut<Assets<StandardMaterial>>,

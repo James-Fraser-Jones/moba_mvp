@@ -8,6 +8,8 @@ mod output;
 use output::*;
 mod process;
 use process::*;
+mod order;
+use order::*;
 
 use bevy::app::PluginGroupBuilder;
 use bevy::prelude::*;
@@ -18,7 +20,7 @@ impl PluginGroup for GamePlugins {
         PluginGroupBuilder::start::<Self>()
             .add(GizmosPlugin)
             .add(HealthbarPlugin)
-            .add(InputPlugin)
+            .add(AxisPlugin)
             .add(LogicPlugin)
             .add(MapPlugin)
             .add(ModelPlugin)
@@ -26,7 +28,6 @@ impl PluginGroup for GamePlugins {
             .add(OSPlugin)
             .add(OverlayCameraPlugin)
             .add(PlayerPlugin)
-            .add(SpawnPlugin)
-            .add(SystemPlugin)
+            .add(OrderPlugin)
     }
 }

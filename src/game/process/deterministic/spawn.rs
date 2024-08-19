@@ -3,13 +3,6 @@ use bevy::prelude::*;
 use std::f32::consts::PI;
 use std::sync::LazyLock;
 
-pub struct SpawnPlugin;
-impl Plugin for SpawnPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init);
-    }
-}
-
 //spawn settings
 const CORE_SPAWN_POSITION: Vec2 = Vec2::splat(300.);
 const SPAWNER_RELATIVE_SPAWN_RADIUS: f32 = 350.;
@@ -88,7 +81,7 @@ fn zig_zag(points: &Vec<f32>, zig_first: bool, zig_spacing: f32) -> Vec<Vec2> {
     zig_zag
 }
 
-pub fn init(mut commands: Commands) {
+pub fn spawn_everything(commands: &mut Commands) {
     for team in [Team::Red, Team::Blue] {
         commands.spawn(Core::new(
             logic::reframe_position(CORE_SPAWN_POSITION, team, true),

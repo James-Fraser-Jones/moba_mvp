@@ -5,11 +5,24 @@ use std::sync::LazyLock;
 pub struct HealthbarPlugin;
 impl Plugin for HealthbarPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init);
-        app.add_systems(Update, add_healthbars);
-        app.add_systems(PostUpdate, update_healthbars.in_set(ProjectCameraSet));
+        app.add_systems(
+            Startup,
+            init.in_set(HealthbarSet)
+                .in_set(GraphicsSet)
+                .in_set(OutputSet),
+        );
+        app.add_systems(
+            Update,
+            (add_healthbars, update_healthbars)
+                .in_set(HealthbarSet)
+                .in_set(GraphicsSet)
+                .in_set(OutputSet),
+        );
     }
 }
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct HealthbarSet;
 
 const HEALTHBAR_ASPECT_RATIO: f32 = 5.;
 const HEALTHBAR_WIDTH_SCALE: f32 = 2700.;

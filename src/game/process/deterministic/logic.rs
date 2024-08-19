@@ -13,10 +13,24 @@ use std::sync::LazyLock;
 pub struct LogicPlugin;
 impl Plugin for LogicPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init);
-        app.add_systems(FixedUpdate, update_move.in_set(LogicSet));
+        app.add_systems(
+            Startup,
+            init.in_set(LogicSet)
+                .in_set(DeterministicSet)
+                .in_set(ProcessSet),
+        );
+        app.add_systems(
+            FixedUpdate,
+            update_move
+                .in_set(LogicSet)
+                .in_set(DeterministicSet)
+                .in_set(ProcessSet),
+        );
     }
 }
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct LogicSet;
 
 //multiply Vec3s in X_TRANSFORM space, by X_TRANSFORM, to convert them to GLOBAL space
 static RED_TRANSFORM: LazyLock<Transform> =
@@ -53,6 +67,7 @@ pub fn reframe_position(position: Vec2, team: Team, to_global: bool) -> Vec2 {
 }
 
 fn init(mut commands: Commands) {
+    spawn_everything(&mut commands);
     commands.spawn(Minion::new(Vec2::ZERO, Team::Red));
 }
 
