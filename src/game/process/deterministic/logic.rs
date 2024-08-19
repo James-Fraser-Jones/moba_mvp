@@ -13,12 +13,13 @@ use std::sync::LazyLock;
 pub struct LogicPlugin;
 impl Plugin for LogicPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Time::<Fixed>::from_hz(16.0));
+        app.insert_resource(Time::<Fixed>::from_hz(TICK_RATE as f64));
         app.add_systems(Startup, init);
         app.add_systems(FixedUpdate, update_move.in_set(LogicSet));
     }
 }
 
+const TICK_RATE: f32 = 16.0;
 //multiply Vec3s in X_TRANSFORM space, by X_TRANSFORM, to convert them to GLOBAL space
 static RED_TRANSFORM: LazyLock<Transform> =
     LazyLock::new(|| Transform::from_translation(Vec2::splat(-1000.).extend(0.)));

@@ -30,6 +30,14 @@ pub enum Lane {
     Top,
 }
 
+pub enum PlayerAction {
+    Move,
+    Attack,
+    Cast,
+    Level,
+    Interact,
+}
+
 #[derive(Bundle)]
 pub struct MoveBundle {
     move_position: MovePosition,
