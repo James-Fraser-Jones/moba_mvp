@@ -1,5 +1,6 @@
 # Todo
 
+- Add dynamic font scaling to health numbers
 - Implement Action events for Action and Player plugins
 - Entirely separate logical entities from 3D transforms (unless Rapier requires transforms)
 - Implement transform extrapolation

@@ -29,7 +29,7 @@ impl Plugin for MobaPlugin {
         app.add_plugins(GamePlugins);
         //core ordering configuration
         app.configure_sets(PreUpdate, InputSet.after(bevy::input::InputSystem));
-        app.configure_sets(PreUpdate, ActionSet.after(AxisSet));
+        app.configure_sets(PreUpdate, (AxisSet, ActionSet).chain());
         app.configure_sets(FixedUpdate, (PlayerSet, LogicSet, PhysicsSet).chain());
         //specific ordering dependencies
         app.configure_sets(Startup, PlayerSet.after(LogicSet));
@@ -42,8 +42,8 @@ impl Plugin for MobaPlugin {
     }
 }
 
-const GAME_ICON: &str = "assets/textures/moba_icon.png";
 const GAME_NAME: &str = "Moba MVP";
+const GAME_ICON: &str = "assets/textures/moba_icon.png";
 static GAME_WINDOW: LazyLock<Window> = LazyLock::new(|| Window {
     title: GAME_NAME.to_string(),
     name: Some(GAME_NAME.to_string()),
