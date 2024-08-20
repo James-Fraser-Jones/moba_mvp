@@ -28,12 +28,15 @@ static SUPPORTED_FONT_SIZES: LazyLock<Vec<f32>> = LazyLock::new(|| {
     font_sizes.reverse();
     font_sizes
 });
-fn get_largest_font_size(available_height: f32) -> Option<f32> {
-    SUPPORTED_FONT_SIZES
+fn font_size_scale(available_height: f32) -> (f32, f32) {
+    let size = SUPPORTED_FONT_SIZES
         .iter()
         .skip_while(|x| **x > available_height)
         .next()
         .copied()
+        .unwrap_or_else(|| SUPPORTED_FONT_SIZES.last().copied().unwrap());
+    let scale = available_height / size;
+    (size, scale)
 }
 
 #[derive(Component, Copy, Clone, PartialEq, Eq, Default)]
@@ -171,9 +174,15 @@ fn update_healthbars(
         (Entity, &mut Style, &HealthbarAnchor, &mut Visibility),
         Without<HealthTextTag>,
     >,
-    display_query: Query<(&DisplayHealthbar, &DisplayModel, &Radius, &Transform)>,
-    camera_query: Query<(&Camera, &Transform, &GlobalTransform), With<OrbitDistance>>,
-    mut text_query: Query<(&mut Text, &mut Visibility), With<HealthTextTag>>,
+    display_query: Query<
+        (&DisplayHealthbar, &DisplayModel, &Radius, &Transform),
+        Without<HealthTextTag>,
+    >,
+    camera_query: Query<
+        (&Camera, &Transform, &GlobalTransform),
+        (With<OrbitDistance>, Without<HealthTextTag>),
+    >,
+    mut text_query: Query<(&mut Text, &mut Transform), With<HealthTextTag>>,
     children_query: Query<&Children>,
 ) {
     let (camera, camera_transform, global_camera_transform) = camera_query.single();
@@ -193,15 +202,6 @@ fn update_healthbars(
             //hide healthbar and text
             if *healthbar_visibility == Visibility::Visible {
                 *healthbar_visibility = Visibility::Hidden;
-                if *display_healthbar == DisplayHealthbar::Advanced {
-                    let child = children_query
-                        .iter_descendants(healthbar_entity)
-                        .skip_while(|child| text_query.get(*child).is_err())
-                        .next()
-                        .unwrap();
-                    let (_, mut visibility) = text_query.get_mut(child).unwrap();
-                    *visibility = Visibility::Hidden;
-                }
             }
         } else {
             *healthbar_visibility = Visibility::Visible;
@@ -220,13 +220,10 @@ fn update_healthbars(
                     .skip_while(|child| text_query.get(*child).is_err())
                     .next()
                     .unwrap();
-                let (mut text, mut visibility) = text_query.get_mut(child).unwrap();
-                if let Some(font_size) = get_largest_font_size(size.y) {
-                    text.sections[0].style.font_size = font_size;
-                    *visibility = Visibility::Visible;
-                } else {
-                    *visibility = Visibility::Hidden;
-                }
+                let (mut text, mut transform) = text_query.get_mut(child).unwrap();
+                let (font_size, font_scale) = font_size_scale(size.y);
+                text.sections[0].style.font_size = font_size;
+                transform.scale = Vec3::splat(font_scale);
             }
         }
     }
