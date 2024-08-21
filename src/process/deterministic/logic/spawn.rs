@@ -2,14 +2,14 @@ use crate::*;
 use bevy::prelude::*;
 use std::{f32::consts::PI, sync::LazyLock};
 
-//spawn settings
+//per-side spawn settings
 const CORE_SPAWN_POSITION: Vec2 = Vec2::splat(300.);
 const SPAWNER_RELATIVE_SPAWN_RADIUS: f32 = 350.;
 static TOPBOT_TOWER_RELATIVE_SPAWN_RADII: LazyLock<Vec<f32>> =
     LazyLock::new(|| vec![500., 830., 1350.]);
 static MID_TOWER_RELATIVE_SPAWN_RADII: LazyLock<Vec<f32>> =
     LazyLock::new(|| vec![540., 780., 1000.]);
-const ADVOCATE_SPAWN_NUM: i32 = 5;
+const ADVOCATE_SPAWN_NUM: u8 = 5;
 const ADVOCATE_SPAWN_RING_POSITION: Vec2 = Vec2::splat(200.);
 const ADVOCATE_SPAWN_RING_RADIUS: f32 = 50.;
 const ADVOCATE_SPAWN_RING_ROTATION: f32 = PI / 2.;
@@ -31,7 +31,7 @@ const BASE_MID_CORNER: Vec2 =
 static SPAWNER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
     let mut positions = Vec::new();
     for lane in [Lane::Top, Lane::Mid, Lane::Bot] {
-        let ang = PI / 4. * lane as i32 as f32;
+        let ang = PI / 4. * lane as u8 as f32;
         let point = Vec2::new(SPAWNER_RELATIVE_SPAWN_RADIUS, 0.).rotate(Vec2::from_angle(ang))
             + BASE_MID_CORNER;
         positions.push(point);
@@ -40,9 +40,9 @@ static SPAWNER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
 });
 static TOWER_SPAWN_POSITIONS: LazyLock<Vec<Vec2>> = LazyLock::new(|| {
     let mut positions = Vec::new();
-    let zig_spacing = map::BLENDER_LANE_WIDTH / 2. - TOWER_RADIUS;
+    let zig_spacing = map::BLENDER_LANE_WIDTH / 2. - TOWER_RADIUS.0;
     for lane in [Lane::Top, Lane::Mid, Lane::Bot] {
-        let ang = PI / 4. * lane as i32 as f32;
+        let ang = PI / 4. * lane as u8 as f32;
         let zig = lane != Lane::Bot;
         let points = if lane == Lane::Mid {
             &MID_TOWER_RELATIVE_SPAWN_RADII
@@ -82,33 +82,35 @@ fn zig_zag(points: &Vec<f32>, zig_first: bool, zig_spacing: f32) -> Vec<Vec2> {
 
 pub fn spawn_everything(commands: &mut Commands) {
     for team in [Team::Red, Team::Blue] {
-        commands.spawn(Core::new(
+        commands.spawn(CoreBundle::new(
             logic::reframe_position(CORE_SPAWN_POSITION, team, true),
             team,
         ));
         for position in SPAWNER_SPAWN_POSITIONS.iter() {
-            commands.spawn(Spawner::new(
+            commands.spawn(SpawnerBundle::new(
                 logic::reframe_position(*position, team, true),
                 team,
             ));
         }
         for position in TOWER_SPAWN_POSITIONS.iter() {
-            commands.spawn(Tower::new(
+            commands.spawn(TowerBundle::new(
                 logic::reframe_position(*position, team, true),
                 team,
             ));
         }
         for (i, position) in ADVOCATE_SPAWN_POSITIONS.iter().enumerate() {
-            commands.spawn(Advocate::new(
+            commands.spawn(AdvocateBundle::new(
                 logic::reframe_position(*position, team, true),
                 team,
-                PlayerID(i as i32),
+                InputHandle::from(i as u8 + team as u8 * ADVOCATE_SPAWN_NUM),
             ));
         }
         for position in MONSTER_SPAWN_POSITIONS.iter() {
-            commands.spawn(Monster::new(logic::reframe_position(*position, team, true)));
+            commands.spawn(MonsterBundle::new(logic::reframe_position(
+                *position, team, true,
+            )));
         }
-        commands.spawn(Demon::new(logic::reframe_position(
+        commands.spawn(DemonBundle::new(logic::reframe_position(
             DEMON_SPAWN_POSITION,
             team,
             true,

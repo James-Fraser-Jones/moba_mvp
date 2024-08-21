@@ -32,10 +32,12 @@ fn update_wireframe(
 
 fn update_player(
     mut gizmos: Gizmos,
-    player: Res<player::Player>,
-    player_query: Query<(&Transform, &MovePosition)>,
+    model: Res<player::PlayerModel>,
+    object_query: Query<&MovePosition>,
+    model_query: Query<(&Transform, &Model)>,
 ) {
-    let (transform, move_position) = player_query.get(player.0).unwrap();
+    let (transform, model) = model_query.get(model.0).unwrap();
+    let move_position = object_query.get(model.target).unwrap();
     let start = transform.translation.with_z(25.);
     let diff = transform.rotation.mul_vec3(Vec3::X * 30.);
     gizmos.arrow(start, start + diff, Color::WHITE);

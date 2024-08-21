@@ -5,7 +5,6 @@ use std::sync::LazyLock;
 pub struct HealthbarPlugin;
 impl Plugin for HealthbarPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init.in_set(HealthbarSet));
         app.add_systems(
             Update,
             (add_healthbars, update_healthbars).in_set(HealthbarSet),
@@ -51,8 +50,6 @@ struct HealthTextTag;
 
 #[derive(Component)]
 struct HealthbarAnchor(Entity);
-
-fn init() {}
 
 fn add_healthbars(
     mut commands: Commands,
@@ -112,7 +109,7 @@ fn add_healthbars(
                         ..default()
                     })
                     .with_children(|builder| {
-                        for _ in 0..(max_health.0 / HEALTHBAR_INDICATOR_HEALTH) as i32 {
+                        for _ in 0..(max_health.0 / HEALTHBAR_INDICATOR_HEALTH) as usize {
                             builder.spawn(NodeBundle {
                                 style: Style {
                                     flex_grow: 1.,
@@ -174,10 +171,7 @@ fn update_healthbars(
         (Entity, &mut Style, &HealthbarAnchor, &mut Visibility),
         Without<HealthTextTag>,
     >,
-    display_query: Query<
-        (&DisplayHealthbar, &DisplayModel, &Radius, &Transform),
-        Without<HealthTextTag>,
-    >,
+    display_query: Query<(&DisplayHealthbar, &Model, &Radius, &Transform), Without<HealthTextTag>>,
     camera_query: Query<
         (&Camera, &Transform, &GlobalTransform),
         (With<OrbitDistance>, Without<HealthTextTag>),

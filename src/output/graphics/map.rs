@@ -20,6 +20,7 @@ const DESIRED_WALL_HEIGHT: f32 = 30.;
 #[derive(Component, Default)]
 struct Map;
 
+//TODO: move to spawn system
 fn init(mut commands: Commands, server: Res<AssetServer>) {
     commands.spawn((
         SceneBundle {

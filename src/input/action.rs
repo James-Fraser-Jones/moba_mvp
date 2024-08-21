@@ -5,7 +5,6 @@ pub struct ActionPlugin;
 impl Plugin for ActionPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ActionEvent>();
-        app.add_systems(Startup, init.in_set(ActionSet).in_set(InputSet));
         app.add_systems(PreUpdate, update.in_set(ActionSet).in_set(InputSet));
     }
 }
@@ -19,8 +18,6 @@ pub enum ActionEvent {
     AttackMove(Vec2),
     Stop,
 }
-
-fn init() {}
 
 fn update(
     cursor_2d: Res<input::CursorPosition2D>,

@@ -1,5 +1,5 @@
 use crate::*;
-use bevy::{color::palettes::css, pbr::wireframe::Wireframe, prelude::*};
+use bevy::{color::palettes::css, prelude::*};
 use ordered_float::OrderedFloat;
 use std::{collections::HashMap, f32::consts::PI};
 
@@ -9,7 +9,7 @@ impl Plugin for ModelPlugin {
         app.init_resource::<MaterialMap>();
         app.init_resource::<MeshMap>();
         app.add_systems(Startup, init.in_set(ModelSet));
-        app.add_systems(Update, update.in_set(ModelSet));
+        app.add_systems(Update, (add_models, interpolate_models).in_set(ModelSet));
     }
 }
 
@@ -166,115 +166,111 @@ impl Into<Mesh> for HashableMesh {
         }
     }
 }
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 enum HashableMeshType {
     Capsule,
     Cylinder,
-    #[default]
     Cuboid,
 }
 
 //models
-#[derive(Component, Copy, Clone)]
-pub struct DisplayModel {
-    mesh_type: HashableMeshType,
-    half_height_ratio: f32,
-    raised: bool,
-    wireframe: bool,
+#[derive(Component)]
+pub struct Model {
+    pub target: Entity,
+    old_transform: Transform,
+    world_height: f32,
 }
-impl Default for DisplayModel {
-    fn default() -> Self {
-        Self {
-            mesh_type: HashableMeshType::default(),
-            half_height_ratio: 1.0,
-            raised: true,
-            wireframe: false,
-        }
-    }
+#[derive(Bundle)]
+struct ModelBundle {
+    model: Model,
+    spatial: SpatialBundle,
 }
-impl DisplayModel {
-    pub fn cuboid() -> Self {
-        Self { ..default() }
-    }
-    pub fn cube() -> Self {
-        Self::cuboid()
-    }
-    pub fn capsule() -> Self {
+impl ModelBundle {
+    fn new(target: Entity, transform: Transform, world_height: f32) -> Self {
         Self {
-            mesh_type: HashableMeshType::Capsule,
-            ..default()
+            model: Model {
+                target,
+                old_transform: transform,
+                world_height,
+            },
+            spatial: SpatialBundle::from_transform(transform),
         }
-    }
-    pub fn sphere() -> Self {
-        Self::capsule()
-    }
-    pub fn hemisphere() -> Self {
-        Self::sphere().unraised()
-    }
-    pub fn cylinder() -> Self {
-        Self {
-            mesh_type: HashableMeshType::Cylinder,
-            ..default()
-        }
-    }
-    pub fn unraised(self) -> Self {
-        Self {
-            raised: false,
-            ..self
-        }
-    }
-    pub fn wireframed(self) -> Self {
-        Self {
-            wireframe: true,
-            ..self
-        }
-    }
-    pub fn with_height_ratio(self, half_height_ratio: f32) -> Self {
-        Self {
-            half_height_ratio,
-            ..self
-        }
-    }
-    pub fn get_height(&self, radius: f32) -> f32 {
-        self.half_height_ratio * radius * if self.raised { 2. } else { 1. }
     }
 }
 
+//render data
+struct RenderData {
+    mesh_type: HashableMeshType,
+    half_height_ratio: f32,
+    raised: bool,
+    alpha: f32,
+}
+impl RenderData {
+    fn new(mesh_type: HashableMeshType, half_height_ratio: f32, raised: bool, alpha: f32) -> Self {
+        Self {
+            mesh_type,
+            half_height_ratio,
+            raised,
+            alpha,
+        }
+    }
+}
+impl From<OutputHandle> for RenderData {
+    fn from(output: OutputHandle) -> Self {
+        match output {
+            OutputHandle::Core => Self::new(HashableMeshType::Capsule, 1.0, false, 1.0),
+            OutputHandle::Spawner => Self::new(HashableMeshType::Capsule, 1.0, false, 0.8),
+            OutputHandle::Tower => Self::new(HashableMeshType::Cylinder, 1.5, true, 1.0),
+            OutputHandle::Advocate => Self::new(HashableMeshType::Capsule, 1.75, true, 1.0),
+            OutputHandle::Minion => Self::new(HashableMeshType::Cuboid, 1.0, true, 1.0),
+            OutputHandle::Monster => Self::new(HashableMeshType::Capsule, 1.75, true, 1.0),
+            OutputHandle::Demon => Self::new(HashableMeshType::Capsule, 1.9, true, 1.0),
+        }
+    }
+}
+
+//TODO: use a handlemap!
 fn init(mut commands: Commands, server: Res<AssetServer>) {
     commands.insert_resource(DevTexture(
         server.load("textures/untracked/kenney_dev_textures/Light/texture_07.png"),
     ));
 }
 
-fn update(
+fn add_models(
     mut commands: Commands,
-    mut query: Query<(Entity, &mut DisplayModel, &Radius, Option<&Team>), Added<DisplayModel>>,
+    object_query: Query<
+        (Entity, &OutputHandle, &Radius, Option<&Team>, &Transform),
+        Added<OutputHandle>,
+    >,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut material_map: ResMut<MaterialMap>,
     mut mesh_map: ResMut<MeshMap>,
     dev_texture: Res<DevTexture>,
 ) {
-    for (entity, display, radius, team) in &mut query {
-        let half_height = display.half_height_ratio * radius.0;
-        let mesh = HashableMesh::new(display.mesh_type, radius.0, half_height);
-        let material_color = team_color(team.copied());
-        let material_texture = &dev_texture.0;
-
-        let model_bundle = PbrBundle {
+    for (target, output, radius, team, transform) in &object_query {
+        let render_data = RenderData::from(*output);
+        let half_height = render_data.half_height_ratio * radius.0;
+        //get model bundle
+        let world_height = half_height * if render_data.raised { 2.0 } else { 1.0 };
+        let model_bundle = ModelBundle::new(target, *transform, world_height);
+        //get render bundle
+        let mesh = HashableMesh::new(render_data.mesh_type, radius.0, half_height);
+        let material_color = team_color(team.copied()).with_alpha(render_data.alpha);
+        let render_bundle = PbrBundle {
             mesh: mesh_map.clone_mesh_handle(&mut meshes, mesh),
             material: material_map.clone_material_handle(
                 &mut materials,
                 material_color,
-                Some(material_texture),
+                Some(&dev_texture.0),
             ),
-            transform: Transform::from_translation(Vec3::ZERO.with_z(if display.raised {
+            transform: Transform::from_translation(Vec3::ZERO.with_z(if render_data.raised {
                 half_height
             } else {
                 0.
             }))
             .with_rotation(Quat::from_rotation_x(
-                if display.mesh_type == HashableMeshType::Cuboid {
+                if render_data.mesh_type == HashableMeshType::Cuboid {
                     0.
                 } else {
                     PI / 2.
@@ -282,11 +278,19 @@ fn update(
             )),
             ..default()
         };
-        let mut model = commands.spawn(model_bundle);
-        if display.wireframe {
-            model.insert(Wireframe);
-        }
-        let model_id = model.id();
-        commands.entity(entity).add_child(model_id);
+        //spawn model
+        commands.spawn(model_bundle).with_children(|builder| {
+            builder.spawn(render_bundle);
+        });
+    }
+}
+
+fn interpolate_models(
+    mut model_query: Query<(&mut Transform, &Model)>,
+    object_query: Query<&Transform, Without<Model>>,
+) {
+    for (mut model_transform, model) in &mut model_query {
+        let object_transform = object_query.get(model.target).unwrap();
+        *model_transform = *object_transform;
     }
 }

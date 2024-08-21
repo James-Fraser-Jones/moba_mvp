@@ -1,7 +1,7 @@
 # Todo
 
-- Entirely separate logical entities from 3D transforms (unless Rapier requires transforms)
-- Implement transform extrapolation
+- Implement translation and orientation interpolation
+- Entirely separate logical entities from 3D transforms
 
 ---
 

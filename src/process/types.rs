@@ -1,42 +1,84 @@
-use crate::*;
+//use crate::*;
 use bevy::prelude::*;
 
-#[derive(Component, Clone, Copy)]
+//==========================================================
+//================ IO Handle Components ====================
+
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
+pub enum InputHandle {
+    Input0,
+    Input1,
+    Input2,
+    Input3,
+    Input4,
+    Input5,
+    Input6,
+    Input7,
+    Input8,
+    Input9,
+}
+impl From<u8> for InputHandle {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => InputHandle::Input0,
+            1 => InputHandle::Input1,
+            2 => InputHandle::Input2,
+            3 => InputHandle::Input3,
+            4 => InputHandle::Input4,
+            5 => InputHandle::Input5,
+            6 => InputHandle::Input6,
+            7 => InputHandle::Input7,
+            8 => InputHandle::Input8,
+            9 => InputHandle::Input9,
+            _ => panic!(),
+        }
+    }
+}
+
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
+pub enum OutputHandle {
+    Core,
+    Spawner,
+    Tower,
+    Advocate,
+    Minion,
+    Monster,
+    Demon,
+}
+
+//==========================================================
+//====================== Components ========================
+
+#[derive(Component, Clone, Copy, PartialEq)]
 pub struct Health(pub f32);
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, PartialEq)]
 pub struct MaxHealth(pub f32);
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, PartialEq)]
 pub struct MovePosition(pub Option<Vec2>);
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, PartialEq)]
 pub struct MoveSpeed(pub f32);
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy, PartialEq)]
 pub struct Radius(pub f32);
 
-#[derive(Component, Default, PartialEq, Eq, Clone, Copy)]
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
 pub enum Team {
-    #[default]
     Red,
     Blue,
 }
-#[derive(Component, Default, PartialEq, Eq, Clone, Copy)]
+
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
 pub enum Lane {
     Bot,
-    #[default]
     Mid,
     Top,
 }
 
-// pub enum PlayerAction {
-//     Move,
-//     Attack,
-//     Cast,
-//     Level,
-//     Interact,
-// }
+//==========================================================
+//====================== Bundles ===========================
 
 #[derive(Bundle)]
 pub struct MoveBundle {
@@ -53,201 +95,156 @@ impl MoveBundle {
 }
 
 #[derive(Bundle)]
-pub struct ModelBundle {
-    radius: Radius,
-    model: DisplayModel,
-}
-impl ModelBundle {
-    pub fn new(radius: f32, model: DisplayModel) -> Self {
-        Self {
-            radius: Radius(radius),
-            model,
-        }
-    }
-}
-
-#[derive(Bundle)]
 pub struct HealthBundle {
     health: Health,
     max_health: MaxHealth,
-    display: DisplayHealthbar,
 }
 impl HealthBundle {
-    pub fn new(health: f32, display: DisplayHealthbar) -> Self {
+    pub fn new(health: Health) -> Self {
         Self {
-            health: Health(health),
-            max_health: MaxHealth(health),
-            display,
+            health,
+            max_health: MaxHealth(health.0),
         }
     }
 }
 
 #[derive(Bundle)]
-pub struct Unit {
+pub struct UnitBundle {
     spatial: SpatialBundle,
-    model: ModelBundle,
+    radius: Radius,
     health: HealthBundle,
 }
-impl Unit {
-    pub fn new(
-        pos: Vec2,
-        radius: f32,
-        model: DisplayModel,
-        health: f32,
-        healthbar: DisplayHealthbar,
-    ) -> Self {
+impl UnitBundle {
+    pub fn new(pos: Vec2, radius: Radius, health: Health) -> Self {
         Self {
-            spatial: new_spatial(pos),
-            model: ModelBundle::new(radius, model),
-            health: HealthBundle::new(health, healthbar),
+            spatial: spatial_from_pos(pos),
+            radius,
+            health: HealthBundle::new(health),
         }
     }
 }
-fn new_spatial(pos: Vec2) -> SpatialBundle {
+fn spatial_from_pos(pos: Vec2) -> SpatialBundle {
     SpatialBundle::from_transform(Transform::from_translation(pos.extend(0.)))
 }
 
+//==========================================================
+//================= Top Level Bundles ======================
+
 #[derive(Bundle)]
-pub struct Core {
-    unit: Unit,
+pub struct CoreBundle {
+    unit: UnitBundle,
     team: Team,
+    output: OutputHandle,
 }
-impl Core {
+impl CoreBundle {
     pub fn new(pos: Vec2, team: Team) -> Self {
         Self {
-            unit: Unit::new(
-                pos,
-                50.,
-                DisplayModel::hemisphere(),
-                3400.,
-                DisplayHealthbar::Advanced,
-            ),
+            unit: UnitBundle::new(pos, Radius(50.), Health(3400.)),
             team,
+            output: OutputHandle::Core,
         }
     }
 }
 
 #[derive(Bundle)]
-pub struct Spawner {
-    unit: Unit,
+pub struct SpawnerBundle {
+    unit: UnitBundle,
     team: Team,
+    output: OutputHandle,
 }
-impl Spawner {
+impl SpawnerBundle {
     pub fn new(pos: Vec2, team: Team) -> Self {
         Self {
-            unit: Unit::new(
-                pos,
-                25.,
-                DisplayModel::hemisphere(),
-                900.,
-                DisplayHealthbar::Advanced,
-            ),
+            unit: UnitBundle::new(pos, Radius(25.), Health(900.)),
             team,
+            output: OutputHandle::Spawner,
         }
     }
 }
 
-pub const TOWER_RADIUS: f32 = 20.;
+pub const TOWER_RADIUS: Radius = Radius(20.);
 #[derive(Bundle)]
-pub struct Tower {
-    unit: Unit,
+pub struct TowerBundle {
+    unit: UnitBundle,
     team: Team,
+    output: OutputHandle,
 }
-impl Tower {
+impl TowerBundle {
     pub fn new(pos: Vec2, team: Team) -> Self {
         Self {
-            unit: Unit::new(
-                pos,
-                TOWER_RADIUS,
-                DisplayModel::cylinder().with_height_ratio(1.5),
-                500.,
-                DisplayHealthbar::Advanced,
-            ),
+            unit: UnitBundle::new(pos, TOWER_RADIUS, Health(500.)),
             team,
+            output: OutputHandle::Tower,
         }
     }
 }
 
-//handle for player plugin to access
-#[derive(Component)]
-pub struct PlayerID(pub i32);
-
 #[derive(Bundle)]
-pub struct Advocate {
-    unit: Unit,
+pub struct AdvocateBundle {
+    unit: UnitBundle,
     team: Team,
     move_: MoveBundle,
-    player_id: PlayerID,
+    output: OutputHandle,
+    input: InputHandle,
 }
-impl Advocate {
-    pub fn new(pos: Vec2, team: Team, player_id: PlayerID) -> Self {
+impl AdvocateBundle {
+    pub fn new(pos: Vec2, team: Team, input: InputHandle) -> Self {
         Self {
-            unit: Unit::new(
-                pos,
-                12.,
-                DisplayModel::capsule().with_height_ratio(1.75),
-                200.,
-                DisplayHealthbar::Advanced,
-            ),
+            unit: UnitBundle::new(pos, Radius(12.), Health(200.)),
             team,
             move_: MoveBundle::new(100.),
-            player_id,
+            output: OutputHandle::Advocate,
+            input,
         }
     }
 }
 
 #[derive(Bundle)]
-pub struct Minion {
-    unit: Unit,
+pub struct MinionBundle {
+    unit: UnitBundle,
     team: Team,
     move_: MoveBundle,
+    output: OutputHandle,
 }
-impl Minion {
+impl MinionBundle {
     pub fn new(pos: Vec2, team: Team) -> Self {
         Self {
-            unit: Unit::new(pos, 8., DisplayModel::cube(), 100., DisplayHealthbar::Basic),
+            unit: UnitBundle::new(pos, Radius(8.), Health(100.)),
             team,
             move_: MoveBundle::new(50.),
+            output: OutputHandle::Minion,
         }
     }
 }
 
 #[derive(Bundle)]
-pub struct Monster {
-    unit: Unit,
+pub struct MonsterBundle {
+    unit: UnitBundle,
     move_: MoveBundle,
+    output: OutputHandle,
 }
-impl Monster {
+impl MonsterBundle {
     pub fn new(pos: Vec2) -> Self {
         Self {
-            unit: Unit::new(
-                pos,
-                10.,
-                DisplayModel::capsule().with_height_ratio(1.75),
-                150.,
-                DisplayHealthbar::Basic,
-            ),
+            unit: UnitBundle::new(pos, Radius(10.), Health(150.)),
             move_: MoveBundle::new(200.),
+            output: OutputHandle::Monster,
         }
     }
 }
 
 #[derive(Bundle)]
-pub struct Demon {
-    unit: Unit,
+pub struct DemonBundle {
+    unit: UnitBundle,
     move_: MoveBundle,
+    output: OutputHandle,
 }
-impl Demon {
+impl DemonBundle {
     pub fn new(pos: Vec2) -> Self {
         Self {
-            unit: Unit::new(
-                pos,
-                25.,
-                DisplayModel::capsule().with_height_ratio(1.9),
-                1500.,
-                DisplayHealthbar::Advanced,
-            ),
+            unit: UnitBundle::new(pos, Radius(25.), Health(1500.)),
             move_: MoveBundle::new(300.),
+            output: OutputHandle::Demon,
         }
     }
 }
