@@ -17,9 +17,9 @@ impl Plugin for HealthbarPlugin {
 pub struct HealthbarSet;
 
 const HEALTHBAR_ASPECT_RATIO: f32 = 5.;
-const HEALTHBAR_WIDTH_SCALE: f32 = 2700.;
+const HEALTHBAR_WIDTH_SCALE: f32 = 1.4;
 const HEALTHBAR_OFFSET: f32 = 5.;
-const HEALTHBAR_INDICATOR_BORDER: f32 = 2.;
+const HEALTHBAR_INDICATOR_BORDER_PX: f32 = 2.;
 const HEALTHBAR_INDICATOR_HEALTH: f32 = 100.;
 const HEALTHBAR_CULL_DISTANCE: f32 = 1000.;
 
@@ -104,7 +104,7 @@ fn add_healthbars(
                             position_type: PositionType::Absolute,
                             width: Val::Percent(100.),
                             height: Val::Percent(100.),
-                            border: UiRect::all(Val::Px(HEALTHBAR_INDICATOR_BORDER))
+                            border: UiRect::all(Val::Px(HEALTHBAR_INDICATOR_BORDER_PX))
                                 .with_right(Val::Px(0.)),
                             ..default()
                         },
@@ -117,7 +117,7 @@ fn add_healthbars(
                                 style: Style {
                                     flex_grow: 1.,
                                     height: Val::Percent(100.),
-                                    border: UiRect::right(Val::Px(HEALTHBAR_INDICATOR_BORDER)),
+                                    border: UiRect::right(Val::Px(HEALTHBAR_INDICATOR_BORDER_PX)),
                                     ..default()
                                 },
                                 border_color: BorderColor(Color::BLACK),
@@ -130,7 +130,7 @@ fn add_healthbars(
                                 style: Style {
                                     flex_grow: remainder,
                                     height: Val::Percent(100.),
-                                    border: UiRect::right(Val::Px(HEALTHBAR_INDICATOR_BORDER)),
+                                    border: UiRect::right(Val::Px(HEALTHBAR_INDICATOR_BORDER_PX)),
                                     ..default()
                                 },
                                 border_color: BorderColor(Color::BLACK),
@@ -184,6 +184,7 @@ fn update_healthbars(
     >,
     mut text_query: Query<(&mut Text, &mut Transform), With<HealthTextTag>>,
     children_query: Query<&Children>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
     let (camera, camera_transform, global_camera_transform) = camera_query.single();
     for (healthbar_entity, mut healthbar_style, healthbar_anchor, mut healthbar_visibility) in
@@ -207,7 +208,9 @@ fn update_healthbars(
             *healthbar_visibility = Visibility::Visible;
             let pixel = pixel.unwrap();
             //set healthbar size and position
-            let intended_width = HEALTHBAR_WIDTH_SCALE * display_radius.0 / distance_from_camera;
+            let window = window_query.single();
+            let intended_width =
+                HEALTHBAR_WIDTH_SCALE * window.size().x * display_radius.0 / distance_from_camera;
             let size = Vec2::new(intended_width, intended_width / HEALTHBAR_ASPECT_RATIO);
             healthbar_style.width = Val::Px(size.x);
             healthbar_style.height = Val::Px(size.y);
